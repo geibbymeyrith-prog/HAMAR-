@@ -74,7 +74,7 @@ function MainApp() {
   const wetonKelahiranDetails = useMemo(() => birthDateWeton ? getJavaneseDetails(birthDateWeton) : null, [birthDateWeton]);
   const hariBaikDetails = useMemo(() => eventDateHariBaik ? getJavaneseDetails(eventDateHariBaik) : null, [eventDateHariBaik]);
 
-  const dateLocale = i18nInstance.language === 'id' ? id : enUS;
+  const dateLocale = i18nInstance.language === 'id' || i18nInstance.language === 'jv' ? id : enUS;
 
   // Jodoh Pinasti State
   const [birthDateSelf, setBirthDateSelf] = useState<Date>(new Date(1990, 0, 1));
@@ -679,7 +679,7 @@ function MainApp() {
                                   label={t('hariBaik.padewan')} 
                                   value={hariBaikDetails.padewan} 
                                   subValue={hariBaikDetails.padewanSifat}
-                                  extra={`Manfaat: ${hariBaikDetails.padewanManfaat}`}
+                                  extra={`${t('common.manfaat')}: ${hariBaikDetails.padewanManfaat}`}
                                 />
                                 <Separator />
                                 <DetailItemSmall 
@@ -767,6 +767,7 @@ function formatBulletPoints(text: string) {
 }
 
 function DetailItem({ label, value, subValue, icon, isLongText = false }: { label: string; value: string; subValue?: string; icon?: React.ReactNode; isLongText?: boolean }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-2 text-stone-400">
@@ -775,16 +776,16 @@ function DetailItem({ label, value, subValue, icon, isLongText = false }: { labe
       </div>
       {isLongText ? (
         <div className="mt-1">
-          {formatBulletPoints(value)}
+          {formatBulletPoints(t(value))}
         </div>
       ) : (
         <p className="font-serif font-bold text-stone-800 text-xl">
-          {value}
+          {t(value)}
         </p>
       )}
       {subValue && (
         <div className="mt-1">
-          {subValue.length > 60 ? formatBulletPoints(subValue) : <p className="text-xs text-stone-500 leading-relaxed">{subValue}</p>}
+          {subValue.length > 60 ? formatBulletPoints(t(subValue)) : <p className="text-xs text-stone-500 leading-relaxed">{t(subValue)}</p>}
         </div>
       )}
     </div>
@@ -796,12 +797,12 @@ function DetailItemSmall({ label, value, subValue, extra, color }: { label: stri
   return (
     <div className="space-y-2">
       <h4 className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{label}</h4>
-      <p className={cn("text-lg font-serif font-bold", color || "text-stone-800")}>{value}</p>
-      {subValue && <p className="text-xs text-stone-600 leading-relaxed">{subValue}</p>}
+      <p className={cn("text-lg font-serif font-bold", color || "text-stone-800")}>{t(value)}</p>
+      {subValue && <p className="text-xs text-stone-600 leading-relaxed">{t(subValue)}</p>}
       {extra && (
         <div className="mt-2 p-2 rounded bg-stone-50 border border-stone-100">
           <p className="text-[10px] font-bold text-stone-400 uppercase mb-1">{t('hariBaik.keterangan')}</p>
-          <p className="text-[11px] text-stone-500 italic">{extra}</p>
+          <p className="text-[11px] text-stone-500 italic">{t(extra)}</p>
         </div>
       )}
     </div>

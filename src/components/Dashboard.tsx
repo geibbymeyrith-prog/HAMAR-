@@ -92,9 +92,9 @@ export function MemberDashboard() {
                          <Sun className="w-5 h-5" />}
                       </div>
                       <div>
-                        <p className="font-bold text-stone-800 capitalize">{item.type} Jawa</p>
+                        <p className="font-bold text-stone-800 capitalize">{t(`tabs.${item.type}`)}</p>
                         <p className="text-xs text-stone-400">
-                          {item.createdAt?.toDate ? format(item.createdAt.toDate(), 'd MMM yyyy, HH:mm') : 'Baru saja'}
+                          {item.createdAt?.toDate ? format(item.createdAt.toDate(), 'd MMM yyyy, HH:mm') : t('common.justNow')}
                         </p>
                       </div>
                     </div>

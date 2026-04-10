@@ -227,7 +227,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   const jawiDayName = DAYS_JAWI[dayOfWeek];
   const dayLambang = DAYS_LAMBANG[dayOfWeek];
   const dayValue = DAYS_VALUE[dayOfWeek];
-  const daySifat = DAYS_SIFAT[jawiDayName];
+  const daySifat = `javanese_calendar.days_sifat.${jawiDayName}`;
 
   // 2. Pasaran
   // 23 May 1982 was Wage (index 2 in [Pahing, Pon, Wage, Kliwon, Legi])
@@ -236,7 +236,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   const pasaranName = pasaran.name;
   const pasaranValue = pasaran.value;
   const pasaranDewa = pasaran.dewa;
-  const pasaranSifat = pasaran.sifat;
+  const pasaranSifat = `javanese_calendar.pasaran_sifat.${pasaran.name}`;
 
   // 3. Neptu
   const neptuValue = dayValue + pasaranValue;
@@ -253,7 +253,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
     'Maktal', 'Wuye', 'Manahil', 'Prangbakat', 'Bala', 'Wugu', 'Wayang', 'Kulawu', 'Dukut', 'Watugunung'
   ];
   const wuku = wukuNames[wukuIndex];
-  const wukuSifat = WUKU_DATA[wuku];
+  const wukuSifat = `javanese_calendar.wuku_sifat.${wuku}`;
 
   // 5. Tahun Saka, Windu, Lambang
   const year = targetDate.getFullYear();
@@ -262,15 +262,15 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   
   const tahunSakaIndex = ((yearDiff % 8) + 8 + 4) % 8;
   const tahunSaka = TAHUN_SAKA[tahunSakaIndex];
-  const tahunSakaSifat = TAHUN_SAKA_SIFAT[tahunSaka];
+  const tahunSakaSifat = `javanese_calendar.tahun_saka_sifat.${tahunSaka}`;
 
   const winduIndex = ((Math.floor((year - 2021) / 8) % 4) + 4 + 3) % 4;
   const windu = WINDU[winduIndex];
-  const winduSifat = WINDU_SIFAT[windu];
+  const winduSifat = `javanese_calendar.windu_sifat.${windu}`;
 
   const lambangIndex = ((Math.floor((year - 2021) / 8) % 2) + 2 + 1) % 2;
   const lambang = LAMBANG[lambangIndex];
-  const lambangSifat = LAMBANG_SIFAT[lambang];
+  const lambangSifat = `javanese_calendar.lambang_sifat.${lambang}`;
 
   // 6. Tahun Jawi
   // (Calculation moved to section 7 for better accuracy)
@@ -324,7 +324,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   // 2026 is 1959 Jawi. 
   const tahunJawi = 1959 + (winduCycles * 8) + (currentYearIdx - 4);
   const lastDigit = tahunJawi % 10;
-  const tahunJawiSifat = TAHUN_JAWI_SIFAT[lastDigit];
+  const tahunJawiSifat = `javanese_calendar.tahun_jawi_sifat.${lastDigit}`;
 
   // 8. Pranata Mangsa
   let pranataMangsa = 'Unknown';
@@ -340,14 +340,14 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
     if (start <= end) {
       if (current >= start && current <= end) {
         pranataMangsa = pm.name;
-        pranataMangsaSifat = pm.sifat;
+        pranataMangsaSifat = `javanese_calendar.pranata_mangsa_sifat.${pranataMangsa}`;
         break;
       }
     } else {
       // Wraps around year end
       if (current >= start || current <= end) {
         pranataMangsa = pm.name;
-        pranataMangsaSifat = pm.sifat;
+        pranataMangsaSifat = `javanese_calendar.pranata_mangsa_sifat.${pranataMangsa}`;
         break;
       }
     }
@@ -364,23 +364,23 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   const nagadina = nagadinaDirections[nagadinaSisa];
   const nagadinaDewa = nagadina.dewa;
   const nagadinaWarna = nagadina.warna;
-  const nagadinaArah = `Menghadap ${nagadina.arah}`;
+  const nagadinaArah = `javanese_calendar.nagadina.arah.${nagadina.arah}`;
 
   // 10. Naas Harian
   // Anchor: 27 Jan 2026 = Wurukung (index 2)
   const naasAnchor = new Date(2026, 0, 27);
   const naasDaysDiff = differenceInDays(targetDate, naasAnchor);
   
-  let naas = 'Hari Normal';
-  let naasSifat = 'Hari ini bukan merupakan Hari Naas.';
-  let naasPantangan = 'Tidak ada pantangan khusus.';
+  let naas = 'hariBaik.normal';
+  let naasSifat = 'hariBaik.normalSifat';
+  let naasPantangan = 'hariBaik.noPantangan';
 
   if (naasDaysDiff % 3 === 0) {
     const naasCycleIdx = ((Math.floor(naasDaysDiff / 3) % 6) + 6 + 2) % 6;
     const naasData = NAAS[naasCycleIdx];
     naas = `HARI NAAS (${naasData.name})`;
-    naasSifat = naasData.watak;
-    naasPantangan = naasData.pantangan;
+    naasSifat = `javanese_calendar.naas.${naasData.name}.watak`;
+    naasPantangan = `javanese_calendar.naas.${naasData.name}.pantangan`;
   }
 
   // 11. Gisir
@@ -389,7 +389,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   const gisirDaysDiff = differenceInDays(targetDate, gisirAnchor);
   const gisirIdx = ((gisirDaysDiff % 6) + 6 + 3) % 6;
   const gisir = GISIR[gisirIdx].name;
-  const gisirSifat = GISIR[gisirIdx].sifat;
+  const gisirSifat = `javanese_calendar.gisir_sifat.${gisir}`;
 
   // 12. Padewan
   // Starts at Wuku Sinta, Sunday Pahing.
@@ -412,8 +412,8 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   }
   const padewanData = PADEWAN[padewanIdx];
   const padewan = padewanData.name;
-  const padewanSifat = padewanData.sifat;
-  const padewanManfaat = padewanData.manfaat;
+  const padewanSifat = `javanese_calendar.padewan_sifat.${padewan}`;
+  const padewanManfaat = `javanese_calendar.padewan_manfaat.${padewan}`;
 
   // 13. Padangon
   // Starts at Wuku Sinta, Sunday Pahing.
@@ -431,7 +431,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   }
   const padangonData = PADANGON[padangonIdx];
   const padangon = padangonData.name;
-  const padangonSifat = padangonData.sifat;
+  const padangonSifat = `javanese_calendar.padangon_sifat.${padangon}`;
 
   return {
     masehiDate: targetDate,
@@ -515,18 +515,18 @@ export function getJodohPinasti(mangsa1: string, mangsa2: string) {
 
   if (p1.jodoh === mangsa2) {
     return {
-      status: 'Berjodoh (Pinasti)',
-      pesan: 'Jika ingin dilanjutkan ke jenjang pernikahan maka silakan pilih hari dan pasaran yang baik. Jika sudah menikah, silakan dapat melakukan puasa weton hari pernikahan setiap 35 hari sekali, jika mampu.'
+      status: 'jodoh.results.pinasti.status',
+      pesan: 'jodoh.results.pinasti.pesan'
     };
   } else if (p1.serasi.includes(mangsa2)) {
     return {
-      status: 'Serasi',
-      pesan: 'Ada kemungkinan kebaikan dan keserasian. Tetap perhatikan hari baik untuk pernikahan.'
+      status: 'jodoh.results.serasi.status',
+      pesan: 'jodoh.results.serasi.pesan'
     };
   } else {
     return {
-      status: 'Kendala Berjodoh',
-      pesan: 'Dalam Petung Jawa, hitungan Jodoh Pinasti adalah tidak untuk dilanggar jika ingin mendapatkan kehidupan pernikahan dan rumah tangga yang harmonis dan bahagia. Namun, jika sudah terlanjur menikah maka dapat melakukan lelaku untuk mengatasinya, salah satunya adalah dengan melakukan Seratan Winadi di setiap weton pernikahannya.'
+      status: 'jodoh.results.kendala.status',
+      pesan: 'jodoh.results.kendala.pesan'
     };
   }
 }
