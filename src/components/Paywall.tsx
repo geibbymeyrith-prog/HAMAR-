@@ -1,14 +1,14 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/lib/AuthContext';
-import { Lock, Check, MessageCircle, BookOpen } from 'lucide-react';
+import { Lock, Check, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { motion } from 'motion/react';
+import { cn } from '@/lib/utils';
 
-export function Paywall({ onUpgrade }: { onUpgrade?: () => void }) {
+export function Paywall() {
   const { t, i18n } = useTranslation();
-  const { user, login } = useAuth();
+  const { user, login, subscribe, authError } = useAuth();
 
   const isIDR = i18n.language === 'id' || i18n.language === 'jv';
   const monthlyPrice = isIDR ? 'Rp 36.950' : '$2.49';
@@ -28,6 +28,13 @@ export function Paywall({ onUpgrade }: { onUpgrade?: () => void }) {
           </p>
         </div>
 
+        {authError && (
+          <div className="flex items-center gap-2 p-3 bg-red-50 text-red-600 text-[10px] rounded-xl border border-red-100 text-left">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{authError}</span>
+          </div>
+        )}
+
         {!user ? (
           <Button onClick={login} className="w-full h-10 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-sm">
             {t('paywall.loginBtn')}
@@ -43,7 +50,7 @@ export function Paywall({ onUpgrade }: { onUpgrade?: () => void }) {
                   t('paywall.features.fullResult'),
                   t('paywall.features.consultation')
                 ]}
-                onSelect={onUpgrade}
+                onSelect={() => subscribe('monthly')}
                 selectBtnText={t('paywall.selectBtn')}
               />
               <PricingCard 
@@ -55,7 +62,7 @@ export function Paywall({ onUpgrade }: { onUpgrade?: () => void }) {
                   t('paywall.save'),
                   t('paywall.features.consultationMonthly')
                 ]}
-                onSelect={onUpgrade}
+                onSelect={() => subscribe('yearly')}
                 selectBtnText={t('paywall.selectBtn')}
               />
             </div>
@@ -104,8 +111,4 @@ function PricingCard({ title, price, period, features, highlight, onSelect, sele
       </Button>
     </motion.div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
 }

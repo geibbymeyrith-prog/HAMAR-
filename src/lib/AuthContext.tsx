@@ -82,8 +82,10 @@ interface AuthContextType {
   user: FirebaseUser | null;
   profile: UserProfile | null;
   loading: boolean;
+  authError: string | null;
   login: () => Promise<void>;
   logout: () => Promise<void>;
+  subscribe: (plan: 'monthly' | 'yearly') => Promise<void>;
   isSubscriber: boolean;
   isAdmin: boolean;
 }
@@ -94,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -143,19 +146,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    setAuthError(null);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      console.error("Login Error:", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        setAuthError("Domain ini belum terdaftar di Firebase Authorized Domains. Silakan tambahkan domain Vercel Anda di Firebase Console.");
+      } else if (error.code === 'auth/popup-blocked') {
+        setAuthError("Popup diblokir oleh browser. Silakan izinkan popup untuk login.");
+      } else {
+        setAuthError("Gagal login: " + error.message);
+      }
+    }
+  };
+
+  const subscribe = async (plan: 'monthly' | 'yearly') => {
+    if (!user) return;
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, {
+        subscriptionStatus: plan,
+        subscriptionEndDate: new Date(Date.now() + (plan === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000)
+      }, { merge: true });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
+    }
   };
 
   const logout = async () => {
     await signOut(auth);
+    setAuthError(null);
   };
 
   const isSubscriber = profile?.subscriptionStatus === 'monthly' || profile?.subscriptionStatus === 'yearly';
   const isAdmin = profile?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, logout, isSubscriber, isAdmin }}>
+    <AuthContext.Provider value={{ user, profile, loading, authError, login, logout, subscribe, isSubscriber, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );
