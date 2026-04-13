@@ -392,7 +392,7 @@ function MainApp() {
                   </div>
                   <div className="text-center">
                     <p className="text-xs text-stone-400">{t('weton.arah')}</p>
-                    <p className="font-medium">{wetonDetails.nagadinaArah}</p>
+                    <p className="font-medium">{t(wetonDetails.nagadinaArah)}</p>
                   </div>
                 </div>
               </div>
@@ -717,7 +717,7 @@ function MainApp() {
                               <div className="space-y-2">
                                 <p className="text-sm"><span className="text-stone-400">Dewa:</span> <span className="font-bold">{hariBaikDetails.nagadinaDewa}</span></p>
                                 <p className="text-sm"><span className="text-stone-400">Warna:</span> <span className="font-bold">{hariBaikDetails.nagadinaWarna}</span></p>
-                                <p className="text-sm"><span className="text-stone-400">Arah:</span> <span className="font-bold">{hariBaikDetails.nagadinaArah}</span></p>
+                                <p className="text-sm"><span className="text-stone-400">Arah:</span> <span className="font-bold">{t(hariBaikDetails.nagadinaArah)}</span></p>
                               </div>
                             </CardContent>
                           </Card>

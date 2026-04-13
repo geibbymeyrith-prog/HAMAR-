@@ -188,10 +188,10 @@ const resources = {
         },
         nagadina: {
           arah: {
-            Utara: 'Menghadap Utara',
-            Timur: 'Menghadap Timur',
-            Selatan: 'Menghadap Selatan',
-            Barat: 'Menghadap Barat'
+            Utara: 'Utara',
+            Timur: 'Timur',
+            Selatan: 'Selatan',
+            Barat: 'Barat'
           }
         },
         naas: {
@@ -507,10 +507,10 @@ const resources = {
         },
         nagadina: {
           arah: {
-            Utara: 'Facing North',
-            Timur: 'Facing East',
-            Selatan: 'Facing South',
-            Barat: 'Facing West'
+            Utara: 'North',
+            Timur: 'East',
+            Selatan: 'South',
+            Barat: 'West'
           }
         },
         naas: {
@@ -826,10 +826,10 @@ const resources = {
         },
         nagadina: {
           arah: {
-            Utara: 'Madhep Lor',
-            Timur: 'Madhep Wetan',
-            Selatan: 'Madhep Kidul',
-            Barat: 'Madhep Kulon'
+            Utara: 'Lor',
+            Timur: 'Wetan',
+            Selatan: 'Kidul',
+            Barat: 'Kulon'
           }
         },
         naas: {
