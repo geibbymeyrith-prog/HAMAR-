@@ -659,15 +659,15 @@ function MainApp() {
                               <DetailItemSmall 
                                 label={t('hariBaik.naas')} 
                                 value={hariBaikDetails.naas} 
-                                subValue={hariBaikDetails.naasSifat}
-                                extra={hariBaikDetails.naasPantangan}
+                                subValue={t(hariBaikDetails.naasSifat)}
+                                extra={t(hariBaikDetails.naasPantangan)}
                                 color="text-red-600"
                               />
                               <Separator />
                               <DetailItemSmall 
                                 label={t('hariBaik.gisir')} 
                                 value={hariBaikDetails.gisir} 
-                                subValue={`${t('weton.labels.daySifat')}: ${hariBaikDetails.gisirSifat}`}
+                                subValue={`${t('weton.labels.daySifat')}: ${t(hariBaikDetails.gisirSifat)}`}
                               />
                             </div>
                             
@@ -678,14 +678,14 @@ function MainApp() {
                                 <DetailItemSmall 
                                   label={t('hariBaik.padewan')} 
                                   value={hariBaikDetails.padewan} 
-                                  subValue={hariBaikDetails.padewanSifat}
-                                  extra={`${t('common.manfaat')}: ${hariBaikDetails.padewanManfaat}`}
+                                  subValue={t(hariBaikDetails.padewanSifat)}
+                                  extra={`${t('common.manfaat')}: ${t(hariBaikDetails.padewanManfaat)}`}
                                 />
                                 <Separator />
                                 <DetailItemSmall 
                                   label={t('hariBaik.padangon')} 
                                   value={hariBaikDetails.padangon} 
-                                  subValue={hariBaikDetails.padangonSifat}
+                                  subValue={t(hariBaikDetails.padangonSifat)}
                                 />
                               </div>
                             </div>
