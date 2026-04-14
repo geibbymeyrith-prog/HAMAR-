@@ -245,14 +245,14 @@ const resources = {
           Jimakir: 'Sifatnya seperti gunung: teguh, kuat, dan pelindung.'
         },
         windu_sifat: {
-          Sancaya: 'Masa kejayaan, kemakmuran, dan keberhasilan.',
-          Adi: 'Masa awal, pertumbuhan, dan harapan baru.',
-          Kuntara: 'Masa perjuangan, ketekunan, dan kerja keras.',
-          Sengara: 'Masa tantangan, kewaspadaan, dan ketabahan.'
+          Adi: 'Masa keemasan, kejayaan, dan kemakmuran.',
+          Kunthara: 'Masa perjuangan, ketekunan, dan kerja keras.',
+          Sangara: 'Masa tantangan, kewaspadaan, dan ketabahan.',
+          Sancaya: 'Masa pengumpulan, refleksi, dan persiapan.'
         },
         lambang_sifat: {
-          Kuwalu: 'Lambang kesuburan, pertumbuhan, dan kemakmuran.',
-          Langgir: 'Lambang kekuatan, ketegasan, dan perlindungan.'
+          Kulawu: 'Lambang kesuburan, pertumbuhan, dan kemakmuran.',
+          Langkir: 'Lambang kekuatan, ketegasan, dan perlindungan.'
         },
         tahun_jawi_sifat: {
           '0': 'Tahun yang penuh dengan keberuntungan dan kemudahan.',
@@ -260,25 +260,25 @@ const resources = {
           '2': 'Tahun yang penuh dengan perubahan dan dinamika.',
           '3': 'Tahun yang membawa kedamaian dan ketenangan.',
           '4': 'Tahun yang penuh dengan tantangan dan ujian.',
-          '5': 'Tahun yang membawa kemakmuran dan kejayaan.',
+          '5': 'Tahun yang membawa kemakmuran and kejayaan.',
           '6': 'Tahun yang memerlukan kewaspadaan dan ketelitian.',
           '7': 'Tahun yang penuh dengan inspirasi dan kreativitas.',
           '8': 'Tahun yang membawa kebahagiaan dan sukacita.',
           '9': 'Tahun yang penuh dengan spiritualitas dan kebijaksanaan.'
         },
         pranata_mangsa_sifat: {
-          Kasa: 'Masa terang, langit bersih, daun mulai berguguran.',
-          Karo: 'Masa tanah retak, pohon randu mulai berbunga.',
-          Katiga: 'Masa air mulai surut, pohon mangga mulai berbunga.',
-          Kapat: 'Masa mata air mulai mengalir, burung mulai bersarang.',
-          Kalima: 'Masa hujan mulai turun, pohon asam mulai bertunas.',
-          Kanem: 'Masa buah-buahan mulai masak, burung mulai bertelur.',
-          Kapitu: 'Masa hujan lebat, sungai meluap, musim penyakit.',
-          Kawolu: 'Masa padi mulai menghijau, ulat mulai bermunculan.',
-          Kasanga: 'Masa padi mulai menguning, burung mulai migrasi.',
-          Kasapuluh: 'Masa padi mulai dipanen, burung mulai menetas.',
-          Desta: 'Masa udara mulai panas, burung mulai terbang.',
-          Sada: 'Masa udara dingin, langit bersih, bintang terlihat jelas.'
+          'Kartika-Kasa': 'Masa terang, langit bersih, daun mulai berguguran.',
+          'Pusa-Karo': 'Masa tanah retak, pohon randu mulai berbunga.',
+          'Manggasri-Katelu': 'Masa air mulai surut, pohon mangga mulai berbunga.',
+          'Sitra-Kapat': 'Masa mata air mulai mengalir, burung mulai bersarang.',
+          'Manggala-Kalima': 'Masa hujan mulai turun, pohon asam mulai bertunas.',
+          'Naya-Kanem': 'Masa buah-buahan mulai masak, burung mulai bertelur.',
+          'Palguna-Kapitu': 'Masa hujan lebat, sungai meluap, musim penyakit.',
+          'Wasika-Kawolu': 'Masa padi mulai menghijau, ulat mulai bermunculan.',
+          'Jita-Kasanga': 'Masa padi mulai menguning, burung mulai migrasi.',
+          'Srawana-Kasedasa': 'Masa padi mulai dipanen, burung mulai menetas.',
+          'Padrawana-Dhesta': 'Masa udara mulai panas, burung mulai terbang.',
+          'Asuji-Sadda': 'Masa udara dingin, langit bersih, bintang terlihat jelas.'
         },
         gisir_sifat: {
           Gisir: 'Sifatnya seperti tanah: teguh, kuat, dan pelindung.',
@@ -564,14 +564,14 @@ const resources = {
           Jimakir: 'Like mountains: steadfast, strong, and protective.'
         },
         windu_sifat: {
-          Sancaya: 'Era of glory, prosperity, and success.',
           Adi: 'Initial era, growth, and new hope.',
-          Kuntara: 'Era of struggle, diligence, and hard work.',
-          Sengara: 'Era of challenges, vigilance, and fortitude.'
+          Kunthara: 'Era of struggle, diligence, and hard work.',
+          Sangara: 'Era of challenges, vigilance, and fortitude.',
+          Sancaya: 'Era of glory, prosperity, and success.'
         },
         lambang_sifat: {
-          Kuwalu: 'Symbol of fertility, growth, and prosperity.',
-          Langgir: 'Symbol of strength, firmness, and protection.'
+          Kulawu: 'Symbol of fertility, growth, and prosperity.',
+          Langkir: 'Symbol of strength, firmness, and protection.'
         },
         tahun_jawi_sifat: {
           '0': 'A year full of luck and ease.',
@@ -586,18 +586,18 @@ const resources = {
           '9': 'A year full of spirituality and wisdom.'
         },
         pranata_mangsa_sifat: {
-          Kasa: 'Bright era, clear sky, leaves begin to fall.',
-          Karo: 'Cracked soil era, randu trees begin to bloom.',
-          Katiga: 'Water begins to recede era, mango trees begin to bloom.',
-          Kapat: 'Springs begin to flow era, birds begin to nest.',
-          Kalima: 'Rain begins to fall era, tamarind trees begin to sprout.',
-          Kanem: 'Fruits begin to ripen era, birds begin to lay eggs.',
-          Kapitu: 'Heavy rain era, overflowing rivers, disease season.',
-          Kawolu: 'Rice begins to turn green era, caterpillars begin to appear.',
-          Kasanga: 'Rice begins to turn yellow era, birds begin to migrate.',
-          Kasapuluh: 'Rice begins to be harvested era, birds begin to hatch.',
-          Desta: 'Air begins to get hot era, birds begin to fly.',
-          Sada: 'Cold air era, clear sky, stars clearly visible.'
+          'Kartika-Kasa': 'Bright era, clear sky, leaves begin to fall.',
+          'Pusa-Karo': 'Cracked soil era, randu trees begin to bloom.',
+          'Manggasri-Katelu': 'Water begins to recede era, mango trees begin to bloom.',
+          'Sitra-Kapat': 'Springs begin to flow era, birds begin to nest.',
+          'Manggala-Kalima': 'Rain begins to fall era, tamarind trees begin to sprout.',
+          'Naya-Kanem': 'Fruits begin to ripen era, birds begin to lay eggs.',
+          'Palguna-Kapitu': 'Heavy rain era, overflowing rivers, disease season.',
+          'Wasika-Kawolu': 'Rice begins to turn green era, caterpillars begin to appear.',
+          'Jita-Kasanga': 'Rice begins to turn yellow era, birds begin to migrate.',
+          'Srawana-Kasedasa': 'Rice begins to be harvested era, birds begin to hatch.',
+          'Padrawana-Dhesta': 'Air begins to get hot era, birds begin to fly.',
+          'Asuji-Sadda': 'Cold air era, clear sky, stars clearly visible.'
         },
         gisir_sifat: {
           Gisir: 'Like earth: steadfast, strong, and protective.',
@@ -883,14 +883,14 @@ const resources = {
           Jimakir: 'Kados redi: kiyat tekadipun, kiyat, lan ngayomi.'
         },
         windu_sifat: {
-          Sancaya: 'Masa jaya, makmur, lan kasil.',
           Adi: 'Masa wiwitan, tuwuh, lan pangajab anyar.',
-          Kuntara: 'Masa perjuangan, temen, lan sregep nyambut damel.',
-          Sengara: 'Masa tantangan, ngati-ati, lan kiyat tekadipun.'
+          Kunthara: 'Masa perjuangan, temen, lan sregep nyambut damel.',
+          Sangara: 'Masa tantangan, ngati-ati, lan kiyat tekadipun.',
+          Sancaya: 'Masa jaya, makmur, lan kasil.'
         },
         lambang_sifat: {
-          Kuwalu: 'Lambang kesuburan, tuwuh, lan kemakmuran.',
-          Langgir: 'Lambang kakuwatan, ketegasan, lan pangayoman.'
+          Kulawu: 'Lambang kesuburan, tuwuh, lan kemakmuran.',
+          Langkir: 'Lambang kakuwatan, ketegasan, lan pangayoman.'
         },
         tahun_jawi_sifat: {
           '0': 'Taun ingkang kebak kabegjan lan gampil.',
@@ -905,18 +905,18 @@ const resources = {
           '9': 'Taun ingkang kebak spiritualitas lan kawicaksanan.'
         },
         pranata_mangsa_sifat: {
-          Kasa: 'Masa padhang, langit resik, godhong wiwit rontok.',
-          Karo: 'Masa lemah nela, wit randu wiwit kembang.',
-          Katiga: 'Masa toya wiwit sudha, wit pelem wiwit kembang.',
-          Kapat: 'Masa sumber wiwit mili, peksi wiwit susuh.',
-          Kalima: 'Masa jawah wiwit mandhap, wit asem wiwit semi.',
-          Kanem: 'Masa woh-wohan wiwit mateng, peksi wiwit nigan.',
-          Kapitu: 'Masa jawah deres, lepen luber, mangsa sakit.',
-          Kawolu: 'Masa pantun wiwit ijo, uler wiwit medal.',
-          Kasanga: 'Masa pantun wiwit kuning, peksi wiwit migrasi.',
-          Kasapuluh: 'Masa pantun wiwit dipunpanen, peksi wiwit netes.',
-          Desta: 'Masa hawa wiwit benter, peksi wiwit mabur.',
-          Sada: 'Masa hawa adhem, langit resik, lintang katingal cetha.'
+          'Kartika-Kasa': 'Masa padhang, langit resik, godhong wiwit rontok.',
+          'Pusa-Karo': 'Masa lemah nela, wit randu wiwit kembang.',
+          'Manggasri-Katelu': 'Masa toya wiwit sudha, wit pelem wiwit kembang.',
+          'Sitra-Kapat': 'Masa sumber wiwit mili, peksi wiwit susuh.',
+          'Manggala-Kalima': 'Masa jawah wiwit mandhap, wit asem wiwit semi.',
+          'Naya-Kanem': 'Masa woh-wohan wiwit mateng, peksi wiwit nigan.',
+          'Palguna-Kapitu': 'Masa jawah deres, lepen luber, mangsa sakit.',
+          'Wasika-Kawolu': 'Masa pantun wiwit ijo, uler wiwit medal.',
+          'Jita-Kasanga': 'Masa pantun wiwit kuning, peksi wiwit migrasi.',
+          'Srawana-Kasedasa': 'Masa pantun wiwit dipunpanen, peksi wiwit netes.',
+          'Padrawana-Dhesta': 'Masa hawa wiwit benter, peksi wiwit mabur.',
+          'Asuji-Sadda': 'Masa hawa adhem, langit resik, lintang katingal cetha.'
         },
         gisir_sifat: {
           Gisir: 'Kados bumi: kiyat tekadipun, kiyat, lan ngayomi.',
