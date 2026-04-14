@@ -36,36 +36,34 @@ export function Paywall() {
         )}
 
         {!user ? (
-          <Button onClick={login} className="w-full h-10 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-sm">
+          <Button onClick={login} className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-sm shadow-lg">
             {t('paywall.loginBtn')}
           </Button>
         ) : (
-          <div className="grid grid-cols-1 gap-3">
-            <div className="flex flex-col md:flex-row gap-3">
-              <PricingCard 
-                title={t('paywall.monthly')} 
-                price={monthlyPrice} 
-                period={isIDR ? '/ bln' : '/ mo'}
-                features={[
-                  t('paywall.features.fullResult'),
-                  t('paywall.features.consultation')
-                ]}
-                onSelect={() => subscribe('monthly')}
-                selectBtnText={t('paywall.selectBtn')}
-              />
-              <PricingCard 
-                title={t('paywall.yearly')} 
-                price={yearlyPrice} 
-                period={isIDR ? '/ thn' : '/ yr'}
-                highlight
-                features={[
-                  t('paywall.save'),
-                  t('paywall.features.consultationMonthly')
-                ]}
-                onSelect={() => subscribe('yearly')}
-                selectBtnText={t('paywall.selectBtn')}
-              />
-            </div>
+          <div className="flex flex-col md:flex-row gap-4">
+            <PricingCard 
+              title={t('paywall.monthly')} 
+              price={monthlyPrice} 
+              period={isIDR ? '/ bln' : '/ mo'}
+              features={[
+                t('paywall.features.fullResult'),
+                t('paywall.features.consultation')
+              ]}
+              onSelect={() => subscribe('monthly')}
+              selectBtnText={t('paywall.selectBtn')}
+            />
+            <PricingCard 
+              title={t('paywall.yearly')} 
+              price={yearlyPrice} 
+              period={isIDR ? '/ thn' : '/ yr'}
+              highlight
+              features={[
+                t('paywall.save'),
+                t('paywall.features.consultationMonthly')
+              ]}
+              onSelect={() => subscribe('yearly')}
+              selectBtnText={t('paywall.selectBtn')}
+            />
           </div>
         )}
       </div>
@@ -77,15 +75,22 @@ function PricingCard({ title, price, period, features, highlight, onSelect, sele
   return (
     <motion.div 
       whileHover={{ y: -5 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onSelect}
       className={cn(
-        "p-4 rounded-xl border-2 text-left flex flex-col h-full",
-        highlight ? "border-[#FBC02D] bg-[#FBC02D]/5" : "border-stone-200 bg-white"
+        "p-5 rounded-2xl border-2 text-left flex flex-col flex-1 cursor-pointer transition-all duration-200",
+        highlight 
+          ? "border-[#FBC02D] bg-[#FBC02D]/5 shadow-md hover:shadow-lg" 
+          : "border-stone-200 bg-white hover:border-stone-300 shadow-sm hover:shadow-md"
       )}
     >
       <div className="mb-4">
-        <h4 className="text-xs font-bold uppercase tracking-widest text-stone-400">{title}</h4>
+        <h4 className={cn(
+          "text-[10px] font-bold uppercase tracking-widest mb-1",
+          highlight ? "text-[#F9A825]" : "text-stone-400"
+        )}>{title}</h4>
         <div className="flex items-baseline gap-1">
-          <span className="text-lg font-bold text-stone-900">{price}</span>
+          <span className="text-xl font-bold text-stone-900">{price}</span>
           <span className="text-[10px] text-stone-400">{period}</span>
         </div>
       </div>
@@ -93,18 +98,23 @@ function PricingCard({ title, price, period, features, highlight, onSelect, sele
       <ul className="space-y-2 mb-6 flex-grow">
         {features.map((f: string, i: number) => (
           <li key={i} className="flex items-start gap-2 text-[10px] text-stone-600">
-            <Check className="w-3 h-3 text-green-600 mt-0.5 shrink-0" />
+            <Check className={cn("w-3 h-3 mt-0.5 shrink-0", highlight ? "text-[#F9A825]" : "text-green-600")} />
             <span>{f}</span>
           </li>
         ))}
       </ul>
       
       <Button 
-        onClick={onSelect}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect();
+        }}
         size="sm" 
         className={cn(
-          "w-full h-8 text-[10px] font-bold rounded-lg",
-          highlight ? "bg-[#FBC02D] hover:bg-[#F9A825] text-black" : "bg-stone-100 hover:bg-stone-200 text-stone-900"
+          "w-full h-9 text-[10px] font-bold rounded-xl transition-all",
+          highlight 
+            ? "bg-[#FBC02D] hover:bg-[#F9A825] text-black shadow-sm" 
+            : "bg-stone-900 hover:bg-stone-800 text-white shadow-sm"
         )}
       >
         {selectBtnText}
