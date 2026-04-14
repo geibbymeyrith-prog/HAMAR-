@@ -16,7 +16,10 @@ export function Paywall() {
 
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-white/60 backdrop-blur-[2px]">
-      <div className="max-w-md w-full text-center space-y-4 bg-white/90 p-6 rounded-2xl shadow-2xl border border-stone-100">
+      <div className={cn(
+        "w-full text-center space-y-4 bg-white/90 p-6 rounded-2xl shadow-2xl border border-stone-100 transition-all duration-300",
+        user ? "max-w-2xl" : "max-w-md"
+      )}>
         <div className="bg-stone-900 text-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg">
           <Lock className="w-6 h-6" />
         </div>
@@ -40,7 +43,7 @@ export function Paywall() {
             {t('paywall.loginBtn')}
           </Button>
         ) : (
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
             <PricingCard 
               title={t('paywall.monthly')} 
               price={monthlyPrice} 
@@ -76,9 +79,12 @@ function PricingCard({ title, price, period, features, highlight, onSelect, sele
     <motion.div 
       whileHover={{ y: -5 }}
       whileTap={{ scale: 0.98 }}
-      onClick={onSelect}
+      onClick={(e) => {
+        e.preventDefault();
+        onSelect();
+      }}
       className={cn(
-        "p-5 rounded-2xl border-2 text-left flex flex-col flex-1 cursor-pointer transition-all duration-200",
+        "p-5 rounded-2xl border-2 text-left flex flex-col cursor-pointer transition-all duration-200 w-full min-h-[220px]",
         highlight 
           ? "border-[#FBC02D] bg-[#FBC02D]/5 shadow-md hover:shadow-lg" 
           : "border-stone-200 bg-white hover:border-stone-300 shadow-sm hover:shadow-md"

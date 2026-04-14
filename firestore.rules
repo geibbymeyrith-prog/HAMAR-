@@ -75,7 +75,8 @@ service cloud.firestore {
              data.role in ['user', 'admin'] &&
              data.subscriptionStatus in ['free', 'monthly', 'yearly'] &&
              (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
-             (!('whatsappConsultationsUsed' in data) || data.whatsappConsultationsUsed is number);
+             (!('whatsappConsultationsUsed' in data) || data.whatsappConsultationsUsed is number) &&
+             (!('subscriptionEndDate' in data) || data.subscriptionEndDate is timestamp);
     }
 
     function isValidCalculation(data) {
@@ -100,7 +101,7 @@ service cloud.firestore {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && 
                     (request.resource.data.role == 'user' || (request.resource.data.role == 'admin' && request.auth.token.email == "geibbymeyrith@gmail.com"));
-      allow update: if isAdmin() || (isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus);
+      allow update: if isAdmin() || (isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role);
     }
 
     match /test/connection {
