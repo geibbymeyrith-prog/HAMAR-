@@ -262,7 +262,8 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   
   const tahunSakaIndex = ((yearDiff % 8) + 8 + 4) % 8;
   const tahunSaka = TAHUN_SAKA[tahunSakaIndex];
-  const tahunSakaSifat = `javanese_calendar.tahun_saka_sifat.${tahunSaka}`;
+  const tahunSakaKey = tahunSaka.charAt(0) + tahunSaka.slice(1).toLowerCase();
+  const tahunSakaSifat = `javanese_calendar.tahun_saka_sifat.${tahunSakaKey}`;
 
   const winduIndex = ((Math.floor((year - 2021) / 8) % 4) + 4 + 3) % 4;
   const windu = WINDU[winduIndex];
@@ -378,9 +379,10 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   if (naasDaysDiff % 3 === 0) {
     const naasCycleIdx = ((Math.floor(naasDaysDiff / 3) % 6) + 6 + 2) % 6;
     const naasData = NAAS[naasCycleIdx];
+    const naasKey = naasData.name.split(' ')[0]; // Get 'Tungle' from 'Tungle (Daun)'
     naas = `HARI NAAS (${naasData.name})`;
-    naasSifat = `javanese_calendar.naas.${naasData.name}.watak`;
-    naasPantangan = `javanese_calendar.naas.${naasData.name}.pantangan`;
+    naasSifat = `javanese_calendar.naas.${naasKey}.watak`;
+    naasPantangan = `javanese_calendar.naas.${naasKey}.pantangan`;
   }
 
   // 11. Gisir
@@ -412,8 +414,14 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   }
   const padewanData = PADEWAN[padewanIdx];
   const padewan = padewanData.name;
-  const padewanSifat = `javanese_calendar.padewan_sifat.${padewan}`;
-  const padewanManfaat = `javanese_calendar.padewan_manfaat.${padewan}`;
+  const padewanKey = padewan
+    .replace('Bathari ', '')
+    .replace('Bathara ', '')
+    .replace('Indra', 'Indera')
+    .replace('Nyamadipati', 'Yama')
+    .replace('Brama', 'Brahma');
+  const padewanSifat = `javanese_calendar.padewan_sifat.${padewanKey}`;
+  const padewanManfaat = `javanese_calendar.padewan_manfaat.${padewanKey}`;
 
   // 13. Padangon
   // Starts at Wuku Sinta, Sunday Pahing.

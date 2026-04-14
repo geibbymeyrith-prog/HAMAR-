@@ -368,14 +368,14 @@ function MainApp() {
                 <div className="relative">
                   {!isSubscriber && !isAdmin && <Paywall />}
                   <div className={cn("p-6 space-y-6 bg-stone-50/50", (!isSubscriber && !isAdmin) && "filter blur-sm select-none pointer-events-none")}>
-                    <DetailItem label={t('weton.labels.daySifat')} value={wetonDetails.daySifat} isLongText />
-                    <DetailItem label={t('weton.labels.pasaranSifat')} value={wetonDetails.pasaranSifat} isLongText />
-                    <DetailItem label={t('weton.labels.tahunSaka')} value={`${wetonDetails.tahunSaka}`} subValue={wetonDetails.tahunSakaSifat} icon={<CalendarIcon className="w-4 h-4" />} />
-                    <DetailItem label={t('weton.labels.windu')} value={`${wetonDetails.windu}`} subValue={wetonDetails.winduSifat} icon={<Wind className="w-4 h-4" />} />
-                    <DetailItem label={t('weton.labels.lambang')} value={`${wetonDetails.lambang}`} subValue={wetonDetails.lambangSifat} icon={<Info className="w-4 h-4" />} />
-                    <DetailItem label={t('weton.labels.tahunJawi')} value={`${wetonDetails.tahunJawi}`} subValue={wetonDetails.tahunJawiSifat} icon={<ArrowRight className="w-4 h-4" />} />
-                    <DetailItem label={t('weton.labels.pranataMangsa')} value={`${wetonDetails.pranataMangsa}`} subValue={wetonDetails.pranataMangsaSifat} icon={<Compass className="w-4 h-4" />} />
-                    <DetailItem label={t('weton.labels.wuku')} value={`${wetonDetails.wuku}`} subValue={wetonDetails.wukuSifat} icon={<Zap className="w-4 h-4" />} />
+                    <DetailItem label={t('weton.labels.daySifat')} value={t(wetonDetails.daySifat)} isLongText />
+                    <DetailItem label={t('weton.labels.pasaranSifat')} value={t(wetonDetails.pasaranSifat)} isLongText />
+                    <DetailItem label={t('weton.labels.tahunSaka')} value={`${wetonDetails.tahunSaka}`} subValue={t(wetonDetails.tahunSakaSifat)} icon={<CalendarIcon className="w-4 h-4" />} />
+                    <DetailItem label={t('weton.labels.windu')} value={`${wetonDetails.windu}`} subValue={t(wetonDetails.winduSifat)} icon={<Wind className="w-4 h-4" />} />
+                    <DetailItem label={t('weton.labels.lambang')} value={`${wetonDetails.lambang}`} subValue={t(wetonDetails.lambangSifat)} icon={<Info className="w-4 h-4" />} />
+                    <DetailItem label={t('weton.labels.tahunJawi')} value={`${wetonDetails.tahunJawi}`} subValue={t(wetonDetails.tahunJawiSifat)} icon={<ArrowRight className="w-4 h-4" />} />
+                    <DetailItem label={t('weton.labels.pranataMangsa')} value={`${wetonDetails.pranataMangsa}`} subValue={t(wetonDetails.pranataMangsaSifat)} icon={<Compass className="w-4 h-4" />} />
+                    <DetailItem label={t('weton.labels.wuku')} value={`${wetonDetails.wuku}`} subValue={t(wetonDetails.wukuSifat)} icon={<Zap className="w-4 h-4" />} />
                   </div>
                 </div>
               </div>
@@ -508,10 +508,10 @@ function MainApp() {
                         <div className="relative">
                           {!isSubscriber && !isAdmin && <Paywall />}
                           <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-stone-50 rounded-2xl border border-stone-100", (!isSubscriber && !isAdmin) && "filter blur-sm select-none pointer-events-none")}>
-                            <DetailItem label={t('weton.labels.daySifat')} value={wetonKelahiranDetails.daySifat} isLongText />
-                            <DetailItem label={t('weton.labels.pasaranSifat')} value={wetonKelahiranDetails.pasaranSifat} isLongText />
-                            <DetailItem label={t('weton.labels.wuku')} value={wetonKelahiranDetails.wuku} subValue={wetonKelahiranDetails.wukuSifat} isLongText />
-                            <DetailItem label={t('weton.labels.pranataMangsa')} value={wetonKelahiranDetails.pranataMangsa} subValue={wetonKelahiranDetails.pranataMangsaSifat} isLongText />
+                            <DetailItem label={t('weton.labels.daySifat')} value={t(wetonKelahiranDetails.daySifat)} isLongText />
+                            <DetailItem label={t('weton.labels.pasaranSifat')} value={t(wetonKelahiranDetails.pasaranSifat)} isLongText />
+                            <DetailItem label={t('weton.labels.wuku')} value={wetonKelahiranDetails.wuku} subValue={t(wetonKelahiranDetails.wukuSifat)} isLongText />
+                            <DetailItem label={t('weton.labels.pranataMangsa')} value={wetonKelahiranDetails.pranataMangsa} subValue={t(wetonKelahiranDetails.pranataMangsaSifat)} isLongText />
                           </div>
                         </div>
                       </motion.div>

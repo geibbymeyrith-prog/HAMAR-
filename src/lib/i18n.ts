@@ -286,7 +286,11 @@ const resources = {
           Wogan: 'Sifatnya seperti angin: lincah, aktif, dan suka bergerak.',
           Malihan: 'Sifatnya seperti api: semangat, kreatif, dan berwibawa.',
           Wurung: 'Sifatnya seperti bintang: terang, terkenal, dan berwibawa.',
-          Dadi: 'Sifatnya seperti matahari: kuat, berkuasa, dan menerangi.'
+          Dadi: 'Sifatnya seperti matahari: kuat, berkuasa, dan menerangi.',
+          Ringkel: 'Sifatnya tidak tetap, sering berubah-ubah dan perlu waspada.',
+          Sonya: 'Sifatnya sepi, tenang, dan kosong (suwung).',
+          Donya: 'Sifatnya duniawi, berorientasi pada harta dan kekayaan.',
+          Nyawa: 'Sifatnya hidup, penuh semangat, dan memiliki jiwa yang kuat.'
         },
         padewan_sifat: {
           Sri: 'Membawa kemakmuran, kesuburan, dan kasih sayang.',
@@ -605,7 +609,11 @@ const resources = {
           Wogan: 'Like wind: lively, active, and likes to move.',
           Malihan: 'Like fire: spirited, creative, and authoritative.',
           Wurung: 'Like stars: bright, famous, and authoritative.',
-          Dadi: 'Like the sun: strong, powerful, and illuminating.'
+          Dadi: 'Like the sun: strong, powerful, and illuminating.',
+          Ringkel: 'Unstable nature, often changing and needs vigilance.',
+          Sonya: 'Quiet, calm, and empty (suwung) nature.',
+          Donya: 'Worldly nature, oriented towards wealth and riches.',
+          Nyawa: 'Living nature, full of spirit, and has a strong soul.'
         },
         padewan_sifat: {
           Sri: 'Brings prosperity, fertility, and affection.',
@@ -924,7 +932,11 @@ const resources = {
           Wogan: 'Kados angin: lincah, aktif, lan remen mobah.',
           Malihan: 'Kados latu: semangat, kreatif, lan wibawa.',
           Wurung: 'Kados lintang: padhang, kondhang, lan wibawa.',
-          Dadi: 'Kados srengenge: kiyat, gadhah panguwasa, lan madhangi.'
+          Dadi: 'Kados srengenge: kiyat, gadhah panguwasa, lan madhangi.',
+          Ringkel: 'Sipatipun mboten tetep, asring owah-owahan lan kedah ngati-ati.',
+          Sonya: 'Sipatipun sepi, ayem, lan suwung.',
+          Donya: 'Sipatipun kadonyan, mligi dhateng bandha lan kasugihan.',
+          Nyawa: 'Sipatipun nggesang, kebak semangat, lan gadhah jiwa ingkang kiyat.'
         },
         padewan_sifat: {
           Sri: 'Mbeta kemakmuran, kesuburan, lan asih.',
