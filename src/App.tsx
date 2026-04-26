@@ -379,7 +379,8 @@ function MainApp() {
             </TabsTrigger>
           </TabsList>
 
-          <AnimatePresence mode="wait">
+          <div className="mt-8">
+            <AnimatePresence mode="wait">
             {/* --- Weton Hari Kelahiran --- */}
             <TabsContent value="weton" key="weton" id="content-weton">
               <motion.div 
@@ -634,7 +635,8 @@ function MainApp() {
               </motion.div>
             </TabsContent>
           </AnimatePresence>
-        </Tabs>
+        </div>
+      </Tabs>
       </main>
 
       <footer className="max-w-6xl mx-auto mt-20 pt-8 border-t border-stone-200 text-center text-stone-400 text-sm pb-12">
