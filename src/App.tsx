@@ -12,7 +12,6 @@ import React, { useState, useMemo } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, startOfWeek, endOfWeek } from 'date-fns';
 import { id, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
-import { useAuth, handleFirestoreError, OperationType } from '@/lib/AuthContext';
 import { 
   Calendar as CalendarIcon, 
   Heart, 
@@ -45,24 +44,13 @@ import {
   PRANATA_MANGSA,
   type JavaneseDetails 
 } from '@/lib/javanese-calendar';
-import { AuthProvider } from '@/lib/AuthContext';
-import { Paywall } from '@/components/Paywall';
-import { BlogSection, AdminBlogEditor } from '@/components/Blog';
-import { MemberDashboard } from '@/components/Dashboard';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
-  );
+  return <MainApp />;
 }
 
 function MainApp() {
   const { t, i18n: i18nInstance } = useTranslation();
-  const { user, profile, login, logout, isSubscriber, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('weton');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -103,20 +91,6 @@ function MainApp() {
     if (mangsaSelfData && mangsaPartnerData) {
       const result = getJodohPinasti(mangsaSelfData.name, mangsaPartnerData.name);
       setJodohResult(result);
-      
-      if (user) {
-        try {
-          await addDoc(collection(db, 'calculations'), {
-            userId: user.uid,
-            type: 'jodoh',
-            inputData: { self: birthDateSelf.toISOString(), partner: birthDatePartner.toISOString() },
-            resultData: result,
-            createdAt: serverTimestamp()
-          });
-        } catch (e) { 
-          handleFirestoreError(e, OperationType.CREATE, 'calculations');
-        }
-      }
     }
   };
 
@@ -138,22 +112,6 @@ function MainApp() {
   return (
     <div className="min-h-screen bg-[#F5F5F0] text-[#1A1A1A] p-4 md:p-8 font-sans" id="app-container">
       <header className="max-w-6xl mx-auto mb-8 text-center relative" id="header">
-        <div className="absolute top-0 left-0 flex items-center gap-4">
-          {!user ? (
-            <Button onClick={login} variant="outline" size="sm" className="bg-white border-stone-200 text-stone-600 font-bold">
-              {t('common.login')}
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Button onClick={() => setActiveTab('dashboard')} variant="ghost" size="sm" className="text-stone-600 font-bold">
-                {t('common.dashboard')}
-              </Button>
-              <Button onClick={logout} variant="ghost" size="sm" className="text-red-600 font-bold">
-                {t('common.logout')}
-              </Button>
-            </div>
-          )}
-        </div>
         <div className="absolute top-0 right-0 flex gap-1">
           {['id', 'jv', 'en'].map((lng) => (
             <Button 
@@ -357,26 +315,22 @@ function MainApp() {
             </CardHeader>
             <CardContent className="p-0 relative">
               <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
-                {/* Visible Section (50%) */}
+                {/* Visible Section (100%) */}
                 <div className="p-6 space-y-6">
                   <DetailItem label={t('weton.labels.jawiDate')} value={`${wetonDetails.jawiDate} ${t(`calendar.months.${wetonDetails.jawiMonthName}`)}`} icon={<Moon className="w-4 h-4" />} />
                   <DetailItem label={t('weton.labels.dayLambang')} value={`${wetonDetails.jawiDayName} (${wetonDetails.dayLambang})`} icon={<Sun className="w-4 h-4" />} />
                   <DetailItem label={t('weton.labels.pasaranDewa')} value={`${wetonDetails.pasaranName} (${wetonDetails.pasaranDewa})`} icon={<Zap className="w-4 h-4" />} />
                 </div>
                 
-                {/* Blurred Section (50%) */}
-                <div className="relative">
-                  {!isSubscriber && !isAdmin && <Paywall />}
-                  <div className={cn("p-6 space-y-6 bg-stone-50/50", (!isSubscriber && !isAdmin) && "filter blur-sm select-none pointer-events-none")}>
-                    <DetailItem label={t('weton.labels.daySifat')} value={t(wetonDetails.daySifat)} isLongText />
-                    <DetailItem label={t('weton.labels.pasaranSifat')} value={t(wetonDetails.pasaranSifat)} isLongText />
-                    <DetailItem label={t('weton.labels.tahunSaka')} value={`${wetonDetails.tahunSaka}`} subValue={t(wetonDetails.tahunSakaSifat)} icon={<CalendarIcon className="w-4 h-4" />} />
-                    <DetailItem label={t('weton.labels.windu')} value={`${wetonDetails.windu}`} subValue={t(wetonDetails.winduSifat)} icon={<Wind className="w-4 h-4" />} />
-                    <DetailItem label={t('weton.labels.lambang')} value={`${wetonDetails.lambang}`} subValue={t(wetonDetails.lambangSifat)} icon={<Info className="w-4 h-4" />} />
-                    <DetailItem label={t('weton.labels.tahunJawi')} value={`${wetonDetails.tahunJawi}`} subValue={t(wetonDetails.tahunJawiSifat)} icon={<ArrowRight className="w-4 h-4" />} />
-                    <DetailItem label={t('weton.labels.pranataMangsa')} value={`${wetonDetails.pranataMangsa}`} subValue={t(wetonDetails.pranataMangsaSifat)} icon={<Compass className="w-4 h-4" />} />
-                    <DetailItem label={t('weton.labels.wuku')} value={`${wetonDetails.wuku}`} subValue={t(wetonDetails.wukuSifat)} icon={<Zap className="w-4 h-4" />} />
-                  </div>
+                <div className="p-6 space-y-6 bg-stone-50/50">
+                  <DetailItem label={t('weton.labels.daySifat')} value={t(wetonDetails.daySifat)} isLongText />
+                  <DetailItem label={t('weton.labels.pasaranSifat')} value={t(wetonDetails.pasaranSifat)} isLongText />
+                  <DetailItem label={t('weton.labels.tahunSaka')} value={`${wetonDetails.tahunSaka}`} subValue={t(wetonDetails.tahunSakaSifat)} icon={<CalendarIcon className="w-4 h-4" />} />
+                  <DetailItem label={t('weton.labels.windu')} value={`${wetonDetails.windu}`} subValue={t(wetonDetails.winduSifat)} icon={<Wind className="w-4 h-4" />} />
+                  <DetailItem label={t('weton.labels.lambang')} value={`${wetonDetails.lambang}`} subValue={t(wetonDetails.lambangSifat)} icon={<Info className="w-4 h-4" />} />
+                  <DetailItem label={t('weton.labels.tahunJawi')} value={`${wetonDetails.tahunJawi}`} subValue={t(wetonDetails.tahunJawiSifat)} icon={<ArrowRight className="w-4 h-4" />} />
+                  <DetailItem label={t('weton.labels.pranataMangsa')} value={`${wetonDetails.pranataMangsa}`} subValue={t(wetonDetails.pranataMangsaSifat)} icon={<Compass className="w-4 h-4" />} />
+                  <DetailItem label={t('weton.labels.wuku')} value={`${wetonDetails.wuku}`} subValue={t(wetonDetails.wukuSifat)} icon={<Zap className="w-4 h-4" />} />
                 </div>
               </div>
               <div className="p-6 bg-stone-100 border-t border-stone-200">
@@ -423,44 +377,9 @@ function MainApp() {
             >
               {t('tabs.hariBaik')}
             </TabsTrigger>
-            {isAdmin && (
-              <TabsTrigger 
-                value="admin" 
-                className="rounded-lg transition-all data-[state=active]:bg-red-500 data-[state=inactive]:bg-stone-800 data-[state=inactive]:text-white data-[state=active]:text-white font-bold" 
-                id="tab-admin"
-              >
-                {t('common.admin')}
-              </TabsTrigger>
-            )}
-            {user && (
-              <TabsTrigger 
-                value="dashboard" 
-                className="hidden" 
-                id="tab-dashboard-hidden"
-              >
-                {t('common.dashboard')}
-              </TabsTrigger>
-            )}
           </TabsList>
 
           <AnimatePresence mode="wait">
-            {/* --- Dashboard --- */}
-            {activeTab === 'dashboard' && (
-              <TabsContent value="dashboard" key="dashboard" id="content-dashboard" forceMount>
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                  <MemberDashboard />
-                </motion.div>
-              </TabsContent>
-            )}
-
-            {/* --- Admin --- */}
-            {activeTab === 'admin' && isAdmin && (
-              <TabsContent value="admin" key="admin" id="content-admin" forceMount>
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                  <AdminBlogEditor />
-                </motion.div>
-              </TabsContent>
-            )}
             {/* --- Weton Hari Kelahiran --- */}
             <TabsContent value="weton" key="weton" id="content-weton">
               <motion.div 
@@ -505,14 +424,11 @@ function MainApp() {
                           </p>
                         </div>
 
-                        <div className="relative">
-                          {!isSubscriber && !isAdmin && <Paywall />}
-                          <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-stone-50 rounded-2xl border border-stone-100", (!isSubscriber && !isAdmin) && "filter blur-sm select-none pointer-events-none")}>
-                            <DetailItem label={t('weton.labels.daySifat')} value={t(wetonKelahiranDetails.daySifat)} isLongText />
-                            <DetailItem label={t('weton.labels.pasaranSifat')} value={t(wetonKelahiranDetails.pasaranSifat)} isLongText />
-                            <DetailItem label={t('weton.labels.wuku')} value={wetonKelahiranDetails.wuku} subValue={t(wetonKelahiranDetails.wukuSifat)} isLongText />
-                            <DetailItem label={t('weton.labels.pranataMangsa')} value={wetonKelahiranDetails.pranataMangsa} subValue={t(wetonKelahiranDetails.pranataMangsaSifat)} isLongText />
-                          </div>
+                        <div className="p-6 bg-stone-50 rounded-2xl border border-stone-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <DetailItem label={t('weton.labels.daySifat')} value={t(wetonKelahiranDetails.daySifat)} isLongText />
+                          <DetailItem label={t('weton.labels.pasaranSifat')} value={t(wetonKelahiranDetails.pasaranSifat)} isLongText />
+                          <DetailItem label={t('weton.labels.wuku')} value={wetonKelahiranDetails.wuku} subValue={t(wetonKelahiranDetails.wukuSifat)} isLongText />
+                          <DetailItem label={t('weton.labels.pranataMangsa')} value={wetonKelahiranDetails.pranataMangsa} subValue={t(wetonKelahiranDetails.pranataMangsaSifat)} isLongText />
                         </div>
                       </motion.div>
                     )}
@@ -596,17 +512,12 @@ function MainApp() {
                              t('jodoh.results.kendala.status')}
                           </p>
                           
-                          <div className="relative">
-                            {!isSubscriber && !isAdmin && <Paywall />}
-                            <div className={cn((!isSubscriber && !isAdmin) && "filter blur-sm select-none pointer-events-none")}>
-                              <Separator className="my-6" />
-                              <p className="text-lg leading-relaxed text-stone-600 italic">
-                                "{jodohResult.status.includes('Pinasti') ? t('jodoh.results.pinasti.pesan') : 
-                                  jodohResult.status === 'Serasi' ? t('jodoh.results.serasi.pesan') : 
-                                  t('jodoh.results.kendala.pesan')}"
-                              </p>
-                            </div>
-                          </div>
+                          <Separator className="my-6" />
+                          <p className="text-lg leading-relaxed text-stone-600 italic">
+                            "{jodohResult.status.includes('Pinasti') ? t('jodoh.results.pinasti.pesan') : 
+                              jodohResult.status === 'Serasi' ? t('jodoh.results.serasi.pesan') : 
+                              t('jodoh.results.kendala.pesan')}"
+                          </p>
                         </div>
                       </motion.div>
                     )}
@@ -669,25 +580,19 @@ function MainApp() {
                                 value={hariBaikDetails.gisir} 
                                 subValue={`${t('weton.labels.daySifat')}: ${t(hariBaikDetails.gisirSifat)}`}
                               />
-                            </div>
-                            
-                            <div className="relative">
-                              {!isSubscriber && !isAdmin && <Paywall />}
-                              <div className={cn("space-y-8", (!isSubscriber && !isAdmin) && "filter blur-sm select-none pointer-events-none")}>
-                                <Separator />
-                                <DetailItemSmall 
-                                  label={t('hariBaik.padewan')} 
-                                  value={hariBaikDetails.padewan} 
-                                  subValue={t(hariBaikDetails.padewanSifat)}
-                                  extra={`${t('common.manfaat')}: ${t(hariBaikDetails.padewanManfaat)}`}
-                                />
-                                <Separator />
-                                <DetailItemSmall 
-                                  label={t('hariBaik.padangon')} 
-                                  value={hariBaikDetails.padangon} 
-                                  subValue={t(hariBaikDetails.padangonSifat)}
-                                />
-                              </div>
+                              <Separator />
+                              <DetailItemSmall 
+                                label={t('hariBaik.padewan')} 
+                                value={hariBaikDetails.padewan} 
+                                subValue={t(hariBaikDetails.padewanSifat)}
+                                extra={`${t('common.manfaat')}: ${t(hariBaikDetails.padewanManfaat)}`}
+                              />
+                              <Separator />
+                              <DetailItemSmall 
+                                label={t('hariBaik.padangon')} 
+                                value={hariBaikDetails.padangon} 
+                                subValue={t(hariBaikDetails.padangonSifat)}
+                              />
                             </div>
                           </CardContent>
                         </Card>
@@ -730,8 +635,6 @@ function MainApp() {
             </TabsContent>
           </AnimatePresence>
         </Tabs>
-
-        <BlogSection />
       </main>
 
       <footer className="max-w-6xl mx-auto mt-20 pt-8 border-t border-stone-200 text-center text-stone-400 text-sm pb-12">
