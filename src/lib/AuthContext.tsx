@@ -74,7 +74,9 @@ interface UserProfile {
   role: 'user' | 'admin';
   subscriptionStatus: 'free' | 'monthly' | 'yearly';
   subscriptionEndDate?: any;
-  whatsappConsultationsUsed: number;
+  premiumExpiredAt?: any;
+  generateCount: number;
+  temporaryUnlock?: boolean;
   createdAt: any;
 }
 
@@ -86,7 +88,8 @@ interface AuthContextType {
   login: () => Promise<void>;
   logout: () => Promise<void>;
   subscribe: (plan: 'monthly' | 'yearly') => Promise<void>;
-  isSubscriber: boolean;
+  incrementGenerateCount: () => Promise<number>;
+  isPremium: boolean;
   isAdmin: boolean;
 }
 
@@ -116,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               displayName: firebaseUser.displayName || '',
               role: firebaseUser.email === 'geibbymeyrith@gmail.com' ? 'admin' : 'user',
               subscriptionStatus: 'free',
-              whatsappConsultationsUsed: 0,
+              generateCount: 0,
               createdAt: serverTimestamp(),
             };
             await setDoc(userDocRef, newProfile);
@@ -165,13 +168,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const incrementGenerateCount = async () => {
+    if (!user || !profile) return profile?.generateCount || 0;
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      const newCount = (profile.generateCount || 0) + 1;
+      await setDoc(userDocRef, {
+        generateCount: newCount
+      }, { merge: true });
+      return newCount;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
+      return profile.generateCount || 0;
+    }
+  };
+
   const subscribe = async (plan: 'monthly' | 'yearly') => {
     if (!user) return;
     try {
       const userDocRef = doc(db, 'users', user.uid);
+      const now = new Date();
+      const expiry = new Date(now.getTime() + (plan === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000);
       await setDoc(userDocRef, {
         subscriptionStatus: plan,
-        subscriptionEndDate: new Date(Date.now() + (plan === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000)
+        premiumExpiredAt: expiry
       }, { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
@@ -183,11 +203,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthError(null);
   };
 
-  const isSubscriber = profile?.subscriptionStatus === 'monthly' || profile?.subscriptionStatus === 'yearly';
+  const isPremium = profile ? (
+    profile.role === 'admin' || 
+    (profile.premiumExpiredAt && profile.premiumExpiredAt.toDate() > new Date()) ||
+    profile.temporaryUnlock === true
+  ) : false;
   const isAdmin = profile?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, authError, login, logout, subscribe, isSubscriber, isAdmin }}>
+    <AuthContext.Provider value={{ user, profile, loading, authError, login, logout, subscribe, incrementGenerateCount, isPremium, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

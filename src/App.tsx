@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, startOfWeek, endOfWeek } from 'date-fns';
 import { id, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +25,11 @@ import {
   Wind,
   Zap,
   User,
-  Users
+  Users,
+  Download,
+  Shield,
+  LogOut,
+  LogIn
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
@@ -44,6 +48,11 @@ import {
   PRANATA_MANGSA,
   type JavaneseDetails 
 } from '@/lib/javanese-calendar';
+import { useAuth } from '@/lib/AuthContext';
+import { Paywall } from '@/components/Paywall';
+import { AdminDashboard } from '@/components/AdminDashboard';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function App() {
   return <MainApp />;
@@ -51,9 +60,13 @@ export default function App() {
 
 function MainApp() {
   const { t, i18n: i18nInstance } = useTranslation();
+  const { profile, login, logout, incrementGenerateCount, isPremium, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('weton');
+  const [isAdminMode, setIsAdminMode] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  
+  const resultRef = useRef<HTMLDivElement>(null);
 
   // New states for specific calculations
   const [birthDateWeton, setBirthDateWeton] = useState<Date | null>(null);
@@ -87,10 +100,62 @@ function MainApp() {
 
   const wetonDetails = useMemo(() => getJavaneseDetails(selectedDate), [selectedDate]);
 
+  const showPaywall = !isPremium && profile && profile.generateCount >= 3;
+
+  const handleCalculateWeton = (date: Date | null) => {
+    if (date) {
+      setBirthDateWeton(date);
+      if (!isPremium && profile && profile.generateCount < 3) {
+        incrementGenerateCount();
+      }
+    }
+  };
+
+  const handleCalculateHariBaik = (date: Date | null) => {
+    if (date) {
+      setEventDateHariBaik(date);
+      if (!isPremium && profile && profile.generateCount < 3) {
+        incrementGenerateCount();
+      }
+    }
+  };
+
   const handleCalculateJodoh = async () => {
     if (mangsaSelfData && mangsaPartnerData) {
       const result = getJodohPinasti(mangsaSelfData.name, mangsaPartnerData.name);
       setJodohResult(result);
+      if (!isPremium && profile && profile.generateCount < 3) {
+        incrementGenerateCount();
+      }
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!resultRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(resultRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#F5F5F0'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Hamare-${activeTab}-${format(new Date(), 'ddMMyy')}.pdf`);
+    } catch (error) {
+      console.error("PDF Export Error:", error);
+      alert("Gagal mengunduh PDF. Silakan coba lagi.");
     }
   };
 
@@ -111,20 +176,36 @@ function MainApp() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F0] text-[#1A1A1A] p-4 md:p-8 font-sans" id="app-container">
-      <header className="max-w-6xl mx-auto mb-8 text-center relative" id="header">
-        <div className="absolute top-0 right-0 flex gap-1">
-          {['id', 'jv', 'en'].map((lng) => (
-            <Button 
-              key={lng}
-              variant="ghost" 
-              size="sm" 
-              onClick={() => i18nInstance.changeLanguage(lng)}
-              className={cn("text-[10px] font-bold px-2 h-7", i18nInstance.language === lng ? "text-[#2E7D32] bg-stone-200/50" : "text-stone-400")}
-            >
-              {lng.toUpperCase()}
-            </Button>
-          ))}
-        </div>
+      {isAdminMode && isAdmin ? (
+        <AdminDashboard onBack={() => setIsAdminMode(false)} />
+      ) : (
+        <>
+          <header className="max-w-6xl mx-auto mb-8 text-center relative" id="header">
+            <div className="absolute top-0 right-0 flex gap-2">
+              <div className="flex gap-1">
+                {['id', 'jv', 'en'].map((lng) => (
+                  <Button 
+                    key={lng}
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => i18nInstance.changeLanguage(lng)}
+                    className={cn("text-[10px] font-bold px-2 h-7", i18nInstance.language === lng ? "text-[#2E7D32] bg-stone-200/50" : "text-stone-400")}
+                  >
+                    {lng.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+              
+              {profile ? (
+                <Button variant="outline" size="sm" onClick={logout} className="h-7 text-[10px] font-bold px-2 text-stone-400">
+                  <LogOut className="w-3 h-3 mr-1" /> KELUAR
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={login} className="h-7 text-[10px] font-bold px-2 text-[#2E7D32]">
+                  <LogIn className="w-3 h-3 mr-1" /> MASUK
+                </Button>
+              )}
+            </div>
 
         <motion.h1 
           initial={{ opacity: 0, y: -20 }}
@@ -232,7 +313,9 @@ function MainApp() {
                 return (
                   <button
                     key={idx}
-                    onClick={() => setSelectedDate(day)}
+                    onClick={() => {
+                      setSelectedDate(day);
+                    }}
                     className={cn(
                       "h-20 md:h-28 p-2 border-r border-b border-stone-50 text-left transition-all hover:bg-stone-100 group relative",
                       !isCurrentMonth && "opacity-30",
@@ -403,7 +486,7 @@ function MainApp() {
                           type="date" 
                           min="1582-01-01"
                           max="2100-12-31"
-                          onChange={(e) => setBirthDateWeton(e.target.value ? new Date(e.target.value) : null)}
+                          onChange={(e) => handleCalculateWeton(e.target.value ? new Date(e.target.value) : null)}
                           className="bg-stone-50 border-stone-200 h-12"
                         />
                       </div>
@@ -413,23 +496,34 @@ function MainApp() {
                       <motion.div 
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-8 space-y-6"
+                        className="mt-8 space-y-6 relative"
+                        ref={activeTab === 'weton' ? resultRef : null}
                       >
-                        <div className="p-6 rounded-xl bg-[#2E7D32] text-white shadow-inner text-center">
-                          <p className="text-xs text-green-100 uppercase tracking-widest font-bold mb-1">{t('weton.birthDate')}</p>
-                          <p className="text-3xl font-serif font-bold">
-                            {wetonKelahiranDetails.masehiDayName} {wetonKelahiranDetails.pasaranName}
-                          </p>
-                          <p className="text-sm text-green-200 mt-2">
-                            {t('weton.neptu')}: {wetonKelahiranDetails.neptuValue} ({wetonKelahiranDetails.dayValue} + {wetonKelahiranDetails.pasaranValue})
-                          </p>
-                        </div>
+                        {showPaywall && <Paywall />}
+                        
+                        <div className="space-y-6">
+                          <div className="p-6 rounded-xl bg-[#2E7D32] text-white shadow-inner text-center">
+                            <p className="text-xs text-green-100 uppercase tracking-widest font-bold mb-1">{t('weton.birthDate')}</p>
+                            <p className="text-3xl font-serif font-bold">
+                              {wetonKelahiranDetails.masehiDayName} {wetonKelahiranDetails.pasaranName}
+                            </p>
+                            <p className="text-sm text-green-200 mt-2">
+                              {t('weton.neptu')}: {wetonKelahiranDetails.neptuValue} ({wetonKelahiranDetails.dayValue} + {wetonKelahiranDetails.pasaranValue})
+                            </p>
+                          </div>
 
-                        <div className="p-6 bg-stone-50 rounded-2xl border border-stone-100 grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <DetailItem label={t('weton.labels.daySifat')} value={t(wetonKelahiranDetails.daySifat)} isLongText />
-                          <DetailItem label={t('weton.labels.pasaranSifat')} value={t(wetonKelahiranDetails.pasaranSifat)} isLongText />
-                          <DetailItem label={t('weton.labels.wuku')} value={wetonKelahiranDetails.wuku} subValue={t(wetonKelahiranDetails.wukuSifat)} isLongText />
-                          <DetailItem label={t('weton.labels.pranataMangsa')} value={wetonKelahiranDetails.pranataMangsa} subValue={t(wetonKelahiranDetails.pranataMangsaSifat)} isLongText />
+                          <div className={cn("p-6 bg-stone-50 rounded-2xl border border-stone-100 grid grid-cols-1 md:grid-cols-2 gap-6 relative transition-all", showPaywall && "blur-md select-none pointer-events-none")}>
+                            <DetailItem label={t('weton.labels.daySifat')} value={t(wetonKelahiranDetails.daySifat)} isLongText />
+                            <DetailItem label={t('weton.labels.pasaranSifat')} value={t(wetonKelahiranDetails.pasaranSifat)} isLongText />
+                            <DetailItem label={t('weton.labels.wuku')} value={wetonKelahiranDetails.wuku} subValue={t(wetonKelahiranDetails.wukuSifat)} isLongText />
+                            <DetailItem label={t('weton.labels.pranataMangsa')} value={wetonKelahiranDetails.pranataMangsa} subValue={t(wetonKelahiranDetails.pranataMangsaSifat)} isLongText />
+                          </div>
+                          
+                          {isPremium && (
+                            <Button variant="outline" className="w-full mt-4 gap-2 border-stone-300" onClick={handleDownloadPDF}>
+                              <Download className="w-4 h-4" /> Download PDF
+                            </Button>
+                          )}
                         </div>
                       </motion.div>
                     )}
@@ -499,26 +593,39 @@ function MainApp() {
                       <motion.div 
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-12"
+                        className="mt-12 relative"
                         id="jodoh-result"
+                        ref={activeTab === 'jodoh' ? resultRef : null}
                       >
-                        <div className="p-8 rounded-2xl bg-stone-50 border-2 border-stone-100 text-center relative overflow-hidden">
-                          <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-2">{t('jodoh.status')}</h3>
-                          <p className={cn(
-                            "text-3xl font-serif font-bold mb-6",
-                            jodohResult.status.includes('Berjodoh') ? "text-[#2E7D32]" : "text-stone-700"
-                          )}>
-                            {jodohResult.status.includes('Pinasti') ? t('jodoh.results.pinasti.status') : 
-                             jodohResult.status === 'Serasi' ? t('jodoh.results.serasi.status') : 
-                             t('jodoh.results.kendala.status')}
-                          </p>
+                        {showPaywall && <Paywall />}
+                        
+                        <div className="space-y-6">
+                          <div className="p-8 rounded-2xl bg-stone-50 border-2 border-stone-100 text-center relative overflow-hidden">
+                            <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-2">{t('jodoh.status')}</h3>
+                            <p className={cn(
+                              "text-3xl font-serif font-bold",
+                              jodohResult.status.includes('Berjodoh') ? "text-[#2E7D32]" : "text-stone-700"
+                            )}>
+                              {jodohResult.status.includes('Pinasti') ? t('jodoh.results.pinasti.status') : 
+                               jodohResult.status === 'Serasi' ? t('jodoh.results.serasi.status') : 
+                               t('jodoh.results.kendala.status')}
+                            </p>
+                          </div>
                           
-                          <Separator className="my-6" />
-                          <p className="text-lg leading-relaxed text-stone-600 italic">
-                            "{jodohResult.status.includes('Pinasti') ? t('jodoh.results.pinasti.pesan') : 
-                              jodohResult.status === 'Serasi' ? t('jodoh.results.serasi.pesan') : 
-                              t('jodoh.results.kendala.pesan')}"
-                          </p>
+                          <div className={cn("p-8 rounded-2xl bg-stone-50 border-2 border-stone-100 text-center relative overflow-hidden transition-all", showPaywall && "blur-md select-none pointer-events-none")}>
+                            <Separator className="my-6" />
+                            <p className="text-lg leading-relaxed text-stone-600 italic">
+                              "{jodohResult.status.includes('Pinasti') ? t('jodoh.results.pinasti.pesan') : 
+                                jodohResult.status === 'Serasi' ? t('jodoh.results.serasi.pesan') : 
+                                t('jodoh.results.kendala.pesan')}"
+                            </p>
+                          </div>
+                          
+                          {isPremium && (
+                            <Button variant="outline" className="w-full gap-2 border-stone-300" onClick={handleDownloadPDF}>
+                              <Download className="w-4 h-4" /> Download PDF
+                            </Button>
+                          )}
                         </div>
                       </motion.div>
                     )}
@@ -549,7 +656,7 @@ function MainApp() {
                           type="date" 
                           min="1582-01-01"
                           max="2100-12-31"
-                          onChange={(e) => setEventDateHariBaik(e.target.value ? new Date(e.target.value) : null)}
+                          onChange={(e) => handleCalculateHariBaik(e.target.value ? new Date(e.target.value) : null)}
                           className="bg-stone-50 border-stone-200 h-12"
                         />
                       </div>
@@ -559,74 +666,87 @@ function MainApp() {
                       <motion.div 
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8"
+                        className="mt-8 relative"
+                        ref={activeTab === 'hari-baik' ? resultRef : null}
                       >
-                        <Card className="md:col-span-2 border-none shadow-xl bg-white/90">
-                          <CardHeader className="bg-stone-800 text-white">
-                            <CardTitle className="text-xl font-serif">{t('hariBaik.analysis')}</CardTitle>
-                            <CardDescription className="text-stone-400">{format(hariBaikDetails.masehiDate, 'EEEE, d MMMM yyyy', { locale: dateLocale })}</CardDescription>
-                          </CardHeader>
-                          <CardContent className="p-8 space-y-8">
-                            <div className="space-y-8">
-                              <DetailItemSmall 
-                                label={t('hariBaik.naas')} 
-                                value={hariBaikDetails.naas} 
-                                subValue={t(hariBaikDetails.naasSifat)}
-                                extra={t(hariBaikDetails.naasPantangan)}
-                                color="text-red-600"
-                              />
-                              <Separator />
-                              <DetailItemSmall 
-                                label={t('hariBaik.gisir')} 
-                                value={hariBaikDetails.gisir} 
-                                subValue={`${t('weton.labels.daySifat')}: ${t(hariBaikDetails.gisirSifat)}`}
-                              />
-                              <Separator />
-                              <DetailItemSmall 
-                                label={t('hariBaik.padewan')} 
-                                value={hariBaikDetails.padewan} 
-                                subValue={t(hariBaikDetails.padewanSifat)}
-                                extra={`${t('common.manfaat')}: ${t(hariBaikDetails.padewanManfaat)}`}
-                              />
-                              <Separator />
-                              <DetailItemSmall 
-                                label={t('hariBaik.padangon')} 
-                                value={hariBaikDetails.padangon} 
-                                subValue={t(hariBaikDetails.padangonSifat)}
-                              />
-                            </div>
-                          </CardContent>
-                        </Card>
+                        {showPaywall && <Paywall />}
                         
-                        <div className="space-y-6">
-                          <div className="p-6 rounded-2xl bg-[#2E7D32] text-white shadow-xl">
-                            <h4 className="text-xs font-bold uppercase tracking-widest text-green-200 mb-4">{t('hariBaik.summary')}</h4>
-                            <div className="space-y-4">
-                              <div className="flex justify-between items-center border-b border-green-700/50 pb-2">
-                                <span className="text-sm text-green-200">Pasaran</span>
-                                <span className="font-bold">{hariBaikDetails.pasaranName}</span>
-                              </div>
-                              <div className="flex justify-between items-center border-b border-green-700/50 pb-2">
-                                <span className="text-sm text-green-200">Wuku</span>
-                                <span className="font-bold">{hariBaikDetails.wuku}</span>
-                              </div>
-                              <div className="flex justify-between items-center border-b border-green-700/50 pb-2">
-                                <span className="text-sm text-green-200">Neptu</span>
-                                <span className="font-bold">{hariBaikDetails.neptuValue}</span>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                          <div className="md:col-span-2 space-y-4 relative">
+                            <Card className="border-none shadow-xl bg-white/90 overflow-hidden">
+                              <CardHeader className="bg-stone-800 text-white">
+                                <CardTitle className="text-xl font-serif">{t('hariBaik.analysis')}</CardTitle>
+                                <CardDescription className="text-stone-400">{format(hariBaikDetails.masehiDate, 'EEEE, d MMMM yyyy', { locale: dateLocale })}</CardDescription>
+                              </CardHeader>
+                              <CardContent className={cn("p-8 space-y-8 transition-all", showPaywall && "blur-md select-none pointer-events-none")}>
+                                <div className="space-y-8">
+                                  <DetailItemSmall 
+                                    label={t('hariBaik.naas')} 
+                                    value={hariBaikDetails.naas} 
+                                    subValue={t(hariBaikDetails.naasSifat)}
+                                    extra={t(hariBaikDetails.naasPantangan)}
+                                    color="text-red-600"
+                                  />
+                                  <Separator />
+                                  <DetailItemSmall 
+                                    label={t('hariBaik.gisir')} 
+                                    value={hariBaikDetails.gisir} 
+                                    subValue={`${t('weton.labels.daySifat')}: ${t(hariBaikDetails.gisirSifat)}`}
+                                  />
+                                  <Separator />
+                                  <DetailItemSmall 
+                                    label={t('hariBaik.padewan')} 
+                                    value={hariBaikDetails.padewan} 
+                                    subValue={t(hariBaikDetails.padewanSifat)}
+                                    extra={`${t('common.manfaat')}: ${t(hariBaikDetails.padewanManfaat)}`}
+                                  />
+                                  <Separator />
+                                  <DetailItemSmall 
+                                    label={t('hariBaik.padangon')} 
+                                    value={hariBaikDetails.padangon} 
+                                    subValue={t(hariBaikDetails.padangonSifat)}
+                                  />
+                                </div>
+                              </CardContent>
+                            </Card>
+                            
+                            {isPremium && (
+                              <Button variant="outline" className="w-full gap-2 border-stone-300" onClick={handleDownloadPDF}>
+                                <Download className="w-4 h-4" /> Download PDF
+                              </Button>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-6">
+                            <div className="p-6 rounded-2xl bg-[#2E7D32] text-white shadow-xl">
+                              <h4 className="text-xs font-bold uppercase tracking-widest text-green-200 mb-4">{t('hariBaik.summary')}</h4>
+                              <div className="space-y-4">
+                                <div className="flex justify-between items-center border-b border-green-700/50 pb-2">
+                                  <span className="text-sm text-green-200">Pasaran</span>
+                                  <span className="font-bold">{hariBaikDetails.pasaranName}</span>
+                                </div>
+                                <div className="flex justify-between items-center border-b border-green-700/50 pb-2">
+                                  <span className="text-sm text-green-200">Wuku</span>
+                                  <span className="font-bold">{hariBaikDetails.wuku}</span>
+                                </div>
+                                <div className="flex justify-between items-center border-b border-green-700/50 pb-2">
+                                  <span className="text-sm text-green-200">Neptu</span>
+                                  <span className="font-bold">{hariBaikDetails.neptuValue}</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          <Card className="border-none shadow-lg bg-[#FBC02D]/10 border border-[#FBC02D]/20">
-                            <CardContent className="p-6">
-                              <h4 className="text-xs font-bold uppercase tracking-widest text-stone-500 mb-3">{t('hariBaik.nagadina')}</h4>
-                              <div className="space-y-2">
-                                <p className="text-sm"><span className="text-stone-400">Dewa:</span> <span className="font-bold">{hariBaikDetails.nagadinaDewa}</span></p>
-                                <p className="text-sm"><span className="text-stone-400">Warna:</span> <span className="font-bold">{hariBaikDetails.nagadinaWarna}</span></p>
-                                <p className="text-sm"><span className="text-stone-400">Arah:</span> <span className="font-bold">{t(hariBaikDetails.nagadinaArah)}</span></p>
-                              </div>
-                            </CardContent>
-                          </Card>
+                            <Card className={cn("border-none shadow-lg bg-[#FBC02D]/10 border border-[#FBC02D]/20 transition-all", showPaywall && "blur-md select-none pointer-events-none")}>
+                              <CardContent className="p-6">
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-stone-500 mb-3">{t('hariBaik.nagadina')}</h4>
+                                <div className="space-y-2">
+                                  <p className="text-sm"><span className="text-stone-400">Dewa:</span> <span className="font-bold">{hariBaikDetails.nagadinaDewa}</span></p>
+                                  <p className="text-sm"><span className="text-stone-400">Warna:</span> <span className="font-bold">{hariBaikDetails.nagadinaWarna}</span></p>
+                                  <p className="text-sm"><span className="text-stone-400">Arah:</span> <span className="font-bold">{t(hariBaikDetails.nagadinaArah)}</span></p>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
                         </div>
                       </motion.div>
                     )}
@@ -641,7 +761,21 @@ function MainApp() {
 
       <footer className="max-w-6xl mx-auto mt-20 pt-8 border-t border-stone-200 text-center text-stone-400 text-sm pb-12">
         <p>© 2026 {t('title')} - {t('description')}</p>
+        <div className="mt-4 flex items-center justify-center gap-4">
+          {isAdmin && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setIsAdminMode(true)}
+              className="text-[10px] font-bold text-stone-400 hover:text-stone-900 border border-transparent hover:border-stone-200"
+            >
+              <Shield className="w-3 h-3 mr-1" /> ADMIN DASHBOARD
+            </Button>
+          )}
+        </div>
       </footer>
+    </>
+    )}
     </div>
   );
 }

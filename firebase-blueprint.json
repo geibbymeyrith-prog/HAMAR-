@@ -11,10 +11,28 @@
         "role": { "type": "string", "enum": ["user", "admin"] },
         "subscriptionStatus": { "type": "string", "enum": ["free", "monthly", "yearly"] },
         "subscriptionEndDate": { "type": "string", "format": "date-time" },
-        "whatsappConsultationsUsed": { "type": "number" },
+        "premiumExpiredAt": { "type": "string", "format": "date-time" },
+        "generateCount": { "type": "number" },
+        "temporaryUnlock": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "role", "subscriptionStatus"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Manual payment record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "package": { "type": "string" },
+        "uniqueAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "email", "whatsapp", "package", "uniqueAmount", "status", "createdAt"]
     },
     "Calculation": {
       "title": "Calculation",
@@ -58,6 +76,10 @@
     "/posts/{postId}": {
       "schema": "BlogPost",
       "description": "Blog posts"
+    },
+    "/payments/{paymentId}": {
+      "schema": "Payment",
+      "description": "Payment records for manual verification"
     }
   }
 }

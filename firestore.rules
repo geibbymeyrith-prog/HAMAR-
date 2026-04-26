@@ -75,7 +75,9 @@ service cloud.firestore {
              data.role in ['user', 'admin'] &&
              data.subscriptionStatus in ['free', 'monthly', 'yearly'] &&
              (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
-             (!('whatsappConsultationsUsed' in data) || data.whatsappConsultationsUsed is number) &&
+             (!('generateCount' in data) || data.generateCount is number) &&
+             (!('temporaryUnlock' in data) || data.temporaryUnlock is bool) &&
+             (!('premiumExpiredAt' in data) || data.premiumExpiredAt is timestamp) &&
              (!('subscriptionEndDate' in data) || data.subscriptionEndDate is timestamp);
     }
 
@@ -93,6 +95,17 @@ service cloud.firestore {
              (!('excerpt' in data) || (data.excerpt is string && data.excerpt.size() < 500));
     }
 
+    function isValidPayment(data) {
+      return data.userId == request.auth.uid &&
+             data.name is string && data.name.size() < 100 &&
+             data.email is string && data.email.size() < 100 &&
+             data.whatsapp is string && data.whatsapp.size() < 30 &&
+             data.package in ['11000', '111000', '1111000'] &&
+             data.uniqueAmount is number &&
+             data.status == 'pending' &&
+             data.createdAt is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -102,6 +115,12 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && 
                     (request.resource.data.role == 'user' || (request.resource.data.role == 'admin' && request.auth.token.email == "geibbymeyrith@gmail.com"));
       allow update: if isAdmin() || (isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role);
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidPayment(request.resource.data);
+      allow update, delete: if isAdmin();
     }
 
     match /test/connection {
