@@ -93,11 +93,6 @@ function MainApp() {
 
   const [jodohResult, setJodohResult] = useState<ReturnType<typeof getJodohPinasti> | null>(null);
 
-  // Jump to date state
-  const [jumpDay, setJumpDay] = useState(format(new Date(), 'd'));
-  const [jumpMonth, setJumpMonth] = useState(format(new Date(), 'M'));
-  const [jumpYear, setJumpYear] = useState(format(new Date(), 'yyyy'));
-
   const wetonDetails = useMemo(() => getJavaneseDetails(selectedDate), [selectedDate]);
 
   const showPaywall = !isPremium && profile && profile.generateCount >= 3;
@@ -156,15 +151,6 @@ function MainApp() {
     } catch (error) {
       console.error("PDF Export Error:", error);
       alert("Gagal mengunduh PDF. Silakan coba lagi.");
-    }
-  };
-
-  const handleJumpToDate = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newDate = new Date(parseInt(jumpYear), parseInt(jumpMonth) - 1, parseInt(jumpDay));
-    if (!isNaN(newDate.getTime())) {
-      setSelectedDate(newDate);
-      setCurrentMonth(newDate);
     }
   };
 
@@ -242,50 +228,6 @@ function MainApp() {
             <div className="text-center md:text-left">
               <CardTitle className="font-serif text-3xl">{format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}</CardTitle>
               <CardDescription className="text-stone-400">{t('calendar.title')}</CardDescription>
-            </div>
-            
-                <div className="flex flex-wrap items-center justify-center gap-4">
-                  <form onSubmit={handleJumpToDate} className="flex items-center gap-2 bg-stone-800 p-1 rounded-lg border border-stone-700">
-                    <Input 
-                      type="number"
-                      min="1"
-                      max="31"
-                      className="w-12 h-8 bg-transparent border-none text-white text-center p-0 focus-visible:ring-0" 
-                      value={jumpDay} 
-                      onChange={(e) => setJumpDay(e.target.value)} 
-                      placeholder={t('common.placeholder.day')}
-                    />
-                    <span className="text-stone-600">/</span>
-                    <Input 
-                      type="number"
-                      min="1"
-                      max="12"
-                      className="w-12 h-8 bg-transparent border-none text-white text-center p-0 focus-visible:ring-0" 
-                      value={jumpMonth} 
-                      onChange={(e) => setJumpMonth(e.target.value)} 
-                      placeholder={t('common.placeholder.month')}
-                    />
-                    <span className="text-stone-600">/</span>
-                    <Input 
-                      type="number"
-                      min="1582"
-                      max="2100"
-                      className="w-20 h-8 bg-transparent border-none text-white text-center p-0 focus-visible:ring-0" 
-                      value={jumpYear} 
-                      onChange={(e) => setJumpYear(e.target.value)} 
-                      placeholder={t('common.placeholder.year')}
-                    />
-                    <Button type="submit" size="sm" className="h-8 bg-stone-700 hover:bg-stone-600 text-white border-none">{t('calendar.go')}</Button>
-                  </form>
-
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="bg-transparent border-stone-600 text-white hover:bg-stone-700">
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="bg-transparent border-stone-600 text-white hover:bg-stone-700">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
