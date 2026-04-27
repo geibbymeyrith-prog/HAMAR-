@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, startOfWeek, endOfWeek } from 'date-fns';
 import { id, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
@@ -29,9 +29,22 @@ import {
   Download,
   Shield,
   LogOut,
-  LogIn
+  LogIn,
+  LayoutDashboard,
+  FileText,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { 
+  collection, 
+  query, 
+  where, 
+  orderBy, 
+  onSnapshot, 
+  doc, 
+  updateDoc 
+} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -51,8 +64,17 @@ import {
 import { useAuth } from '@/lib/AuthContext';
 import { Paywall } from '@/components/Paywall';
 import { AdminDashboard } from '@/components/AdminDashboard';
+import { UserDashboard } from '@/components/UserDashboard';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+
+interface Article {
+  id: string;
+  title: string;
+  author: string;
+  content: string;
+  createdAt: any;
+}
 
 export default function App() {
   return <MainApp />;
@@ -60,13 +82,29 @@ export default function App() {
 
 function MainApp() {
   const { t, i18n: i18nInstance } = useTranslation();
-  const { profile, login, logout, incrementGenerateCount, isPremium, isAdmin } = useAuth();
+  const { profile, login, logout, incrementGenerateCount, isPremium, isAdmin, saveHistory } = useAuth();
   const [activeTab, setActiveTab] = useState('weton');
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [isDashboardMode, setIsDashboardMode] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [publicArticles, setPublicArticles] = useState<Article[]>([]);
   
   const resultRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Load Public Articles for Homepage
+    const q = query(
+      collection(db, 'articles'),
+      where('visibility', '==', 'public'),
+      where('status', '==', 'published'),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setPublicArticles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Article[]);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // New states for specific calculations
   const [birthDateWeton, setBirthDateWeton] = useState<Date | null>(null);
@@ -100,8 +138,12 @@ function MainApp() {
   const handleCalculateWeton = (date: Date | null) => {
     if (date) {
       setBirthDateWeton(date);
-      if (!isPremium && profile && profile.generateCount < 3) {
-        incrementGenerateCount();
+      const details = getJavaneseDetails(date);
+      if (profile) {
+        saveHistory('weton', `${details.masehiDayName} ${details.pasaranName}`, details);
+        if (!isPremium && profile.generateCount < 3) {
+          incrementGenerateCount();
+        }
       }
     }
   };
@@ -109,8 +151,12 @@ function MainApp() {
   const handleCalculateHariBaik = (date: Date | null) => {
     if (date) {
       setEventDateHariBaik(date);
-      if (!isPremium && profile && profile.generateCount < 3) {
-        incrementGenerateCount();
+      const details = getJavaneseDetails(date);
+      if (profile) {
+        saveHistory('hariBaik', `${details.masehiDayName} ${details.pasaranName}`, details);
+        if (!isPremium && profile.generateCount < 3) {
+          incrementGenerateCount();
+        }
       }
     }
   };
@@ -119,8 +165,11 @@ function MainApp() {
     if (mangsaSelfData && mangsaPartnerData) {
       const result = getJodohPinasti(mangsaSelfData.name, mangsaPartnerData.name);
       setJodohResult(result);
-      if (!isPremium && profile && profile.generateCount < 3) {
-        incrementGenerateCount();
+      if (profile) {
+        saveHistory('jodoh', `${mangsaSelfData.name} x ${mangsaPartnerData.name}`, result);
+        if (!isPremium && profile.generateCount < 3) {
+          incrementGenerateCount();
+        }
       }
     }
   };
@@ -164,6 +213,8 @@ function MainApp() {
     <div className="min-h-screen bg-[#F5F5F0] text-[#1A1A1A] p-4 md:p-8 font-sans" id="app-container">
       {isAdminMode && isAdmin ? (
         <AdminDashboard onBack={() => setIsAdminMode(false)} />
+      ) : isDashboardMode && profile ? (
+        <UserDashboard onBack={() => setIsDashboardMode(false)} />
       ) : (
         <>
           <header className="max-w-6xl mx-auto mb-8 text-center relative" id="header">
@@ -184,6 +235,14 @@ function MainApp() {
               
               {profile ? (
                 <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsDashboardMode(true)}
+                    className="h-7 text-[10px] font-bold px-2 text-[#2E7D32] border border-[#2E7D32]/20 hover:bg-[#2E7D32]/10"
+                  >
+                    <LayoutDashboard className="w-3 h-3 mr-1" /> DASHBOARD
+                  </Button>
                   {isAdmin && (
                     <Button 
                       variant="ghost" 
@@ -234,65 +293,109 @@ function MainApp() {
       </header>
 
       <main className="max-w-6xl mx-auto space-y-8" id="main-content">
-        {/* --- Infinite Calendar at Top --- */}
-        <Card className="border-none shadow-xl bg-white/80 backdrop-blur-md overflow-hidden" id="calendar-card">
-          <CardHeader className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 pb-7 bg-stone-900 text-white">
-            <div className="text-center md:text-left">
-              <CardTitle className="font-serif text-3xl">{format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}</CardTitle>
-              <CardDescription className="text-stone-400">{t('calendar.title')}</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="grid grid-cols-7 border-b border-stone-100 bg-stone-50">
-              {[
-                t('calendar.days.min'),
-                t('calendar.days.sen'),
-                t('calendar.days.sel'),
-                t('calendar.days.rab'),
-                t('calendar.days.kam'),
-                t('calendar.days.jum'),
-                t('calendar.days.sab')
-              ].map(day => (
-                <div key={day} className="py-3 text-center text-xs font-bold text-stone-400 uppercase tracking-widest">
-                  {day}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* --- Infinite Calendar --- */}
+          <div className="lg:col-span-2">
+            <Card className="border-none shadow-xl bg-white/80 backdrop-blur-md overflow-hidden" id="calendar-card">
+              <CardHeader className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 pb-7 bg-stone-900 text-white">
+                <div className="text-center md:text-left">
+                  <CardTitle className="font-serif text-3xl">{format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}</CardTitle>
+                  <CardDescription className="text-stone-400">{t('calendar.title')}</CardDescription>
                 </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7">
-              {calendarDays.map((day, idx) => {
-                const isSelected = isSameDay(day, selectedDate);
-                const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
-                const details = getJavaneseDetails(day);
-                
-                return (
-                  <div
-                    key={idx}
-                    className={cn(
-                      "h-20 md:h-28 p-2 border-r border-b border-stone-50 text-left transition-all group relative",
-                      !isCurrentMonth && "opacity-30",
-                      isSelected && "bg-stone-50 ring-1 ring-inset ring-stone-200 shadow-inner"
-                    )}
-                  >
-                    <span className={cn(
-                      "text-lg font-medium",
-                      isSelected ? "text-stone-900" : "text-stone-600"
-                    )}>
-                      {format(day, 'd')}
-                    </span>
-                    <div className="mt-1 space-y-0.5">
-                      <p className="text-[9px] md:text-[10px] font-bold text-stone-400 uppercase truncate">
-                        {details.pasaranName.split('-')[0]}
-                      </p>
-                      <p className="text-[8px] md:text-[9px] text-stone-500 truncate">
-                        {details.wuku}
-                      </p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="grid grid-cols-7 border-b border-stone-100 bg-stone-50">
+                  {[
+                    t('calendar.days.min'),
+                    t('calendar.days.sen'),
+                    t('calendar.days.sel'),
+                    t('calendar.days.rab'),
+                    t('calendar.days.kam'),
+                    t('calendar.days.jum'),
+                    t('calendar.days.sab')
+                  ].map(day => (
+                    <div key={day} className="py-3 text-center text-xs font-bold text-stone-400 uppercase tracking-widest">
+                      {day}
                     </div>
-                  </div>
-                );
-              })}
+                  ))}
+                </div>
+                <div className="grid grid-cols-7">
+                  {calendarDays.map((day, idx) => {
+                    const isSelected = isSameDay(day, selectedDate);
+                    const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
+                    const details = getJavaneseDetails(day);
+                    
+                    return (
+                      <div
+                        key={idx}
+                        className={cn(
+                          "h-20 md:h-28 p-2 border-r border-b border-stone-50 text-left transition-all group relative",
+                          !isCurrentMonth && "opacity-30",
+                          isSelected && "bg-stone-50 ring-1 ring-inset ring-stone-200 shadow-inner"
+                        )}
+                        onClick={() => setSelectedDate(day)}
+                      >
+                        <span className={cn(
+                          "text-lg font-medium",
+                          isSelected ? "text-stone-900" : "text-stone-600"
+                        )}>
+                          {format(day, 'd')}
+                        </span>
+                        <div className="mt-1 space-y-0.5">
+                          <p className="text-[9px] md:text-[10px] font-bold text-stone-400 uppercase truncate">
+                            {details.pasaranName.split('-')[0]}
+                          </p>
+                          <p className="text-[8px] md:text-[9px] text-stone-500 truncate">
+                            {details.wuku}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* --- Public Blog Feed --- */}
+          <div className="lg:col-span-1 space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-5 h-5 text-[#2E7D32]" />
+              <h3 className="font-serif font-bold text-xl text-stone-800">Artikel Terbaru</h3>
             </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+              {publicArticles.length === 0 ? (
+                <div className="p-8 text-center bg-white/50 rounded-2xl border border-dashed border-stone-200">
+                  <p className="text-sm text-stone-400 italic">Belum ada artikel publik.</p>
+                </div>
+              ) : (
+                publicArticles.map((article) => (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    key={article.id}
+                  >
+                    <Card className="border-none shadow-sm hover:shadow-md transition-all overflow-hidden group">
+                      <CardHeader className="p-4 pb-2">
+                        <CardTitle className="text-sm font-serif font-bold group-hover:text-[#2E7D32] transition-colors line-clamp-2">
+                          {article.title}
+                        </CardTitle>
+                        <CardDescription className="text-[10px] flex items-center gap-2">
+                          <Clock className="w-3 h-3" /> {article.createdAt ? format(article.createdAt.toDate(), 'dd MMM yyyy') : '-'}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-0">
+                        <p className="text-xs text-stone-500 line-clamp-3 leading-relaxed">
+                          {article.content}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* --- Selected Date Summary --- */}
         <motion.div

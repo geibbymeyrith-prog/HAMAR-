@@ -8,15 +8,17 @@
         "uid": { "type": "string" },
         "email": { "type": "string" },
         "displayName": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "fullName": { "type": "string" },
+        "birthDate": { "type": "object" },
         "role": { "type": "string", "enum": ["user", "admin"] },
         "subscriptionStatus": { "type": "string", "enum": ["free", "monthly", "yearly"] },
-        "subscriptionEndDate": { "type": "string", "format": "date-time" },
         "premiumExpiredAt": { "type": "string", "format": "date-time" },
         "generateCount": { "type": "number" },
         "temporaryUnlock": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email", "role", "subscriptionStatus"]
+      "required": ["uid", "email", "role"]
     },
     "Payment": {
       "title": "Payment",
@@ -34,34 +36,33 @@
       },
       "required": ["userId", "name", "email", "whatsapp", "package", "uniqueAmount", "status", "createdAt"]
     },
-    "Calculation": {
-      "title": "Calculation",
-      "description": "Saved calculation history for a user",
+    "History": {
+      "title": "History",
+      "description": "Saved calculation results for a user",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
         "type": { "type": "string", "enum": ["weton", "jodoh", "hariBaik"] },
-        "inputData": { "type": "object" },
-        "resultData": { "type": "object" },
+        "label": { "type": "string" },
+        "details": { "type": "object" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "type", "inputData", "resultData", "createdAt"]
+      "required": ["userId", "type", "label", "details", "createdAt"]
     },
-    "BlogPost": {
-      "title": "BlogPost",
+    "Article": {
+      "title": "Article",
       "description": "Blog article content",
       "type": "object",
       "properties": {
         "title": { "type": "string" },
+        "author": { "type": "string" },
         "content": { "type": "string" },
-        "excerpt": { "type": "string" },
-        "authorId": { "type": "string" },
-        "featuredImage": { "type": "string" },
-        "isPremium": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "contentHtml": { "type": "string" },
+        "visibility": { "type": "string", "enum": ["public", "member"] },
+        "status": { "type": "string", "enum": ["draft", "published"] },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["title", "content", "authorId", "createdAt"]
+      "required": ["title", "author", "content", "visibility", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -69,17 +70,17 @@
       "schema": "User",
       "description": "User profile data"
     },
-    "/calculations/{calcId}": {
-      "schema": "Calculation",
+    "/history/{historyId}": {
+      "schema": "History",
       "description": "Calculation history"
     },
-    "/posts/{postId}": {
-      "schema": "BlogPost",
-      "description": "Blog posts"
+    "/articles/{articleId}": {
+      "schema": "Article",
+      "description": "Blog articles"
     },
     "/payments/{paymentId}": {
       "schema": "Payment",
-      "description": "Payment records for manual verification"
+      "description": "Payment records"
     }
   }
 }

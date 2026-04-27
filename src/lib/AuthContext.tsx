@@ -12,7 +12,8 @@ import {
   setDoc, 
   serverTimestamp,
   getDoc,
-  getDocFromServer
+  collection,
+  addDoc
 } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
@@ -71,12 +72,27 @@ interface UserProfile {
   uid: string;
   email: string;
   displayName: string;
+  fullName?: string;
+  whatsapp?: string;
+  birthDate?: {
+    day: string;
+    month: string;
+    year: string;
+  };
   role: 'user' | 'admin';
   subscriptionStatus: 'free' | 'monthly' | 'yearly';
   subscriptionEndDate?: any;
   premiumExpiredAt?: any;
   generateCount: number;
   temporaryUnlock?: boolean;
+  createdAt: any;
+}
+
+interface HistoryItem {
+  userId: string;
+  type: 'weton' | 'jodoh' | 'hariBaik';
+  label: string;
+  details: any;
   createdAt: any;
 }
 
@@ -87,6 +103,8 @@ interface AuthContextType {
   authError: string | null;
   login: () => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  saveHistory: (type: 'weton' | 'jodoh' | 'hariBaik', label: string, details: any) => Promise<void>;
   subscribe: (plan: 'monthly' | 'yearly') => Promise<void>;
   incrementGenerateCount: () => Promise<number>;
   isPremium: boolean;
@@ -174,6 +192,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateProfile = async (data: Partial<UserProfile>) => {
+    if (!user) return;
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, data, { merge: true });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
+    }
+  };
+
+  const saveHistory = async (type: 'weton' | 'jodoh' | 'hariBaik', label: string, details: any) => {
+    if (!user) return;
+    try {
+      await addDoc(collection(db, 'history'), {
+        userId: user.uid,
+        type,
+        label,
+        details,
+        createdAt: serverTimestamp()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'history');
+    }
+  };
+
   const incrementGenerateCount = async () => {
     if (!user || !profile) return profile?.generateCount || 0;
     try {
@@ -221,7 +264,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAdmin = profile?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, authError, login, logout, subscribe, incrementGenerateCount, isPremium, isAdmin }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      profile, 
+      loading, 
+      authError, 
+      login, 
+      logout, 
+      updateProfile,
+      saveHistory,
+      subscribe, 
+      incrementGenerateCount, 
+      isPremium, 
+      isAdmin 
+    }}>
       {children}
     </AuthContext.Provider>
   );
