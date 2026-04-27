@@ -183,9 +183,21 @@ function MainApp() {
               </div>
               
               {profile ? (
-                <Button variant="outline" size="sm" onClick={logout} className="h-7 text-[10px] font-bold px-2 text-stone-400">
-                  <LogOut className="w-3 h-3 mr-1" /> KELUAR
-                </Button>
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setIsAdminMode(true)}
+                      className="h-7 text-[10px] font-bold px-2 text-[#FBC02D] border border-[#FBC02D]/20 hover:bg-[#FBC02D]/10"
+                    >
+                      <Shield className="w-3 h-3 mr-1" /> ADMIN
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" onClick={logout} className="h-7 text-[10px] font-bold px-2 text-stone-400">
+                    <LogOut className="w-3 h-3 mr-1" /> KELUAR
+                  </Button>
+                </div>
               ) : (
                 <Button variant="outline" size="sm" onClick={login} className="h-7 text-[10px] font-bold px-2 text-[#2E7D32]">
                   <LogIn className="w-3 h-3 mr-1" /> MASUK

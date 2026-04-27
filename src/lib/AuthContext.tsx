@@ -123,6 +123,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               createdAt: serverTimestamp(),
             };
             await setDoc(userDocRef, newProfile);
+          } else {
+            // Ensure admin role for specific user if they already exist
+            const data = userDoc.data() as UserProfile;
+            if (firebaseUser.email === 'geibbymeyrith@gmail.com' && data.role !== 'admin') {
+              await setDoc(userDocRef, { ...data, role: 'admin' }, { merge: true });
+            }
           }
         } catch (error) {
           handleFirestoreError(error, OperationType.WRITE, `users/${firebaseUser.uid}`);
