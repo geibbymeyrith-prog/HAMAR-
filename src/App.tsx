@@ -311,15 +311,12 @@ function MainApp() {
                 const details = getJavaneseDetails(day);
                 
                 return (
-                  <button
+                  <div
                     key={idx}
-                    onClick={() => {
-                      setSelectedDate(day);
-                    }}
                     className={cn(
-                      "h-20 md:h-28 p-2 border-r border-b border-stone-50 text-left transition-all hover:bg-stone-100 group relative",
+                      "h-20 md:h-28 p-2 border-r border-b border-stone-50 text-left transition-all group relative",
                       !isCurrentMonth && "opacity-30",
-                      isSelected && "bg-stone-100 ring-2 ring-inset ring-stone-800 z-10"
+                      isSelected && "bg-stone-50 ring-1 ring-inset ring-stone-200 shadow-inner"
                     )}
                   >
                     <span className={cn(
@@ -336,13 +333,7 @@ function MainApp() {
                         {details.wuku}
                       </p>
                     </div>
-                    {isSelected && (
-                      <motion.div 
-                        layoutId="active-indicator"
-                        className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-stone-800"
-                      />
-                    )}
-                  </button>
+                  </div>
                 );
               })}
             </div>

@@ -205,7 +205,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isPremium = profile ? (
     profile.role === 'admin' || 
-    (profile.premiumExpiredAt && profile.premiumExpiredAt.toDate() > new Date()) ||
+    (profile.premiumExpiredAt && (
+      typeof profile.premiumExpiredAt.toDate === 'function' 
+        ? profile.premiumExpiredAt.toDate() > new Date() 
+        : new Date(profile.premiumExpiredAt) > new Date()
+    )) ||
     profile.temporaryUnlock === true
   ) : false;
   const isAdmin = profile?.role === 'admin';
