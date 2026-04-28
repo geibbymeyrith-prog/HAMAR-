@@ -32,7 +32,8 @@ import {
   LogIn,
   LayoutDashboard,
   FileText,
-  Clock
+  Clock,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -89,6 +90,10 @@ function MainApp() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [publicArticles, setPublicArticles] = useState<Article[]>([]);
+  const [guestGenerateCount, setGuestGenerateCount] = useState<number>(() => {
+    const saved = localStorage.getItem('hamare_guest_count');
+    return saved ? parseInt(saved, 10) : 0;
+  });
   
   const resultRef = useRef<HTMLDivElement>(null);
 
@@ -105,6 +110,12 @@ function MainApp() {
     });
     return () => unsubscribe();
   }, []);
+
+  const incrementGuestGenerateCount = () => {
+    const newCount = guestGenerateCount + 1;
+    setGuestGenerateCount(newCount);
+    localStorage.setItem('hamare_guest_count', newCount.toString());
+  };
 
   // New states for specific calculations
   const [birthDateWeton, setBirthDateWeton] = useState<Date | null>(null);
@@ -133,8 +144,9 @@ function MainApp() {
 
   const wetonDetails = useMemo(() => getJavaneseDetails(selectedDate), [selectedDate]);
 
-  const showPaywall = !isPremium && profile && profile.generateCount >= 3;
-  const canDownload = isPremium || (profile && profile.generateCount < 3);
+  const currentCount = profile ? profile.generateCount : guestGenerateCount;
+  const showPaywall = !isPremium && currentCount > 3;
+  const canDownload = isPremium || currentCount <= 3;
 
   const handleCalculateWeton = (date: Date | null) => {
     if (date) {
@@ -142,8 +154,12 @@ function MainApp() {
       const details = getJavaneseDetails(date);
       if (profile) {
         saveHistory('weton', `${details.masehiDayName} ${details.pasaranName}`, details);
-        if (!isPremium && profile.generateCount < 3) {
+        if (!isPremium && profile.generateCount <= 3) {
           incrementGenerateCount();
+        }
+      } else {
+        if (guestGenerateCount <= 3) {
+          incrementGuestGenerateCount();
         }
       }
     }
@@ -155,8 +171,12 @@ function MainApp() {
       const details = getJavaneseDetails(date);
       if (profile) {
         saveHistory('hariBaik', `${details.masehiDayName} ${details.pasaranName}`, details);
-        if (!isPremium && profile.generateCount < 3) {
+        if (!isPremium && profile.generateCount <= 3) {
           incrementGenerateCount();
+        }
+      } else {
+        if (guestGenerateCount <= 3) {
+          incrementGuestGenerateCount();
         }
       }
     }
@@ -168,8 +188,12 @@ function MainApp() {
       setJodohResult(result);
       if (profile) {
         saveHistory('jodoh', `${mangsaSelfData.name} x ${mangsaPartnerData.name}`, result);
-        if (!isPremium && profile.generateCount < 3) {
+        if (!isPremium && profile.generateCount <= 3) {
           incrementGenerateCount();
+        }
+      } else {
+        if (guestGenerateCount <= 3) {
+          incrementGuestGenerateCount();
         }
       }
     }
@@ -568,7 +592,17 @@ function MainApp() {
                             <DetailItem label={t('weton.labels.pranataMangsa')} value={wetonKelahiranDetails.pranataMangsa} subValue={t(wetonKelahiranDetails.pranataMangsaSifat)} isLongText />
                           </div>
                           
-                          {canDownload && (
+                          {!canDownload ? (
+                            <Button 
+                              variant="outline" 
+                              className="w-full mt-4 gap-2 border-stone-200 bg-stone-50 text-stone-400 cursor-not-allowed"
+                              onClick={() => {
+                                document.getElementById('calendar-card')?.scrollIntoView({ behavior: 'smooth' });
+                              }}
+                            >
+                              <Lock className="w-4 h-4" /> {t('common.unlockToDownload') || 'Unlock untuk Download PDF'}
+                            </Button>
+                          ) : (
                             <Button variant="outline" className="w-full mt-4 gap-2 border-stone-300" onClick={handleDownloadPDF}>
                               <Download className="w-4 h-4" /> Download PDF
                             </Button>
@@ -670,7 +704,17 @@ function MainApp() {
                             </p>
                           </div>
                           
-                          {canDownload && (
+                          {!canDownload ? (
+                            <Button 
+                              variant="outline" 
+                              className="w-full gap-2 border-stone-200 bg-stone-50 text-stone-400 cursor-not-allowed"
+                              onClick={() => {
+                                document.getElementById('calendar-card')?.scrollIntoView({ behavior: 'smooth' });
+                              }}
+                            >
+                              <Lock className="w-4 h-4" /> {t('common.unlockToDownload') || 'Unlock untuk Download PDF'}
+                            </Button>
+                          ) : (
                             <Button variant="outline" className="w-full gap-2 border-stone-300" onClick={handleDownloadPDF}>
                               <Download className="w-4 h-4" /> Download PDF
                             </Button>
@@ -759,7 +803,17 @@ function MainApp() {
                               </CardContent>
                             </Card>
                             
-                            {canDownload && (
+                            {!canDownload ? (
+                              <Button 
+                                variant="outline" 
+                                className="w-full gap-2 border-stone-200 bg-stone-50 text-stone-400 cursor-not-allowed"
+                                onClick={() => {
+                                  document.getElementById('calendar-card')?.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                              >
+                                <Lock className="w-4 h-4" /> {t('common.unlockToDownload') || 'Unlock untuk Download PDF'}
+                              </Button>
+                            ) : (
                               <Button variant="outline" className="w-full gap-2 border-stone-300" onClick={handleDownloadPDF}>
                                 <Download className="w-4 h-4" /> Download PDF
                               </Button>

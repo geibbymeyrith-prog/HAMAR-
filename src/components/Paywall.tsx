@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Check, Send, AlertCircle, X } from 'lucide-react';
+import { Lock, Check, Send, AlertCircle, X, LogIn } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -113,21 +113,33 @@ Mohon segera diproses. Terima kasih.`;
                   <button
                     key={pkg.id}
                     onClick={() => handleSelectPackage(pkg)}
-                    className="flex items-center justify-between p-4 rounded-xl border border-stone-200 bg-white hover:border-[#FBC02D] hover:bg-[#FBC02D]/5 transition-all text-left shadow-sm group"
+                    className="flex items-center justify-between p-4 rounded-xl border border-stone-200 bg-white hover:border-[#2E7D32] hover:bg-[#2E7D32]/5 transition-all text-left shadow-sm group"
                   >
-                    <div>
+                    <div className="flex-1">
                       <p className="font-bold text-stone-800 text-sm">{pkg.name}</p>
-                      <p className="text-xs text-stone-500">Mulai dari Rp {pkg.price.toLocaleString('id-ID')}</p>
+                      <p className="text-xs text-stone-500">
+                        Rp {pkg.price.toLocaleString('id-ID')} {pkg.id === '11000' ? '' : '+ Nominal Unik'}
+                      </p>
                     </div>
-                    <Check className="w-4 h-4 text-[#FBC02D] opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {!user ? (
+                      <LogIn className="w-4 h-4 text-stone-400 group-hover:text-[#2E7D32] transition-colors" />
+                    ) : (
+                      <Check className="w-4 h-4 text-[#2E7D32] opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
                   </button>
                 ))}
               </div>
               
               {!user && (
-                <Button onClick={login} className="w-full bg-[#FBC02D] hover:bg-[#f9a825] text-black font-bold h-12 rounded-xl">
-                  {t('paywall.loginBtn') || 'Login untuk Membeli'}
-                </Button>
+                <div className="pt-4 space-y-3">
+                  <div className="flex items-center gap-2 text-[10px] text-stone-400 justify-center">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>Anda harus masuk terlebih dahulu untuk membeli paket</span>
+                  </div>
+                  <Button onClick={login} className="w-full bg-[#FBC02D] hover:bg-[#f9a825] text-black font-bold h-12 rounded-xl border-b-4 border-[#f9a825] active:border-b-0 active:translate-y-1 transition-all">
+                    <LogIn className="w-4 h-4 mr-2" /> MASUK / DAFTAR SEKARANG
+                  </Button>
+                </div>
               )}
             </motion.div>
           )}
