@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Check, Send, AlertCircle, X, LogIn } from 'lucide-react';
+import { Lock, Check, Send, AlertCircle, X, LogIn, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useAuth } from '../lib/AuthContext';
 import { db, auth } from '../lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
 
@@ -17,11 +17,53 @@ interface PaywallProps {
 export const Paywall: React.FC<PaywallProps> = ({ onUnlock }) => {
   const { user, login, loginWithEmail, registerWithEmail, authError: authErr } = useAuth();
   const { t } = useTranslation();
-  const [step, setStep] = useState<'options' | 'form' | 'instructions'>('options');
+  const [step, setStep] = useState<'options' | 'form' | 'instructions' | 'pending'>('options');
   const [selectedPackage, setSelectedPackage] = useState<{ id: string, name: string, price: number } | null>(null);
   const [formData, setFormData] = useState({ name: '', whatsapp: '', email: user?.email || '', password: '' });
   const [paymentDetails, setPaymentDetails] = useState<{ uniqueAmount: number, package: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
+
+  // Check for existing pending payments
+  useEffect(() => {
+    const checkPendingPayment = async () => {
+      if (!user) return;
+      
+      setCheckingPayment(true);
+      try {
+        const paymentsRef = collection(db, 'payments');
+        const q = query(
+          paymentsRef, 
+          where('userId', '==', user.uid), 
+          where('status', '==', 'pending'),
+          orderBy('createdAt', 'desc'),
+          limit(1)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          const paymentData = querySnapshot.docs[0].data();
+          setPaymentDetails({ 
+            uniqueAmount: paymentData.uniqueAmount, 
+            package: paymentData.packageName 
+          });
+          setFormData(prev => ({
+            ...prev,
+            name: paymentData.name,
+            whatsapp: paymentData.whatsapp,
+            email: paymentData.email
+          }));
+          setStep('pending');
+        }
+      } catch (err) {
+        console.error("Error checking pending payment:", err);
+      } finally {
+        setCheckingPayment(false);
+      }
+    };
+
+    checkPendingPayment();
+  }, [user]);
 
   const packages = [
     { id: '11000', name: '1 Unlock (Hanya Hasil Ini)', price: 11000 },
@@ -273,6 +315,9 @@ Mohon segera diproses. Terima kasih.`;
             >
               <div className="space-y-4 w-full">
                 <div className="text-center">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold uppercase rounded-full mb-3">
+                    <Clock className="w-3 h-3" /> Step Terakhir: Pembayaran
+                  </div>
                   <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1">Total Transfer (Hingga 3 Digit Terakhir)</p>
                   <p className="text-3xl font-mono font-bold text-[#2E7D32] bg-stone-50 py-3 rounded-xl border border-stone-100">
                     Rp {paymentDetails.uniqueAmount.toLocaleString('id-ID')}
@@ -297,7 +342,7 @@ Mohon segera diproses. Terima kasih.`;
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-stone-500 font-medium">Nama Penerima</span>
-                      <span className="font-bold">Geibby Meyrith Bolang</span>
+                      <span className="font-bold uppercase">Geibby Meyrith Bolang</span>
                     </div>
                   </div>
                 </div>
@@ -308,16 +353,69 @@ Mohon segera diproses. Terima kasih.`;
                     className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold h-14 rounded-2xl flex items-center justify-center gap-3 shadow-lg border-b-4 border-[#20ba5a] active:border-b-0 active:translate-y-1 transition-all"
                   >
                     <Send className="w-5 h-5" />
-                    KONFIRMASI VIA WHATSAPP
+                    KONFIRMASI PEMBAYARAN VIA WA
                   </Button>
                   
-                  <div className="px-4 py-3 bg-amber-50 rounded-xl flex items-start gap-3 border border-amber-100">
-                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    <p className="text-[10px] text-amber-700 leading-relaxed font-medium">
-                      Setelah konfirmasi dikirim, Admin akan memverifikasi dan mengaktifkan akun Anda dalam waktu 1-12 jam. Anda akan menerima notifikasi via WhatsApp.
-                    </p>
+                  <div className="px-4 py-4 bg-amber-50 rounded-xl flex items-start gap-3 border border-amber-100">
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[11px] text-amber-800 leading-relaxed font-bold uppercase mb-1">Penting:</p>
+                      <p className="text-[11px] text-amber-700 leading-relaxed">
+                        Harap simpan bukti transfer dan unggah melalui WhatsApp. Admin akan memverifikasi dalam waktu 1-12 jam.
+                      </p>
+                    </div>
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 'pending' && paymentDetails && (
+            <motion.div
+              key="pending"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-6 text-center"
+            >
+              <div className="relative inline-flex mb-2">
+                <div className="bg-amber-100 text-amber-600 w-20 h-20 rounded-full flex items-center justify-center animate-pulse">
+                  <Clock className="w-10 h-10" />
+                </div>
+                <div className="absolute -right-2 -bottom-2 bg-white rounded-full p-2 shadow-md border border-stone-100">
+                  <Check className="w-4 h-4 text-amber-500" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-serif font-bold text-xl text-stone-800">Menunggu Verifikasi</h3>
+                <p className="text-sm text-stone-500 max-w-[280px] mx-auto">
+                  Kami telah menerima data pesanan Anda. Admin sedang mengecek pembayaran secara manual.
+                </p>
+              </div>
+
+              <div className="bg-stone-50 p-5 rounded-2xl border border-stone-200 text-left space-y-3">
+                <div className="flex justify-between text-xs">
+                  <span className="text-stone-400">Status</span>
+                  <span className="font-bold text-amber-600 uppercase tracking-widest px-2 py-0.5 bg-amber-50 rounded text-[9px]">Dalam Proses</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-stone-400">Total Transfer</span>
+                  <span className="font-bold text-stone-800">Rp {paymentDetails.uniqueAmount.toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+
+              <div className="pt-4 space-y-3 w-full">
+                <Button 
+                  onClick={() => window.open(getWAUrl(), '_blank')}
+                  variant="outline"
+                  className="w-full border-stone-200 hover:bg-stone-50 h-12 rounded-xl text-stone-600 font-bold"
+                >
+                  <Send className="w-4 h-4 mr-2" /> HUBUNGI ADMIN (WA)
+                </Button>
+                
+                <p className="text-[10px] text-stone-400 italic">
+                  Akun Anda akan aktif otomatis setelah verifikasi selesai. Mohon tunggu sejenak.
+                </p>
               </div>
             </motion.div>
           )}

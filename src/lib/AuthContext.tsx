@@ -111,7 +111,6 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
   saveHistory: (type: 'weton' | 'jodoh' | 'hariBaik', label: string, details: any) => Promise<void>;
-  subscribe: (plan: 'monthly' | 'yearly') => Promise<void>;
   incrementGenerateCount: () => Promise<number>;
   isPremium: boolean;
   isAdmin: boolean;
@@ -297,21 +296,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const subscribe = async (plan: 'monthly' | 'yearly') => {
-    if (!user) return;
-    try {
-      const userDocRef = doc(db, 'users', user.uid);
-      const now = new Date();
-      const expiry = new Date(now.getTime() + (plan === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000);
-      await setDoc(userDocRef, {
-        subscriptionStatus: plan,
-        premiumExpiredAt: expiry
-      }, { merge: true });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
-    }
-  };
-
   const logout = async () => {
     await signOut(auth);
     setAuthError(null);
@@ -340,7 +324,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout, 
       updateProfile,
       saveHistory,
-      subscribe, 
       incrementGenerateCount, 
       isPremium: isPremium || isAdmin, 
       isAdmin 

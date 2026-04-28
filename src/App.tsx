@@ -158,11 +158,21 @@ function MainApp() {
 
   const [jodohResult, setJodohResult] = useState<ReturnType<typeof getJodohPinasti> | null>(null);
 
+  const handleDateSelfChange = (date: Date) => {
+    setBirthDateSelf(date);
+    setJodohResult(null); // Reset result when date changes
+  };
+
+  const handleDatePartnerChange = (date: Date) => {
+    setBirthDatePartner(date);
+    setJodohResult(null); // Reset result when date changes
+  };
+
   const wetonDetails = useMemo(() => getJavaneseDetails(selectedDate), [selectedDate]);
 
   const currentCount = profile ? profile.generateCount : guestGenerateCount;
-  const showPaywall = !isPremium && currentCount > 3;
-  const canDownload = isPremium || currentCount <= 3;
+  const showPaywall = !isPremium && currentCount >= 3;
+  const canDownload = isPremium || currentCount < 3;
 
   const handleCalculateWeton = (date: Date | null) => {
     if (date) {
@@ -227,6 +237,23 @@ function MainApp() {
         backgroundColor: '#F5F5F0',
         logging: false,
         onclone: (clonedDoc) => {
+          // Add Branding / Header for PDF
+          const header = clonedDoc.createElement('div');
+          header.style.textAlign = 'center';
+          header.style.marginBottom = '30px';
+          header.style.padding = '20px';
+          header.style.borderBottom = '2px solid #2E7D32';
+          header.innerHTML = `
+            <h1 style="font-family: serif; font-size: 28px; margin: 0; color: #1A1A1A;">HAMARE</h1>
+            <p style="font-size: 14px; color: #2E7D32; font-weight: bold; margin: 5px 0 0 0;">Primbon Javanese & Pranata Mangsa Expert</p>
+            <p style="font-size: 10px; color: #78716c; margin: 5px 0 0 0;">Generated on ${format(new Date(), 'EEEE, d MMMM yyyy HH:mm')}</p>
+          `;
+          
+          const target = clonedDoc.querySelector('[ref="resultRef"]') || clonedDoc.body.firstChild;
+          if (target && target.parentNode) {
+            target.parentNode.insertBefore(header, target);
+          }
+
           const allElements = clonedDoc.getElementsByTagName("*");
           for (let i = 0; i < allElements.length; i++) {
             const el = allElements[i] as HTMLElement;
@@ -634,6 +661,12 @@ function MainApp() {
                         {showPaywall && <Paywall />}
                         
                         <div className="space-y-6">
+                          {/* Calculation Details for PDF */}
+                          <div className="p-4 bg-stone-100/50 rounded-xl border border-stone-200 mb-4">
+                            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Detail Perhitungan</p>
+                            <p className="text-sm font-medium text-stone-700">Analisis Weton Kelahiran untuk: <span className="font-bold text-stone-900">{format(wetonKelahiranDetails.masehiDate, 'EEEE, d MMMM yyyy', { locale: dateLocale })}</span></p>
+                          </div>
+
                           <div className="p-6 rounded-xl bg-[#2E7D32] text-white shadow-inner text-center">
                             <p className="text-xs text-green-100 uppercase tracking-widest font-bold mb-1">{t('weton.birthDate')}</p>
                             <p className="text-3xl font-serif font-bold">
@@ -697,7 +730,7 @@ function MainApp() {
                           min="1582-01-01"
                           max="2100-12-31"
                           value={format(birthDateSelf, 'yyyy-MM-dd')}
-                          onChange={(e) => setBirthDateSelf(new Date(e.target.value))}
+                          onChange={(e) => handleDateSelfChange(new Date(e.target.value))}
                           className="bg-stone-50 border-stone-200 h-12"
                         />
                         <div className="p-3 bg-green-50 rounded-lg border border-green-100">
@@ -713,7 +746,7 @@ function MainApp() {
                           min="1582-01-01"
                           max="2100-12-31"
                           value={format(birthDatePartner, 'yyyy-MM-dd')}
-                          onChange={(e) => setBirthDatePartner(new Date(e.target.value))}
+                          onChange={(e) => handleDatePartnerChange(new Date(e.target.value))}
                           className="bg-stone-50 border-stone-200 h-12"
                         />
                         <div className="p-3 bg-green-50 rounded-lg border border-green-100">
@@ -742,25 +775,64 @@ function MainApp() {
                         {showPaywall && <Paywall />}
                         
                         <div className="space-y-6">
-                          <div className="p-8 rounded-2xl bg-stone-50 border-2 border-stone-100 text-center relative overflow-hidden">
-                            <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-2">{t('jodoh.status')}</h3>
-                            <p className={cn(
-                              "text-3xl font-serif font-bold",
-                              jodohResult.status.includes('Berjodoh') ? "text-[#2E7D32]" : "text-stone-700"
-                            )}>
-                              {jodohResult.status.includes('Pinasti') ? t('jodoh.results.pinasti.status') : 
-                               jodohResult.status === 'Serasi' ? t('jodoh.results.serasi.status') : 
-                               t('jodoh.results.kendala.status')}
-                            </p>
-                          </div>
-                          
-                          <div className={cn("p-8 rounded-2xl bg-stone-50 border-2 border-stone-100 text-center relative overflow-hidden transition-all", showPaywall && "blur-md select-none pointer-events-none")}>
-                            <Separator className="my-6" />
-                            <p className="text-lg leading-relaxed text-stone-600 italic">
-                              "{jodohResult.status.includes('Pinasti') ? t('jodoh.results.pinasti.pesan') : 
-                                jodohResult.status === 'Serasi' ? t('jodoh.results.serasi.pesan') : 
-                                t('jodoh.results.kendala.pesan')}"
-                            </p>
+                          {/* PDF Only Section - Hidden in UI but visible to html2canvas if we need more info */}
+                          <div className={cn("space-y-6 transition-all", showPaywall && "blur-md select-none pointer-events-none")}>
+                            
+                            {/* Detailed Info for PDF */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <Card className="border border-stone-100 bg-stone-50/50">
+                                <CardHeader className="p-4 bg-stone-100/50">
+                                  <CardTitle className="text-xs font-bold uppercase text-stone-500">Data Diri</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-4 space-y-3">
+                                  <div>
+                                    <p className="text-[10px] text-stone-400 uppercase font-bold">Tanggal Lahir</p>
+                                    <p className="font-serif font-bold text-stone-800">{format(birthDateSelf, 'EEEE, d MMMM yyyy', { locale: dateLocale })}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] text-stone-400 uppercase font-bold">Pranata Mangsa</p>
+                                    <p className="font-serif font-bold text-[#2E7D32]">{mangsaSelfData?.name}</p>
+                                    <p className="text-[11px] text-stone-600 italic mt-1 leading-relaxed">"{mangsaSelfData?.sifat}"</p>
+                                  </div>
+                                </CardContent>
+                              </Card>
+
+                              <Card className="border border-stone-100 bg-stone-50/50">
+                                <CardHeader className="p-4 bg-stone-100/50">
+                                  <CardTitle className="text-xs font-bold uppercase text-stone-500">Data Pasangan</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-4 space-y-3">
+                                  <div>
+                                    <p className="text-[10px] text-stone-400 uppercase font-bold">Tanggal Lahir</p>
+                                    <p className="font-serif font-bold text-stone-800">{format(birthDatePartner, 'EEEE, d MMMM yyyy', { locale: dateLocale })}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] text-stone-400 uppercase font-bold">Pranata Mangsa</p>
+                                    <p className="font-serif font-bold text-[#2E7D32]">{mangsaPartnerData?.name}</p>
+                                    <p className="text-[11px] text-stone-600 italic mt-1 leading-relaxed">"{mangsaPartnerData?.sifat}"</p>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+
+                            <div className="p-8 rounded-2xl bg-stone-50 border-2 border-stone-100 text-center relative overflow-hidden">
+                              <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-2">{t('jodoh.status')}</h3>
+                              <p className={cn(
+                                "text-3xl font-serif font-bold",
+                                jodohResult.status.includes('Berjodoh') ? "text-[#2E7D32]" : "text-stone-700"
+                              )}>
+                                {jodohResult.status.includes('Pinasti') ? t('jodoh.results.pinasti.status') : 
+                                 jodohResult.status === 'Serasi' ? t('jodoh.results.serasi.status') : 
+                                 t('jodoh.results.kendala.status')}
+                              </p>
+                              
+                              <Separator className="my-6" />
+                              <p className="text-lg leading-relaxed text-stone-600 italic">
+                                "{jodohResult.status.includes('Pinasti') ? t('jodoh.results.pinasti.pesan') : 
+                                  jodohResult.status === 'Serasi' ? t('jodoh.results.serasi.pesan') : 
+                                  t('jodoh.results.kendala.pesan')}"
+                              </p>
+                            </div>
                           </div>
                           
                           {!canDownload ? (
@@ -831,6 +903,13 @@ function MainApp() {
                                 <CardDescription className="text-stone-400">{format(hariBaikDetails.masehiDate, 'EEEE, d MMMM yyyy', { locale: dateLocale })}</CardDescription>
                               </CardHeader>
                               <CardContent className={cn("p-8 space-y-8 transition-all", showPaywall && "blur-md select-none pointer-events-none")}>
+                                {/* Meta info for PDF */}
+                                <div className="p-4 bg-stone-100/50 rounded-xl border border-stone-200 mb-6 hidden md:block">
+                                  <p className="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Target Hari</p>
+                                  <p className="text-sm font-bold text-stone-900">{format(hariBaikDetails.masehiDate, 'EEEE, d MMMM yyyy', { locale: dateLocale })}</p>
+                                  <p className="text-xs text-stone-600">{hariBaikDetails.pasaranName} • Wuku {hariBaikDetails.wuku} • Neptu {hariBaikDetails.neptuValue}</p>
+                                </div>
+
                                 <div className="space-y-8">
                                   <DetailItemSmall 
                                     label={t('hariBaik.naas')} 
