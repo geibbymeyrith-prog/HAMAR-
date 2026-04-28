@@ -230,32 +230,33 @@ function MainApp() {
           const allElements = clonedDoc.getElementsByTagName("*");
           for (let i = 0; i < allElements.length; i++) {
             const el = allElements[i] as HTMLElement;
+            const styles = window.getComputedStyle(el);
             
-            // Scrub computed style as well if needed, but onclone gives us the cloned subtree
-            const styles = el.style;
-            
-            // Helper to sanitize color values
-            const sanitize = (val: string | null) => {
-              if (val && val.includes('oklch')) {
-                return '#1A1A1A';
-              }
-              return val;
-            };
+            // Critical CSS properties to check
+            const propsToCheck = [
+              'color', 'background-color', 'border-color', 'fill', 'stroke',
+              'outline-color', 'text-decoration-color', 'stop-color'
+            ];
 
-            if (styles.color) styles.color = sanitize(styles.color) as string;
-            if (styles.backgroundColor) styles.backgroundColor = sanitize(styles.backgroundColor) as string;
-            if (styles.borderColor) styles.borderColor = sanitize(styles.borderColor) as string;
-            if (styles.fill) styles.fill = sanitize(styles.fill) as string;
-            if (styles.stroke) styles.stroke = sanitize(styles.stroke) as string;
-            
-            // Special check: remove transform if it causes issues, though usually ok
-            // But definitely remove oklch from ANY property
-            for (let j = 0; j < styles.length; j++) {
-              const prop = styles[j];
+            propsToCheck.forEach(prop => {
               const val = styles.getPropertyValue(prop);
               if (val && val.includes('oklch')) {
-                styles.setProperty(prop, '#1A1A1A');
+                // Force a safe fallback using inline style on the cloned element
+                const propCamelCase = prop.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+                // @ts-ignore
+                el.style[propCamelCase] = (prop === 'background-color' || prop === 'fill') ? 'transparent' : '#1A1A1A';
               }
+            });
+
+            // Extra check for complex properties like box-shadow or backgrounds with gradients
+            const backgroundImage = styles.getPropertyValue('background-image');
+            if (backgroundImage && backgroundImage.includes('oklch')) {
+              el.style.backgroundImage = 'none';
+            }
+            
+            const boxShadow = styles.getPropertyValue('box-shadow');
+            if (boxShadow && boxShadow.includes('oklch')) {
+              el.style.boxShadow = 'none';
             }
           }
           
@@ -263,6 +264,12 @@ function MainApp() {
           const paywall = clonedDoc.querySelector('.absolute.inset-0.z-20');
           if (paywall) {
             (paywall as HTMLElement).style.display = 'none';
+          }
+
+          // Ensure the result container itself is visible and has correct background
+          const resultEl = clonedDoc.querySelector('[ref="resultRef"]'); 
+          if (resultEl) {
+            (resultEl as HTMLElement).style.backgroundColor = '#F5F5F0';
           }
         }
       });
@@ -330,12 +337,12 @@ function MainApp() {
                   </Button>
                   {isAdmin && (
                     <Button 
-                      variant="ghost" 
+                      variant="default" 
                       size="sm" 
                       onClick={() => setIsAdminMode(true)}
-                      className="h-7 text-[10px] font-bold px-2 text-amber-600 border border-amber-200 hover:bg-amber-50"
+                      className="h-7 text-[10px] font-bold px-3 bg-amber-500 hover:bg-amber-600 text-white border-none shadow-sm rounded-full"
                     >
-                      <Shield className="w-3 h-3 mr-1" /> ADMIN
+                      <Shield className="w-3 h-3 mr-1" /> PANEL ADMIN
                     </Button>
                   )}
                   <Button variant="outline" size="sm" onClick={logout} className="h-7 text-[10px] font-bold px-2 text-stone-600">

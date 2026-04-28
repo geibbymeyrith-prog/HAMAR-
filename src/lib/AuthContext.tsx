@@ -311,7 +311,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     )) ||
     profile.temporaryUnlock === true
   ) : false;
-  const isAdmin = profile?.role === 'admin';
+  const isAdmin = profile?.role === 'admin' || user?.email === 'geibbymeyrith@gmail.com';
 
   return (
     <AuthContext.Provider value={{ 
@@ -327,7 +327,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       saveHistory,
       subscribe, 
       incrementGenerateCount, 
-      isPremium, 
+      isPremium: isPremium || isAdmin, 
       isAdmin 
     }}>
       {children}
