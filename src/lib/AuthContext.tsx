@@ -114,6 +114,7 @@ interface AuthContextType {
   incrementGenerateCount: () => Promise<number>;
   isPremium: boolean;
   isAdmin: boolean;
+  isExpired: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -301,6 +302,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthError(null);
   };
 
+  const isExpired = profile ? (
+    profile.subscriptionStatus !== 'free' &&
+    profile.premiumExpiredAt && (
+      typeof profile.premiumExpiredAt.toDate === 'function' 
+        ? profile.premiumExpiredAt.toDate() < new Date() 
+        : new Date(profile.premiumExpiredAt) < new Date()
+    )
+  ) : false;
+
   const isPremium = profile ? (
     profile.role === 'admin' || 
     (profile.premiumExpiredAt && (
@@ -325,8 +335,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateProfile,
       saveHistory,
       incrementGenerateCount, 
-      isPremium: isPremium || isAdmin, 
-      isAdmin 
+      isPremium, 
+      isAdmin,
+      isExpired
     }}>
       {children}
     </AuthContext.Provider>

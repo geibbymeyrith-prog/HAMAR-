@@ -84,7 +84,7 @@ export default function App() {
 
 function MainApp() {
   const { t, i18n: i18nInstance } = useTranslation();
-  const { user, profile, login, logout, incrementGenerateCount, isPremium, isAdmin, saveHistory } = useAuth();
+  const { user, profile, login, logout, incrementGenerateCount, isPremium, isAdmin, saveHistory, isExpired } = useAuth();
   const [activeTab, setActiveTab] = useState('weton');
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [isDashboardMode, setIsDashboardMode] = useState(false);
@@ -323,6 +323,30 @@ function MainApp() {
       ) : (
         <>
           <header className="max-w-6xl mx-auto mb-8 text-center relative" id="header">
+            {isExpired && !isDashboardMode && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                    <Clock className="w-6 h-6" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-red-800">Masa Langganan Habis</p>
+                    <p className="text-xs text-red-600">Akses premium Anda telah berakhir. Silakan perbarui paket Anda.</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => setIsDashboardMode(true)}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold h-10 rounded-xl whitespace-nowrap"
+                >
+                  PERBARUI SEKARANG
+                </Button>
+              </motion.div>
+            )}
+
             <div className="absolute top-0 right-0 flex gap-2">
               <div className="flex gap-1">
                 {['id', 'jv', 'en'].map((lng) => (

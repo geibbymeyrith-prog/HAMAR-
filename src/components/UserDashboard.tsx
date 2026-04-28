@@ -12,7 +12,9 @@ import {
   Mail,
   ChevronRight,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Shield,
+  Check
 } from 'lucide-react';
 import { 
   collection, 
@@ -49,6 +51,52 @@ interface Article {
   content: string;
   createdAt: any;
 }
+
+const PRANATA_MANGSA_WA_NUMBER = "6281299996816";
+
+const PricingCard: React.FC<{
+  title: string;
+  price: string;
+  period: string;
+  features: string[];
+  isPopular?: boolean;
+  onSelect: () => void;
+}> = ({ title, price, period, features, isPopular, onSelect }) => (
+  <div className={cn(
+    "relative p-6 rounded-2xl border flex flex-col transition-all overflow-hidden",
+    isPopular ? "border-[#2E7D32] bg-[#2E7D32]/5 shadow-lg" : "border-stone-200 bg-white shadow-sm"
+  )}>
+    {isPopular && (
+      <div className="absolute top-0 right-0 bg-[#2E7D32] text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-widest">
+        REKOMENDASI
+      </div>
+    )}
+    <div className="mb-6">
+      <h4 className="text-sm font-bold text-stone-400 uppercase tracking-widest mb-1">{title}</h4>
+      <div className="flex items-baseline gap-1">
+        <span className="text-2xl font-serif font-bold text-stone-900">Rp {price}</span>
+        <span className="text-xs text-stone-500">/{period}</span>
+      </div>
+    </div>
+    <ul className="space-y-3 mb-8 flex-1">
+      {features.map((feature, i) => (
+        <li key={i} className="flex items-start gap-2 text-xs text-stone-600">
+          <Check className="w-3.5 h-3.5 text-[#2E7D32] shrink-0 mt-0.5" />
+          <span>{feature}</span>
+        </li>
+      ))}
+    </ul>
+    <Button 
+      className={cn(
+        "w-full h-11 rounded-xl font-bold transition-all",
+        isPopular ? "bg-[#2E7D32] hover:bg-[#1B5E20] text-white" : "bg-stone-900 hover:bg-stone-800 text-white"
+      )}
+      onClick={onSelect}
+    >
+      Pilih Paket
+    </Button>
+  </div>
+);
 
 export const UserDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { profile, updateProfile } = useAuth();
@@ -129,6 +177,9 @@ export const UserDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <TabsTrigger value="history" className="rounded-lg gap-2">
             <History className="w-4 h-4" /> Riwayat
           </TabsTrigger>
+          <TabsTrigger value="subscription" className="rounded-lg gap-2">
+            <Shield className="w-4 h-4" /> Langganan
+          </TabsTrigger>
           <TabsTrigger value="profile" className="rounded-lg gap-2">
             <User className="w-4 h-4" /> Profil
           </TabsTrigger>
@@ -136,6 +187,114 @@ export const UserDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <FileText className="w-4 h-4" /> Artikel Member
           </TabsTrigger>
         </TabsList>
+
+        {/* Subscription Content */}
+        <TabsContent value="subscription" className="space-y-6">
+          <Card className="border-none shadow-xl bg-white overflow-hidden">
+            <CardHeader className="bg-stone-900 text-white">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="font-serif text-2xl">Status Langganan</CardTitle>
+                  <CardDescription className="text-stone-400">
+                    Kelola paket aktif Anda • {profile?.subscriptionStatus === 'free' ? 'Gratis' : profile?.subscriptionStatus === 'monthly' ? 'Bulanan' : 'Tahunan'}
+                  </CardDescription>
+                </div>
+                {profile?.role === 'admin' ? (
+                  <div className="px-3 py-1 bg-amber-500 text-white text-[10px] font-bold uppercase rounded-full">ADMIN</div>
+                ) : (
+                  <div className={cn(
+                    "px-3 py-1 text-[10px] font-bold uppercase rounded-full",
+                    profile?.subscriptionStatus === 'free' ? "bg-stone-700 text-stone-300" : "bg-green-600 text-white"
+                  )}>
+                    {profile?.subscriptionStatus}
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="p-8">
+              {profile?.role === 'admin' ? (
+                <div className="text-center py-8">
+                  <Shield className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold">Akses Admin Aktif</h3>
+                  <p className="text-stone-500">Anda memiliki akses penuh ke seluruh fitur situs.</p>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  <div className="flex flex-col md:flex-row gap-6 items-center justify-between p-6 bg-stone-50 rounded-2xl border border-stone-100">
+                    <div className="space-y-1 text-center md:text-left">
+                      <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Detail Paket</p>
+                      <h3 className="text-2xl font-serif font-bold text-stone-800">
+                        {profile?.subscriptionStatus === 'free' ? 'Paket Gratis' : 
+                         profile?.subscriptionStatus === 'monthly' ? 'Paket Unlimited 30 Hari' : 'Paket Unlimited 365 Hari'}
+                      </h3>
+                      {profile?.premiumExpiredAt && (
+                        <p className={cn(
+                          "text-sm font-medium",
+                          new Date(profile.premiumExpiredAt.toDate ? profile.premiumExpiredAt.toDate() : profile.premiumExpiredAt) < new Date() 
+                            ? "text-red-500" 
+                            : "text-green-600"
+                        )}>
+                          {new Date(profile.premiumExpiredAt.toDate ? profile.premiumExpiredAt.toDate() : profile.premiumExpiredAt) < new Date()
+                            ? "Masa Berlaku Telah Habis"
+                            : `Berlaku Sampai: ${format(profile.premiumExpiredAt.toDate ? profile.premiumExpiredAt.toDate() : new Date(profile.premiumExpiredAt), 'dd MMMM yyyy')}`}
+                        </p>
+                      )}
+                    </div>
+                    {(!profile?.premiumExpiredAt || new Date(profile.premiumExpiredAt.toDate ? profile.premiumExpiredAt.toDate() : profile.premiumExpiredAt) < new Date()) && (
+                      <Button className="bg-[#2E7D32] hover:bg-[#1B5E20] font-bold px-6 h-12 rounded-xl">
+                        PERBARUI LANGGANAN
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <PricingCard 
+                      title="Unlimited 30 Hari" 
+                      price="111.000" 
+                      period="bulan" 
+                      features={['Unlimited Generate Weton', 'Unlimited Cek Jodoh', 'Akses Hari Baik Tanpa Batas', 'Download PDF Sepuasnya', 'Akses Artikel Eksklusif Member']}
+                      isPopular
+                      onSelect={() => window.open(`https://wa.me/6281299996816?text=${encodeURIComponent(`Halo Admin, saya ingin berlangganan paket Unlimited 30 Hari.\nEmail: ${profile?.email}`)}`, '_blank')}
+                    />
+                    <PricingCard 
+                      title="Unlimited 365 Hari" 
+                      price="1.111.000" 
+                      period="tahun" 
+                      features={['Semua Fitur Paket Bulanan', 'Akses Tanpa Batas Selama Setahun', 'Prioritas Dukungan Admin', 'Hemat Lebih Dari 25%']}
+                      onSelect={() => window.open(`https://wa.me/6281299996816?text=${encodeURIComponent(`Halo Admin, saya ingin berlangganan paket Unlimited 365 Hari.\nEmail: ${profile?.email}`)}`, '_blank')}
+                    />
+                  </div>
+
+                  <div className="bg-amber-50 p-6 rounded-2xl border border-amber-100 flex flex-col items-center text-center space-y-4">
+                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
+                      <Clock className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-amber-800">Instruksi Pembayaran Manual</h4>
+                      <p className="text-xs text-amber-700 max-w-lg">
+                        Silakan pilih paket di atas, kirimkan bukti transfer ke WhatsApp admin kami, dan akun Anda akan diaktifkan dalam waktu 1-12 jam.
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl border border-amber-200 w-full max-w-sm space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-stone-500">Bank</span>
+                        <span className="font-bold">BCA</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-stone-500">No. Rekening</span>
+                        <span className="font-mono font-bold">1371225981</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-stone-500">Penerima</span>
+                        <span className="font-bold">GEIBBY MEYRITH BOLANG</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* History Content */}
         <TabsContent value="history" className="space-y-4">
