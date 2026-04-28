@@ -60,25 +60,33 @@ export const Paywall: React.FC<PaywallProps> = ({ onUnlock }) => {
         }
       }
 
-      // Re-fetch current user just in case registration was fast
       const currentUser = auth.currentUser;
+      const uid = currentUser?.uid || user?.uid;
 
-      await addDoc(collection(db, 'payments'), {
-        userId: currentUser?.uid || user?.uid,
-        name: formData.name,
-        email: formData.email,
-        whatsapp: formData.whatsapp,
-        package: selectedPackage.id,
-        packageName: selectedPackage.name,
-        uniqueAmount: uniqueAmount,
-        status: 'pending',
-        createdAt: serverTimestamp(),
-      });
+      if (!uid) throw new Error("User ID not found after registration");
 
-      setPaymentDetails({ uniqueAmount, package: selectedPackage.name });
-      setStep('instructions');
+      try {
+        await addDoc(collection(db, 'payments'), {
+          userId: uid,
+          name: formData.name,
+          email: formData.email,
+          whatsapp: formData.whatsapp,
+          package: selectedPackage.id,
+          packageName: selectedPackage.name,
+          uniqueAmount: uniqueAmount,
+          status: 'pending',
+          createdAt: serverTimestamp(),
+        });
+
+        setPaymentDetails({ uniqueAmount, package: selectedPackage.name });
+        setStep('instructions');
+      } catch (err) {
+        console.error("Firestore payment error:", err);
+        alert("Gagal membuat data pesanan: " + (err instanceof Error ? err.message : String(err)));
+      }
     } catch (error) {
-      console.error("Error creating payment:", error);
+      console.error("Error in handleSubmitForm:", error);
+      alert("Terjadi kesalahan: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsSubmitting(false);
     }
@@ -98,10 +106,10 @@ Mohon segera diproses. Terima kasih.`;
   };
 
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-white/60 backdrop-blur-[2px]">
-      <div className="max-w-md w-full text-center space-y-4 bg-white/90 p-6 rounded-2xl shadow-2xl border border-stone-100">
-        <div className="bg-stone-900 text-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg">
-          <Lock className="w-6 h-6" />
+    <div className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-white/95 backdrop-blur-md">
+      <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-2xl border border-stone-100 flex flex-col items-center">
+        <div className="bg-stone-900 text-white w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-xl transform rotate-3">
+          <Lock className="w-8 h-8" />
         </div>
         
         <AnimatePresence mode="wait">
@@ -263,50 +271,53 @@ Mohon segera diproses. Terima kasih.`;
               animate={{ opacity: 1, scale: 1 }}
               className="space-y-5"
             >
-              <div className="bg-green-50 text-green-700 p-3 rounded-xl flex items-start gap-3 text-left">
-                <Check className="w-5 h-5 shrink-0 mt-0.5" />
-                <p className="text-xs font-medium">Pesanan berhasil dibuat. Silakan selesaikan pembayaran berikut.</p>
-              </div>
-
-              <div className="bg-stone-50 p-6 rounded-2xl border border-stone-200 space-y-4">
+              <div className="space-y-4 w-full">
                 <div className="text-center">
-                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1">Total Transfer</p>
-                  <p className="text-3xl font-mono font-bold text-stone-900">
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1">Total Transfer (Hingga 3 Digit Terakhir)</p>
+                  <p className="text-3xl font-mono font-bold text-[#2E7D32] bg-stone-50 py-3 rounded-xl border border-stone-100">
                     Rp {paymentDetails.uniqueAmount.toLocaleString('id-ID')}
                   </p>
-                  <p className="text-[10px] text-amber-600 font-bold mt-1 uppercase italic">Wajib transfer hingga 3 digit terakhir!</p>
+                  <p className="text-[10px] text-amber-600 font-bold mt-2 uppercase italic">Wajib transfer tepat sesuai nominal di atas!</p>
                 </div>
                 
-                <div className="border-t border-stone-200 pt-4 space-y-2 text-left text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-stone-500">Bank</span>
-                    <span className="font-bold">BCA</span>
+                <div className="bg-stone-50 p-6 rounded-2xl border border-stone-200 space-y-3 text-left">
+                  <div className="pb-3 border-b border-stone-200 mb-1">
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Instruksi Pembayaran</p>
+                    <p className="text-xs text-stone-600 leading-relaxed">Silakan transfer via ATM / Mobile Banking ke rekening berikut:</p>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-stone-500">No. Rekening</span>
-                    <span className="font-bold tracking-wider">1371225981</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-stone-500">Nama Penerima</span>
-                    <span className="font-bold">Geibby Meyrith Bolang</span>
+                  
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-stone-500 font-medium">Bank</span>
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" alt="BCA" className="h-4" />
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-stone-500 font-medium">No. Rekening</span>
+                      <span className="font-mono font-bold text-lg tracking-wider select-all cursor-pointer hover:text-[#2E7D32] transition-colors" title="Klik untuk menyalin">1371225981</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-stone-500 font-medium">Nama Penerima</span>
+                      <span className="font-bold">Geibby Meyrith Bolang</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-3">
-                <a 
-                  href={getWAUrl()} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold h-12 rounded-xl"
-                >
-                  <Send className="w-4 h-4" />
-                  Kirim Bukti via WhatsApp
-                </a>
-                <p className="text-[10px] text-stone-400">
-                  <AlertCircle className="w-3 h-3 inline mr-1" />
-                  Admin akan memverifikasi dalam 1-12 jam.
-                </p>
+                <div className="pt-2 space-y-4">
+                  <Button 
+                    onClick={() => window.open(getWAUrl(), '_blank')}
+                    className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold h-14 rounded-2xl flex items-center justify-center gap-3 shadow-lg border-b-4 border-[#20ba5a] active:border-b-0 active:translate-y-1 transition-all"
+                  >
+                    <Send className="w-5 h-5" />
+                    KONFIRMASI VIA WHATSAPP
+                  </Button>
+                  
+                  <div className="px-4 py-3 bg-amber-50 rounded-xl flex items-start gap-3 border border-amber-100">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-amber-700 leading-relaxed font-medium">
+                      Setelah konfirmasi dikirim, Admin akan memverifikasi dan mengaktifkan akun Anda dalam waktu 1-12 jam. Anda akan menerima notifikasi via WhatsApp.
+                    </p>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}

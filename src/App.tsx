@@ -220,6 +220,7 @@ function MainApp() {
     setIsLoading(true);
     
     try {
+      // Use a more aggressive scrubber in onclone
       const canvas = await html2canvas(resultRef.current, {
         scale: 2,
         useCORS: true,
@@ -229,12 +230,39 @@ function MainApp() {
           const allElements = clonedDoc.getElementsByTagName("*");
           for (let i = 0; i < allElements.length; i++) {
             const el = allElements[i] as HTMLElement;
-            if (el.style.color && el.style.color.includes('oklch')) {
-              el.style.color = '#1A1A1A';
+            
+            // Scrub computed style as well if needed, but onclone gives us the cloned subtree
+            const styles = el.style;
+            
+            // Helper to sanitize color values
+            const sanitize = (val: string | null) => {
+              if (val && val.includes('oklch')) {
+                return '#1A1A1A';
+              }
+              return val;
+            };
+
+            if (styles.color) styles.color = sanitize(styles.color) as string;
+            if (styles.backgroundColor) styles.backgroundColor = sanitize(styles.backgroundColor) as string;
+            if (styles.borderColor) styles.borderColor = sanitize(styles.borderColor) as string;
+            if (styles.fill) styles.fill = sanitize(styles.fill) as string;
+            if (styles.stroke) styles.stroke = sanitize(styles.stroke) as string;
+            
+            // Special check: remove transform if it causes issues, though usually ok
+            // But definitely remove oklch from ANY property
+            for (let j = 0; j < styles.length; j++) {
+              const prop = styles[j];
+              const val = styles.getPropertyValue(prop);
+              if (val && val.includes('oklch')) {
+                styles.setProperty(prop, '#1A1A1A');
+              }
             }
-            if (el.style.backgroundColor && el.style.backgroundColor.includes('oklch')) {
-              el.style.backgroundColor = 'transparent';
-            }
+          }
+          
+          // Force results to be visible in the clone even if hidden in the main view
+          const paywall = clonedDoc.querySelector('.absolute.inset-0.z-20');
+          if (paywall) {
+            (paywall as HTMLElement).style.display = 'none';
           }
         }
       });
