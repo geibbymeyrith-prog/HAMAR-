@@ -230,47 +230,33 @@ function MainApp() {
           const allElements = clonedDoc.getElementsByTagName("*");
           for (let i = 0; i < allElements.length; i++) {
             const el = allElements[i] as HTMLElement;
-            const styles = window.getComputedStyle(el);
             
-            // Critical CSS properties to check
+            // Critical CSS properties to check for oklch which breaks html2canvas
             const propsToCheck = [
               'color', 'background-color', 'border-color', 'fill', 'stroke',
               'outline-color', 'text-decoration-color', 'stop-color'
             ];
 
             propsToCheck.forEach(prop => {
-              const val = styles.getPropertyValue(prop);
+              // Check the element's actual current style
+              const val = window.getComputedStyle(el).getPropertyValue(prop);
               if (val && val.includes('oklch')) {
-                // Force a safe fallback using inline style on the cloned element
                 const propCamelCase = prop.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
                 // @ts-ignore
-                el.style[propCamelCase] = (prop === 'background-color' || prop === 'fill') ? 'transparent' : '#1A1A1A';
+                try { el.style[propCamelCase] = (prop === 'background-color' || prop === 'fill') ? 'transparent' : '#1A1A1A'; } catch(e) {}
               }
             });
 
-            // Extra check for complex properties like box-shadow or backgrounds with gradients
-            const backgroundImage = styles.getPropertyValue('background-image');
-            if (backgroundImage && backgroundImage.includes('oklch')) {
+            // Handle gradients or complex values
+            const bgImg = window.getComputedStyle(el).getPropertyValue('background-image');
+            if (bgImg && bgImg.includes('oklch')) {
               el.style.backgroundImage = 'none';
-            }
-            
-            const boxShadow = styles.getPropertyValue('box-shadow');
-            if (boxShadow && boxShadow.includes('oklch')) {
-              el.style.boxShadow = 'none';
             }
           }
           
-          // Force results to be visible in the clone even if hidden in the main view
-          const paywall = clonedDoc.querySelector('.absolute.inset-0.z-20');
-          if (paywall) {
-            (paywall as HTMLElement).style.display = 'none';
-          }
-
-          // Ensure the result container itself is visible and has correct background
-          const resultEl = clonedDoc.querySelector('[ref="resultRef"]'); 
-          if (resultEl) {
-            (resultEl as HTMLElement).style.backgroundColor = '#F5F5F0';
-          }
+          // Force results to be visible in the clone
+          const paywall = clonedDoc.querySelector('.z-20'); // Selection of paywall
+          if (paywall) (paywall as HTMLElement).style.display = 'none';
         }
       });
       
@@ -412,7 +398,7 @@ function MainApp() {
                     t('calendar.days.jum'),
                     t('calendar.days.sab')
                   ].map(day => (
-                    <div key={day} className="py-3 text-center text-xs font-bold text-stone-600 uppercase tracking-widest">
+                    <div key={day} className="py-3 text-center text-xs font-bold text-stone-800 uppercase tracking-widest">
                       {day}
                     </div>
                   ))}
