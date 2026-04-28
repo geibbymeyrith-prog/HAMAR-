@@ -134,6 +134,7 @@ function MainApp() {
   const wetonDetails = useMemo(() => getJavaneseDetails(selectedDate), [selectedDate]);
 
   const showPaywall = !isPremium && profile && profile.generateCount >= 3;
+  const canDownload = isPremium || (profile && profile.generateCount < 3);
 
   const handleCalculateWeton = (date: Date | null) => {
     if (date) {
@@ -567,7 +568,7 @@ function MainApp() {
                             <DetailItem label={t('weton.labels.pranataMangsa')} value={wetonKelahiranDetails.pranataMangsa} subValue={t(wetonKelahiranDetails.pranataMangsaSifat)} isLongText />
                           </div>
                           
-                          {isPremium && (
+                          {canDownload && (
                             <Button variant="outline" className="w-full mt-4 gap-2 border-stone-300" onClick={handleDownloadPDF}>
                               <Download className="w-4 h-4" /> Download PDF
                             </Button>
@@ -669,7 +670,7 @@ function MainApp() {
                             </p>
                           </div>
                           
-                          {isPremium && (
+                          {canDownload && (
                             <Button variant="outline" className="w-full gap-2 border-stone-300" onClick={handleDownloadPDF}>
                               <Download className="w-4 h-4" /> Download PDF
                             </Button>
@@ -758,7 +759,7 @@ function MainApp() {
                               </CardContent>
                             </Card>
                             
-                            {isPremium && (
+                            {canDownload && (
                               <Button variant="outline" className="w-full gap-2 border-stone-300" onClick={handleDownloadPDF}>
                                 <Download className="w-4 h-4" /> Download PDF
                               </Button>
