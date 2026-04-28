@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useAuth } from '../lib/AuthContext';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
@@ -15,11 +15,11 @@ interface PaywallProps {
 }
 
 export const Paywall: React.FC<PaywallProps> = ({ onUnlock }) => {
-  const { user, login } = useAuth();
+  const { user, login, loginWithEmail, registerWithEmail, authError: authErr } = useAuth();
   const { t } = useTranslation();
   const [step, setStep] = useState<'options' | 'form' | 'instructions'>('options');
   const [selectedPackage, setSelectedPackage] = useState<{ id: string, name: string, price: number } | null>(null);
-  const [formData, setFormData] = useState({ name: '', whatsapp: '', email: user?.email || '' });
+  const [formData, setFormData] = useState({ name: '', whatsapp: '', email: user?.email || '', password: '' });
   const [paymentDetails, setPaymentDetails] = useState<{ uniqueAmount: number, package: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,10 +30,6 @@ export const Paywall: React.FC<PaywallProps> = ({ onUnlock }) => {
   ];
 
   const handleSelectPackage = (pkg: typeof packages[0]) => {
-    if (!user) {
-      login();
-      return;
-    }
     setSelectedPackage(pkg);
     setStep('form');
   };
@@ -45,14 +41,30 @@ export const Paywall: React.FC<PaywallProps> = ({ onUnlock }) => {
 
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPackage || !user) return;
+    if (!selectedPackage) return;
 
     setIsSubmitting(true);
     const uniqueAmount = generateUniqueAmount(selectedPackage.price);
 
     try {
+      let currentUserId = user?.uid;
+
+      if (!user) {
+        try {
+          await registerWithEmail(formData.email, formData.password, formData.name);
+          // The new user will be signed in automatically
+        } catch (err: any) {
+          console.error("Auto registration error:", err);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Re-fetch current user just in case registration was fast
+      const currentUser = auth.currentUser;
+
       await addDoc(collection(db, 'payments'), {
-        userId: user.uid,
+        userId: currentUser?.uid || user?.uid,
         name: formData.name,
         email: formData.email,
         whatsapp: formData.whatsapp,
@@ -196,6 +208,42 @@ Mohon segera diproses. Terima kasih.`;
                     disabled={!!user?.email}
                   />
                 </div>
+                
+                {!user && (
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-stone-500">Buat Password Baru</Label>
+                    <Input 
+                      id="password" 
+                      required 
+                      type="password"
+                      value={formData.password} 
+                      onChange={e => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                      placeholder="Minimal 6 karakter"
+                      className="h-10 rounded-lg"
+                      minLength={6}
+                    />
+                    <p className="text-[10px] text-stone-400">Password ini digunakan untuk masuk ke dashboard Anda nantinya.</p>
+                  </div>
+                )}
+                
+                {authErr && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-red-500">{authErr}</p>
+                    {authErr.includes('terdaftar') && (
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          // Allow user to try login instead
+                          const pwd = prompt("Masukkan password untuk login ke akun ini:");
+                          if (pwd) loginWithEmail(formData.email, pwd).then(() => setStep('form')).catch(e => alert(e.message));
+                        }}
+                        className="text-[10px] font-bold text-[#2E7D32] uppercase underline"
+                      >
+                        Masuk ke akun ini
+                      </button>
+                    )}
+                  </div>
+                )}
                 
                 <Button 
                   type="submit" 

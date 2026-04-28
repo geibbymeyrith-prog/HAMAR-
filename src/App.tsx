@@ -66,6 +66,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Paywall } from '@/components/Paywall';
 import { AdminDashboard } from '@/components/AdminDashboard';
 import { UserDashboard } from '@/components/UserDashboard';
+import { AuthModal } from '@/components/AuthModal';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -83,7 +84,7 @@ export default function App() {
 
 function MainApp() {
   const { t, i18n: i18nInstance } = useTranslation();
-  const { profile, login, logout, incrementGenerateCount, isPremium, isAdmin, saveHistory } = useAuth();
+  const { user, profile, login, logout, incrementGenerateCount, isPremium, isAdmin, saveHistory } = useAuth();
   const [activeTab, setActiveTab] = useState('weton');
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [isDashboardMode, setIsDashboardMode] = useState(false);
@@ -95,7 +96,22 @@ function MainApp() {
     return saved ? parseInt(saved, 10) : 0;
   });
   
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  
+  const openLogin = () => {
+    setAuthModalMode('login');
+    setIsAuthModalOpen(true);
+  };
+  
+  const openRegister = () => {
+    setAuthModalMode('register');
+    setIsAuthModalOpen(true);
+  };
+
   const resultRef = useRef<HTMLDivElement>(null);
+
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     // Load Public Articles for Homepage
@@ -201,12 +217,14 @@ function MainApp() {
 
   const handleDownloadPDF = async () => {
     if (!resultRef.current) return;
+    setIsLoading(true);
     
     try {
       const canvas = await html2canvas(resultRef.current, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#F5F5F0'
+        backgroundColor: '#F5F5F0',
+        logging: false,
       });
       
       const imgData = canvas.toDataURL('image/png');
@@ -221,10 +239,12 @@ function MainApp() {
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Hamare-${activeTab}-${format(new Date(), 'ddMMyy')}.pdf`);
+      pdf.save(`Hamare-${activeTab}-${format(new Date(), 'ddMMyy-HHmm')}.pdf`);
     } catch (error) {
       console.error("PDF Export Error:", error);
       alert("Gagal mengunduh PDF. Silakan coba lagi.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -251,7 +271,7 @@ function MainApp() {
                     variant="ghost" 
                     size="sm" 
                     onClick={() => i18nInstance.changeLanguage(lng)}
-                    className={cn("text-[10px] font-bold px-2 h-7", i18nInstance.language === lng ? "text-[#2E7D32] bg-stone-200/50" : "text-stone-400")}
+                    className={cn("text-[10px] font-bold px-2 h-7", i18nInstance.language === lng ? "text-[#2E7D32] bg-stone-200/50" : "text-stone-600")}
                   >
                     {lng.toUpperCase()}
                   </Button>
@@ -273,21 +293,27 @@ function MainApp() {
                       variant="ghost" 
                       size="sm" 
                       onClick={() => setIsAdminMode(true)}
-                      className="h-7 text-[10px] font-bold px-2 text-[#FBC02D] border border-[#FBC02D]/20 hover:bg-[#FBC02D]/10"
+                      className="h-7 text-[10px] font-bold px-2 text-amber-600 border border-amber-200 hover:bg-amber-50"
                     >
                       <Shield className="w-3 h-3 mr-1" /> ADMIN
                     </Button>
                   )}
-                  <Button variant="outline" size="sm" onClick={logout} className="h-7 text-[10px] font-bold px-2 text-stone-400">
+                  <Button variant="outline" size="sm" onClick={logout} className="h-7 text-[10px] font-bold px-2 text-stone-600">
                     <LogOut className="w-3 h-3 mr-1" /> KELUAR
                   </Button>
                 </div>
               ) : (
-                <Button variant="outline" size="sm" onClick={login} className="h-7 text-[10px] font-bold px-2 text-[#2E7D32]">
-                  <LogIn className="w-3 h-3 mr-1" /> MASUK
+                <Button variant="outline" size="sm" onClick={openLogin} className="h-7 text-[10px] font-bold px-4 text-[#2E7D32] border-[#2E7D32]/30 hover:bg-[#2E7D32]/10 rounded-full">
+                  <LogIn className="w-3 h-3 mr-1" /> MASUK / DAFTAR
                 </Button>
               )}
             </div>
+
+            <AuthModal 
+              isOpen={isAuthModalOpen} 
+              onClose={() => setIsAuthModalOpen(false)} 
+              defaultMode={authModalMode}
+            />
 
         <motion.h1 
           initial={{ opacity: 0, y: -20 }}
@@ -310,7 +336,7 @@ function MainApp() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="text-lg text-stone-500 font-medium italic"
+          className="text-lg text-stone-700 font-medium italic"
           id="main-subtitle-2"
         >
           {t('description')}
@@ -339,7 +365,7 @@ function MainApp() {
                     t('calendar.days.jum'),
                     t('calendar.days.sab')
                   ].map(day => (
-                    <div key={day} className="py-3 text-center text-xs font-bold text-stone-400 uppercase tracking-widest">
+                    <div key={day} className="py-3 text-center text-xs font-bold text-stone-600 uppercase tracking-widest">
                       {day}
                     </div>
                   ))}
@@ -367,10 +393,10 @@ function MainApp() {
                           {format(day, 'd')}
                         </span>
                         <div className="mt-1 space-y-0.5">
-                          <p className="text-[9px] md:text-[10px] font-bold text-stone-400 uppercase truncate">
+                          <p className="text-[9px] md:text-[10px] font-bold text-stone-600 uppercase truncate">
                             {details.pasaranName.split('-')[0]}
                           </p>
-                          <p className="text-[8px] md:text-[9px] text-stone-500 truncate">
+                          <p className="text-[8px] md:text-[9px] text-stone-700 truncate">
                             {details.wuku}
                           </p>
                         </div>
@@ -405,7 +431,7 @@ function MainApp() {
                         <CardTitle className="text-sm font-serif font-bold group-hover:text-[#2E7D32] transition-colors line-clamp-2">
                           {article.title}
                         </CardTitle>
-                        <CardDescription className="text-[10px] flex items-center gap-2">
+                        <CardDescription className="text-stone-500 flex items-center gap-2">
                           <Clock className="w-3 h-3" /> {article.createdAt ? format(article.createdAt.toDate(), 'dd MMM yyyy') : '-'}
                         </CardDescription>
                       </CardHeader>
@@ -497,11 +523,11 @@ function MainApp() {
                     <p className="font-medium">{wetonDetails.nagadinaDewa}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-stone-400">{t('weton.warna')}</p>
+                    <p className="text-xs text-stone-500">{t('weton.warna')}</p>
                     <p className="font-medium">{wetonDetails.nagadinaWarna}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-stone-400">{t('weton.arah')}</p>
+                    <p className="text-xs text-stone-500">{t('weton.arah')}</p>
                     <p className="font-medium">{t(wetonDetails.nagadinaArah)}</p>
                   </div>
                 </div>
@@ -912,7 +938,7 @@ function DetailItem({ label, value, subValue, icon, isLongText = false }: { labe
   const { t } = useTranslation();
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-2 text-stone-400">
+      <div className="flex items-center gap-2 text-stone-700">
         {icon}
         <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
       </div>
@@ -927,7 +953,7 @@ function DetailItem({ label, value, subValue, icon, isLongText = false }: { labe
       )}
       {subValue && (
         <div className="mt-1">
-          {subValue.length > 60 ? formatBulletPoints(t(subValue)) : <p className="text-xs text-stone-500 leading-relaxed">{t(subValue)}</p>}
+          {subValue.length > 60 ? formatBulletPoints(t(subValue)) : <p className="text-xs text-stone-700 leading-relaxed">{t(subValue)}</p>}
         </div>
       )}
     </div>
@@ -938,13 +964,13 @@ function DetailItemSmall({ label, value, subValue, extra, color }: { label: stri
   const { t } = useTranslation();
   return (
     <div className="space-y-2">
-      <h4 className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{label}</h4>
+      <h4 className="text-[10px] font-bold uppercase tracking-widest text-stone-700">{label}</h4>
       <p className={cn("text-lg font-serif font-bold", color || "text-stone-800")}>{t(value)}</p>
       {subValue && <p className="text-xs text-stone-600 leading-relaxed">{t(subValue)}</p>}
       {extra && (
         <div className="mt-2 p-2 rounded bg-stone-50 border border-stone-100">
-          <p className="text-[10px] font-bold text-stone-400 uppercase mb-1">{t('hariBaik.keterangan')}</p>
-          <p className="text-[11px] text-stone-500 italic">{t(extra)}</p>
+          <p className="text-[10px] font-bold text-stone-600 uppercase mb-1">{t('hariBaik.keterangan')}</p>
+          <p className="text-[11px] text-stone-700 italic">{t(extra)}</p>
         </div>
       )}
     </div>

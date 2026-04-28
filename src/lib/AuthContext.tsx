@@ -4,7 +4,10 @@ import {
   User as FirebaseUser,
   signInWithPopup,
   GoogleAuthProvider,
-  signOut
+  signOut,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile as updateFirebaseProfile
 } from 'firebase/auth';
 import { 
   doc, 
@@ -13,7 +16,8 @@ import {
   serverTimestamp,
   getDoc,
   collection,
-  addDoc
+  addDoc,
+  updateDoc
 } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
@@ -102,6 +106,8 @@ interface AuthContextType {
   loading: boolean;
   authError: string | null;
   login: () => Promise<void>;
+  loginWithEmail: (email: string, pass: string) => Promise<void>;
+  registerWithEmail: (email: string, pass: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
   saveHistory: (type: 'weton' | 'jodoh' | 'hariBaik', label: string, details: any) => Promise<void>;
@@ -192,6 +198,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithEmail = async (email: string, pass: string) => {
+    setAuthError(null);
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (error: any) {
+      console.error("Login Email Error:", error);
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        setAuthError("Email atau password salah.");
+      } else {
+        setAuthError("Gagal login: " + error.message);
+      }
+      throw error;
+    }
+  };
+
+  const registerWithEmail = async (email: string, pass: string, name: string) => {
+    setAuthError(null);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      await updateFirebaseProfile(userCredential.user, { displayName: name });
+      
+      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      const newProfile: UserProfile = {
+        uid: userCredential.user.uid,
+        email: email,
+        displayName: name,
+        role: 'user',
+        subscriptionStatus: 'free',
+        generateCount: 0,
+        createdAt: serverTimestamp(),
+      };
+      await setDoc(userDocRef, newProfile);
+      setProfile(newProfile);
+    } catch (error: any) {
+      console.error("Register Error:", error);
+      if (error.code === 'auth/email-already-in-use') {
+        setAuthError("Email sudah terdaftar. Silakan masuk.");
+      } else {
+        setAuthError("Gagal mendaftar: " + error.message);
+      }
+      throw error;
+    }
+  };
+
   const updateProfile = async (data: Partial<UserProfile>) => {
     if (!user) return;
     try {
@@ -270,6 +320,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading, 
       authError, 
       login, 
+      loginWithEmail,
+      registerWithEmail,
       logout, 
       updateProfile,
       saveHistory,
