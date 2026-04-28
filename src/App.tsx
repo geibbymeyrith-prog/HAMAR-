@@ -225,6 +225,18 @@ function MainApp() {
         useCORS: true,
         backgroundColor: '#F5F5F0',
         logging: false,
+        onclone: (clonedDoc) => {
+          const allElements = clonedDoc.getElementsByTagName("*");
+          for (let i = 0; i < allElements.length; i++) {
+            const el = allElements[i] as HTMLElement;
+            if (el.style.color && el.style.color.includes('oklch')) {
+              el.style.color = '#1A1A1A';
+            }
+            if (el.style.backgroundColor && el.style.backgroundColor.includes('oklch')) {
+              el.style.backgroundColor = 'transparent';
+            }
+          }
+        }
       });
       
       const imgData = canvas.toDataURL('image/png');
