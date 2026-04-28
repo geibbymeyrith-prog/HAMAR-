@@ -126,14 +126,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
+    let unsubscribeProfile: (() => void) | undefined;
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Clear existing profile listener if switching users
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+        unsubscribeProfile = undefined;
+      }
+
       setUser(firebaseUser);
       
       if (firebaseUser) {
         // Listen to profile changes
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         
-        // Check if profile exists, if not create it
+        // Initial setup for profile if it doesn't exist
         try {
           const userDoc = await getDoc(userDocRef);
           if (!userDoc.exists()) {
@@ -151,31 +159,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Ensure admin role for specific user if they already exist
             const data = userDoc.data() as UserProfile;
             if (firebaseUser.email === 'geibbymeyrith@gmail.com' && data.role !== 'admin') {
-              await setDoc(userDocRef, { ...data, role: 'admin' }, { merge: true });
+              await updateDoc(userDocRef, { role: 'admin' });
             }
           }
         } catch (error) {
-          handleFirestoreError(error, OperationType.WRITE, `users/${firebaseUser.uid}`);
+          console.error("Profile setup error:", error);
         }
 
-        const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
+        unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
           if (doc.exists()) {
             setProfile(doc.data() as UserProfile);
           }
           setLoading(false);
         }, (error) => {
-          handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
+          console.error("Profile snapshot error:", error);
           setLoading(false);
         });
-
-        return () => unsubscribeProfile();
       } else {
         setProfile(null);
         setLoading(false);
       }
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) unsubscribeProfile();
+    };
   }, []);
 
   const login = async () => {
@@ -188,13 +197,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Login Error:", error);
+      let message = "Gagal login: " + error.message;
       if (error.code === 'auth/unauthorized-domain') {
-        setAuthError("Domain ini belum terdaftar di Firebase Authorized Domains. Silakan tambahkan domain Vercel Anda di Firebase Console.");
+        message = "Domain ini belum terdaftar di Authorized Domains Firebase. Silakan hubungi admin.";
+      } else if (error.code === 'auth/operation-not-allowed') {
+        message = "Metode Google Sign-In belum diaktifkan di Firebase Console. Silakan aktifkan di tab Authentication > Sign-in method.";
       } else if (error.code === 'auth/popup-blocked') {
-        setAuthError("Popup diblokir oleh browser. Silakan izinkan popup untuk login.");
-      } else {
-        setAuthError("Gagal login: " + error.message);
+        message = "Popup diblokir oleh browser. Silakan izinkan popup untuk login.";
+      } else if (error.code === 'auth/cancelled-by-user') {
+        return; // Silent resolve for cancellation
       }
+      
+      setAuthError(message);
+      throw error;
     }
   };
 
