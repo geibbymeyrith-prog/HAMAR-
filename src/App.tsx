@@ -62,6 +62,12 @@ import {
   PRANATA_MANGSA,
   type JavaneseDetails 
 } from '@/lib/javanese-calendar';
+import { 
+  getJavaDate, 
+  getPMDate, 
+  getSifatHari, 
+  getSTValue 
+} from '@/lib/calendar-utils';
 import { useAuth } from '@/lib/AuthContext';
 import { Paywall } from '@/components/Paywall';
 import { AdminDashboard } from '@/components/AdminDashboard';
@@ -460,27 +466,54 @@ function MainApp() {
                     const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
                     const details = getJavaneseDetails(day);
                     
+                    const java = getJavaDate(day);
+                    const pm = getPMDate(day);
+                    const sifat = getSifatHari(day);
+                    const st = getSTValue(java.day);
+                    
                     return (
                       <div
                         key={idx}
                         className={cn(
-                          "h-20 md:h-28 p-2 border-r border-b border-stone-50 text-left transition-all group relative",
+                          "h-24 md:h-32 p-1.5 border-r border-b border-stone-50 text-left transition-all group relative overflow-hidden",
                           !isCurrentMonth && "opacity-30",
                           isSelected && "bg-stone-50 ring-1 ring-inset ring-stone-200 shadow-inner"
                         )}
                         onClick={() => setSelectedDate(day)}
                       >
-                        <span className={cn(
-                          "text-lg font-medium",
-                          isSelected ? "text-stone-900" : "text-stone-600"
-                        )}>
-                          {format(day, 'd')}
-                        </span>
-                        <div className="mt-1 space-y-0.5">
-                          <p className="text-[9px] md:text-[10px] font-bold text-stone-600 uppercase truncate">
-                            {details.pasaranName.split('-')[0]}
+                        <div className="flex justify-between items-start">
+                          <span className={cn(
+                            "text-base md:text-lg font-medium leading-none",
+                            isSelected ? "text-stone-900" : "text-stone-600"
+                          )}>
+                            {format(day, 'd')}
+                          </span>
+                          {st && (
+                            <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1 rounded border border-red-200">
+                              {st}
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="mt-1 flex flex-col gap-0.5">
+                          <div className="flex justify-between items-center gap-1">
+                            <p className="text-[9px] md:text-[10px] font-bold text-[#2E7D32] truncate">
+                              {java.day} {java.month}
+                            </p>
+                            <p className="text-[8px] md:text-[9px] font-mono font-bold text-stone-400">
+                              {details.pasaranName.split(' ')[0]}
+                            </p>
+                          </div>
+                          
+                          <p className="text-[8px] md:text-[9px] text-amber-700 font-medium truncate">
+                            PM: {pm.day} {pm.name.split(' ')[0]}
                           </p>
-                          <p className="text-[8px] md:text-[9px] text-stone-700 truncate">
+                          
+                          <p className="text-[8px] text-stone-500 truncate italic">
+                            {sifat.split('.')[1].trim()}
+                          </p>
+                          
+                          <p className="text-[8px] text-stone-400 truncate opacity-0 group-hover:opacity-100 transition-opacity">
                             {details.wuku}
                           </p>
                         </div>

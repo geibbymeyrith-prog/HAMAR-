@@ -77,6 +77,23 @@ interface Article {
   createdAt: any;
 }
 
+import { 
+  JAVA_MONTHS,
+  PM_ORDERED,
+  getJavaDate,
+  getPMDate,
+  getPasaran,
+  getNagadina,
+  getDewaHarian,
+  getWuku,
+  getPadewan,
+  getPadangon,
+  getSifatHari,
+  getNeptu,
+  getSTValue,
+  checkIs40
+} from '../lib/calendar-utils';
+
 export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { isAdmin } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -214,7 +231,10 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
+    <div className={cn(
+      "mx-auto p-4 md:p-8 space-y-8 transition-all duration-300",
+      activeView === 'calendar' ? "max-w-[1400px]" : "max-w-6xl"
+    )}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
@@ -450,156 +470,27 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
               <div className="overflow-x-auto rounded-xl border border-stone-200">
                 <table className="w-full text-left border-collapse table-auto">
                   <thead>
-                    <tr className="bg-stone-50 text-[7px] font-bold uppercase tracking-tighter text-stone-500 border-b border-stone-200">
-                      <th className="p-1.5 w-8">Tgl</th>
-                      <th className="p-1.5">Hari</th>
-                      <th className="p-1.5">Jawa</th>
-                      <th className="p-1.5">Bulan Jawa</th>
-                      <th className="p-1.5">PM</th>
-                      <th className="p-1.5">Tgl PM</th>
-                      <th className="p-1.5">Pasaran</th>
-                      <th className="p-1.5">Neptu</th>
-                      <th className="p-1.5">Nagadina</th>
-                      <th className="p-1.5">Dewa Harian</th>
-                      <th className="p-1.5">Sifat Hari</th>
+                    <tr className="bg-[#211e1d] text-[6.5px] font-bold uppercase tracking-tighter text-white border-b border-stone-200">
+                      <th className="p-0.5 w-6 text-center">40</th>
+                      <th className="p-0.5 w-6 text-center">S/T</th>
+                      <th className="p-0.5 w-6 text-center">Tgl</th>
+                      <th className="p-0.5 text-center">Hari</th>
+                      <th className="p-0.5 text-center">Jawa</th>
+                      <th className="p-0.5 text-center">Bulan Jawa</th>
+                      <th className="p-0.5 text-center">Pranata Mangsa</th>
+                      <th className="p-0.5 text-center">Tgl PM</th>
+                      <th className="p-0.5 text-center">Pasaran</th>
+                      <th className="p-0.5 text-center">Neptu</th>
+                      <th className="p-0.5 text-center">Nagadina</th>
+                      <th className="p-0.5 text-center">Dewa Harian</th>
+                      <th className="p-0.5 text-center">Sifat Hari</th>
+                      <th className="p-0.5 text-center">Wuku</th>
+                      <th className="p-0.5 text-center">Padewan</th>
+                      <th className="p-0.5 text-center">Padangon</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100 uppercase">
                     {(() => {
-                      const JAVA_MONTHS = [
-                        { name: 'Sura', days: 30 },
-                        { name: 'Sapar', days: 29 },
-                        { name: 'Mulud', days: 30 },
-                        { name: 'Bakda Mulud', days: 29 },
-                        { name: 'Jumadil Awal', days: 30 },
-                        { name: 'Jumadil Akir', days: 29 },
-                        { name: 'Rejeb', days: 30 },
-                        { name: 'Ruwah', days: 29 },
-                        { name: 'Pasa', days: 30 },
-                        { name: 'Sawal', days: 29 },
-                        { name: 'Sela', days: 30 },
-                        { name: 'Besar', days: 29 }
-                      ];
-                      
-                      const PM_ORDERED = [
-                        { name: 'Jita - Kasanga', days: 25 },
-                        { name: 'Srawana - Kasedasa', days: 24 },
-                        { name: 'Destha - Pradawana', days: 23 },
-                        { name: 'Sadda - Asuji', days: 41 },
-                        { name: 'Kasa - Kartika', days: 41 },
-                        { name: 'Pusa - Karo', days: 23 },
-                        { name: 'Katelu - Manggasri', days: 24 },
-                        { name: 'Kapat - Sitra', days: 25 },
-                        { name: 'Kalima - Manggala', days: 27 },
-                        { name: 'Kanem - Naya', days: 43 },
-                        { name: 'Palguna - Kapitu', days: 43 },
-                        { name: 'Wasika - Kawolu', days: 25 }
-                      ];
-                      
-                      const totalYearDaysJava = 354;
-                      const refDateJava = new Date(2025, 4, 1); // 1 Mei 2025
-                      const refDayIdxJava = 298; // Day 3 Sela in 354 cycle
-
-                      const getJavaDate = (target: Date) => {
-                        const diffTime = target.getTime() - refDateJava.getTime();
-                        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-                        let currentTotalDays = (refDayIdxJava + diffDays) % totalYearDaysJava;
-                        if (currentTotalDays <= 0) currentTotalDays += totalYearDaysJava;
-                        let daysLeft = currentTotalDays;
-                        let mIdx = 0;
-                        for (let i = 0; i < JAVA_MONTHS.length; i++) {
-                          if (daysLeft <= JAVA_MONTHS[i].days) { mIdx = i; break; }
-                          daysLeft -= JAVA_MONTHS[i].days;
-                        }
-                        return { day: daysLeft, month: JAVA_MONTHS[mIdx].name };
-                      };
-
-                      const getPMDate = (target: Date) => {
-                        const m = target.getMonth();
-                        const d = target.getDate();
-                        const y = target.getFullYear();
-
-                        if (m === 1 && d === 29) return { day: '', name: '' };
-
-                        let anchorYear = y;
-                        if (m < 2) anchorYear--; 
-                        
-                        const anchor = new Date(anchorYear, 2, 1);
-                        const diffTime = target.getTime() - anchor.getTime();
-                        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-                        
-                        let dayInCycle = diffDays + 1; 
-
-                        if (dayInCycle > 364) return { day: '', name: '' };
-
-                        let daysLeft = dayInCycle;
-                        for (let i = 0; i < PM_ORDERED.length; i++) {
-                          if (daysLeft <= PM_ORDERED[i].days) {
-                            return { day: daysLeft, name: PM_ORDERED[i].name };
-                          }
-                          daysLeft -= PM_ORDERED[i].days;
-                        }
-                        return { day: '', name: '' };
-                      };
-
-                      const getPasaran = (target: Date) => {
-                        const PASARAN_LIST = ['Pon - Abrit', 'Wage - Cemeng', 'Kliwon - Mancawarna', 'Legi - Pethak', 'Pahing - Jenih'];
-                        const refDate = new Date(1982, 4, 23); // 23 Mei 1982
-                        const diffTime = target.getTime() - refDate.getTime();
-                        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-                        let idx = (1 + diffDays) % 5; 
-                        if (idx < 0) idx += 5;
-                        return PASARAN_LIST[idx];
-                      };
-
-                      const getNagadina = (neptu: number) => {
-                        const sisa = neptu % 4;
-                        if (sisa === 0) return 'Utara';
-                        if (sisa === 1) return 'Timur';
-                        if (sisa === 2) return 'Selatan';
-                        return 'Barat';
-                      };
-
-                      const getDewaHarian = (nagaDina: string) => {
-                        if (nagaDina === 'Utara') return 'Sang Hyang Wisnu';
-                        if (nagaDina === 'Timur') return 'Bathari Sri';
-                        if (nagaDina === 'Selatan') return 'Sang Hyang Brahma';
-                        if (nagaDina === 'Barat') return 'Sang Hyang Kala';
-                        return '-';
-                      };
-
-                      const getSifatHari = (target: Date) => {
-                        const SIFAT_LIST = [
-                          "1. Ringkel", "2. Sonya", "3. Donya", "4. Malihan", "5. Sonya", "6. Nyawa"
-                        ];
-                        const refDate = new Date(2025, 0, 1); // 1 Jan 2025
-                        const diffTime = target.getTime() - refDate.getTime();
-                        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-                        let idx = (3 + diffDays) % 6; // 1 Jan 2025 is "4. Malihan" (index 3)
-                        if (idx < 0) idx += 6;
-                        return SIFAT_LIST[idx];
-                      };
-
-                      const getNeptu = (dayName: string, pasaran: string) => {
-                        const dayValues: Record<string, number> = {
-                          'Minggu': 5, 'Senin': 4, 'Selasa': 3, 'Rabu': 7, 'Kamis': 8, 'Jumat': 6, 'Sabtu': 9
-                        };
-                        const pasaranValues: Record<string, number> = {
-                          'Pahing - Jenih': 9, 'Pon - Abrit': 7, 'Wage - Cemeng': 4, 'Kliwon - Mancawarna': 8, 'Legi - Pethak': 5
-                        };
-                        
-                        let pVal = 0;
-                        for (const k in pasaranValues) {
-                          if (pasaran.includes(k.split(' - ')[0])) {
-                            pVal = pasaranValues[k];
-                            break;
-                          }
-                        }
-                        
-                        const hVal = dayValues[dayName] || 0;
-                        return hVal + pVal;
-                      };
-
                       const daysInMonthResult = new Date(calendarYear, calendarMonth + 1, 0).getDate();
                       const rows = [];
                       for (let i = 1; i <= daysInMonthResult; i++) {
@@ -612,29 +503,52 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                         const nagaDina = getNagadina(neptu);
                         const dewaHarian = getDewaHarian(nagaDina);
                         const sifatHari = getSifatHari(date);
+                        const wuku = getWuku(date);
+                        const padewan = getPadewan(date);
+                        const padangon = getPadangon(date);
+                        
+                        // Perhitungan background color setiap 3 hari sekali
+                        const refBase = new Date(2025, 1, 3); // 3 Feb 2025
+                        const diffDays3Val = Math.round((date.getTime() - refBase.getTime()) / (1000 * 60 * 60 * 24));
+                        let mod3 = diffDays3Val % 3;
+                        if (mod3 < 0) mod3 += 3;
+                        const isThirdDay = mod3 === 0;
+                        
+                        const stValue = getSTValue(java.day);
+                        const is40 = checkIs40(dayName, pasaran);
+                        const fortyValue = is40 ? '40' : '';
                         
                         rows.push(
-                          <tr key={i} className="hover:bg-stone-50 transition-colors text-[8px] leading-none">
-                            <td className="p-1.5 font-mono text-black font-bold">{i}</td>
+                          <tr key={i} className={cn(
+                            "transition-colors text-[6.5px] leading-none",
+                            isThirdDay ? "bg-[#928f8e]" : "bg-white",
+                            "hover:opacity-80"
+                          )}>
+                            <td className="p-0.5 font-mono text-black font-bold text-center">{fortyValue}</td>
+                            <td className="p-0.5 font-mono text-black font-bold text-center">{stValue}</td>
+                            <td className="p-0.5 font-mono text-black font-bold text-center">{i}</td>
                             <td className={cn(
-                              "p-1.5 font-serif font-bold whitespace-nowrap",
+                              "p-0.5 font-serif font-bold whitespace-nowrap",
                               dayName === 'Minggu' ? "text-red-600" : "text-black"
                             )}>{dayName}</td>
-                            <td className="p-1.5 font-mono text-black font-bold">{java.day}</td>
-                            <td className="p-1.5 font-serif font-bold text-black whitespace-nowrap">{java.month}</td>
-                            <td className="p-1.5 font-serif font-bold text-black whitespace-nowrap">{pm.name}</td>
-                            <td className="p-1.5 font-mono font-bold text-black">{pm.day}</td>
-                            <td className="p-1.5 font-serif font-bold text-black whitespace-nowrap">{pasaran}</td>
-                            <td className="p-1.5 font-mono font-bold text-black">{neptu}</td>
+                            <td className="p-0.5 font-mono text-black font-bold text-center">{java.day}</td>
+                            <td className="p-0.5 font-serif font-bold text-black whitespace-nowrap">{java.month}</td>
+                            <td className="p-0.5 font-serif font-bold text-black whitespace-nowrap">{pm.name}</td>
+                            <td className="p-0.5 font-mono font-bold text-black text-center">{pm.day}</td>
+                            <td className="p-0.5 font-serif font-bold text-black whitespace-nowrap">{pasaran}</td>
+                            <td className="p-0.5 font-mono font-bold text-black text-center">{neptu}</td>
                             <td className={cn(
-                              "p-1.5 font-serif font-bold border-x border-stone-100 text-center",
+                              "p-0.5 font-serif font-bold border-x border-stone-100 text-center",
                               nagaDina === 'Utara' && "bg-black text-white",
                               nagaDina === 'Selatan' && "bg-yellow-300 text-black",
                               nagaDina === 'Barat' && "bg-red-500 text-black",
-                              nagaDina === 'Timur' && "bg-white text-black"
+                              nagaDina === 'Timur' && (isThirdDay ? "bg-[#928f8e] text-black" : "bg-white text-black")
                             )}>{nagaDina}</td>
-                            <td className="p-1.5 font-serif font-bold text-black whitespace-nowrap">{dewaHarian}</td>
-                            <td className="p-1.5 font-serif font-bold text-black whitespace-nowrap">{sifatHari}</td>
+                            <td className="p-0.5 font-serif font-bold text-black whitespace-nowrap">{dewaHarian}</td>
+                            <td className="p-0.5 font-serif font-bold text-black whitespace-nowrap">{sifatHari}</td>
+                            <td className="p-0.5 font-serif font-bold text-black whitespace-nowrap">{wuku}</td>
+                            <td className="p-0.5 font-serif font-bold text-black whitespace-nowrap">{padewan}</td>
+                            <td className="p-0.5 font-serif font-bold text-black whitespace-nowrap text-center">{padangon}</td>
                           </tr>
                         );
                       }
