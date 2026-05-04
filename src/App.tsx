@@ -66,7 +66,9 @@ import {
   getJavaDate, 
   getPMDate, 
   getSifatHari, 
-  getSTValue 
+  getSTValue,
+  getJavaneseMonthName,
+  getJavaneseYearDetails 
 } from '@/lib/calendar-utils';
 import { useAuth } from '@/lib/AuthContext';
 import { Paywall } from '@/components/Paywall';
@@ -440,7 +442,9 @@ function MainApp() {
             <Card className="border-none shadow-xl bg-white/80 backdrop-blur-md overflow-hidden" id="calendar-card">
               <CardHeader className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 pb-7 bg-stone-900 text-white">
                 <div className="text-center md:text-left">
-                  <CardTitle className="font-serif text-3xl">{format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}</CardTitle>
+                  <CardTitle className="font-serif text-3xl">
+                    {getJavaneseMonthName(currentMonth.getMonth())}, {getJavaneseYearDetails(currentMonth.getFullYear()).year} {getJavaneseYearDetails(currentMonth.getFullYear()).name} ({format(currentMonth, 'MMMM', { locale: dateLocale })}, {currentMonth.getFullYear()})
+                  </CardTitle>
                   <CardDescription className="text-stone-400">{t('calendar.title')}</CardDescription>
                 </div>
               </CardHeader>

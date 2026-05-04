@@ -91,7 +91,9 @@ import {
   getSifatHari,
   getNeptu,
   getSTValue,
-  checkIs40
+  checkIs40,
+  getJavaneseMonthName,
+  getJavaneseYearDetails
 } from '../lib/calendar-utils';
 
 export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -440,7 +442,7 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-stone-100 mb-4">
               <div>
                 <CardTitle className="font-serif text-2xl text-stone-800">
-                  {new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date(calendarYear, calendarMonth))}
+                  {getJavaneseMonthName(calendarMonth)}, {getJavaneseYearDetails(calendarYear).year} {getJavaneseYearDetails(calendarYear).name} ({new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(new Date(calendarYear, calendarMonth))}, {calendarYear})
                 </CardTitle>
               </div>
               <div className="flex gap-2">
@@ -470,6 +472,38 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
               <div className="overflow-x-auto rounded-xl border border-stone-200">
                 <table className="w-full text-left border-collapse table-auto">
                   <thead>
+                    {(() => {
+                      const PM_INFO_DETAILS = [
+                        { mStart: 5, mEnd: 7, text: "Kasa - Kartika || 41 Hari || Bathara Wisnu || Domba || Sapi Gumarang" },
+                        { mStart: 7, mEnd: 7, text: "Pusa - Karo || 23 hari || Bathara Sambu || Banteng || Tagih" },
+                        { mStart: 7, mEnd: 8, text: "Katelu - Manggasri || 24 Hari || Bathara Rudra || Kehidupan Tanaman Tumbuh Bertunas || Lumbung" },
+                        { mStart: 8, mEnd: 9, text: "Kapat - Sitra | 25 Hari || Bathara Nyamadipati || Kepiting || Jaran Dawuk" },
+                        { mStart: 9, mEnd: 10, text: "Kalima - Manggala || 27 Hari || Bathara Metri || Singa || Banyak Angrem" },
+                        { mStart: 10, mEnd: 11, text: "Kanem - Naya || 43 Hari || Bathara Guru || Perempuan Roro Kenya || Gotong Mayit" },
+                        { mStart: 11, mEnd: 1, text: "Palguna - Kapitu || 43 Hari || Bathara Indra || Neraca Keseimbangan || Bimasekti" },
+                        { mStart: 1, mEnd: 1, text: "Wasika - Kawolu || 25 Hari || Bathara Brahma || Kelabang || Wulanjar Angirian" },
+                        { mStart: 2, mEnd: 2, text: "Jita - Kasanga || 25 Hari || Bathara Bayu || Garuda || Wuluh" },
+                        { mStart: 2, mEnd: 3, text: "Srawana - Kasedasa || 24 Hari || Rsi Bisma || Kambing || Waluku" },
+                        { mStart: 3, mEnd: 4, text: "Destha - Padrawana || 23 Hari || Bathara Antaboga || Air Tertumpah" },
+                        { mStart: 4, mEnd: 5, text: "Sadda - Asuji || 41 Hari || Bathari Sri || Mino" },
+                      ];
+                      
+                      const active = PM_INFO_DETAILS.filter(pm => {
+                        if (pm.mStart <= pm.mEnd) {
+                          return calendarMonth >= pm.mStart && calendarMonth <= pm.mEnd;
+                        } else {
+                          return calendarMonth >= pm.mStart || calendarMonth <= pm.mEnd;
+                        }
+                      });
+
+                      return active.map((pm, idx) => (
+                        <tr key={`pm-header-${idx}`} className="bg-[#211e1d] text-white border-b border-stone-800">
+                          <th colSpan={16} className="p-1 px-4 text-[9px] font-bold text-center tracking-wide uppercase">
+                            {pm.text}
+                          </th>
+                        </tr>
+                      ));
+                    })()}
                     <tr className="bg-[#211e1d] text-[6.5px] font-bold uppercase tracking-tighter text-white border-b border-stone-200">
                       <th className="p-0.5 w-6 text-center">40</th>
                       <th className="p-0.5 w-6 text-center">S/T</th>

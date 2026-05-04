@@ -232,7 +232,7 @@ const resources = {
           Wayang: 'Sifatnya seperti Dewa Sri: makmur, subur, dan penuh kasih.',
           Kulawu: 'Sifatnya seperti Dewa Sadana: kaya, makmur, dan beruntung.',
           Dukut: 'Sifatnya seperti Dewa Baruna: luas wawasannya, tenang, dan dalam.',
-          Watugunung: 'Sifatnya seperti Dewa Sang Hyang Antaboga: kuat, abadi, dan pelindung.'
+          Watugunung: 'Sifatnya seperti Dewa Bathara Antaboga: kuat, abadi, and pelindung.'
         },
         tahun_saka_sifat: {
           Alip: 'Sifatnya seperti air: tenang, sejuk, dan menghidupkan.',
@@ -555,7 +555,7 @@ const resources = {
           Wayang: 'Like Sri: prosperous, fertile, and loving.',
           Kulawu: 'Like Sadana: rich, prosperous, and lucky.',
           Dukut: 'Like Baruna: broad-minded, calm, and deep.',
-          Watugunung: 'Like Sang Hyang Antaboga: strong, eternal, and protective.'
+          Watugunung: 'Like Bathara Antaboga: strong, eternal, and protective.'
         },
         tahun_saka_sifat: {
           Alip: 'Like water: calm, cool, and life-giving.',
@@ -878,7 +878,7 @@ const resources = {
           Wayang: 'Kados Dewa Sri: makmur, subur, lan kebak asih.',
           Kulawu: 'Kados Dewa Sadana: sugih, makmur, lan beja.',
           Dukut: 'Kados Dewa Baruna: jembar wawasanipun, ayem, lan jero.',
-          Watugunung: 'Kados Dewa Sang Hyang Antaboga: kiyat, langgeng, lan ngayomi.'
+          Watugunung: 'Kados Dewa Bathara Antaboga: kiyat, langgeng, lan ngayomi.'
         },
         tahun_saka_sifat: {
           Alip: 'Kados toya: ayem, adhem, lan nggesangake.',

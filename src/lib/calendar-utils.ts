@@ -1,3 +1,25 @@
+export const getJavaneseMonthName = (masehiMonth: number) => {
+  const months = [
+    'Wadana', 'Wijangga', 'Wiyana', 'Widada', 'Widarpa', 'Wilapa',
+    'Wahana', 'Wanana', 'Wurana', 'Wujana', 'Wujala', 'Warana'
+  ];
+  return months[masehiMonth];
+};
+
+export const getJavaneseYearDetails = (masehiYear: number) => {
+  const sequence = ['Alip', 'Ehe', 'Jimawal', 'Je', 'Dal', 'Be', 'Wawu', 'Jimakir'];
+  const refMasehi = 2025;
+  const refJavaYear = 1958;
+  const refIndex = 3; // 'Je'
+  
+  const diff = masehiYear - refMasehi;
+  const javaYear = refJavaYear + diff;
+  let javaIndex = (refIndex + diff) % 8;
+  if (javaIndex < 0) javaIndex += 8;
+  
+  return { year: javaYear, name: sequence[javaIndex] };
+};
+
 export const JAVA_MONTHS = [
   { name: 'Sura', days: 30 },
   { name: 'Sapar', days: 29 },
