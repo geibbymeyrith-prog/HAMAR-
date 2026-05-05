@@ -122,97 +122,71 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     try {
       const element = calendarRef.current;
       
-      // Calculate full scrollable dimensions for capture
-      const scrollWidth = element.scrollWidth;
-      const scrollHeight = element.scrollHeight;
-
+      // html2canvas capture logic with robust settings
       const canvas = await html2canvas(element, {
         scale: 2, 
         useCORS: true,
         allowTaint: true,
         logging: true,
         backgroundColor: '#ffffff',
-        width: element.scrollWidth,
-        height: element.scrollHeight,
-        windowWidth: 2600, // Very wide to accommodate A2 content spread
+        // Crucial: ensure windowWidth is large enough to prevent responsive wrapping during capture
+        windowWidth: 2800, 
         onclone: (clonedDoc, clonedElement) => {
-          // Robust fix for "oklch" and layout optimization for PDF
-          const style = clonedDoc.createElement('style');
-          style.innerHTML = `
-            * { 
-              color-interpolation-filters: sRGB !important;
-            }
+          // 1. Force the print-only header to be visible in the capture
+          const printHeader = clonedElement.querySelector('.print-header-content');
+          if (printHeader) {
+            (printHeader as HTMLElement).style.display = 'block';
+            (printHeader as HTMLElement).style.visibility = 'visible';
+            (printHeader as HTMLElement).style.opacity = '1';
+            (printHeader as HTMLElement).style.textAlign = 'center';
+            (printHeader as HTMLElement).style.marginBottom = '40px';
+          }
 
-            #calendar-to-export {
-              font-size: 12px !important;
-              color: #292524 !important;
-              width: 2500px !important;
-              padding: 60px !important;
-              background: white !important;
-            }
+          // 2. Optimization: Ensure the table doesn't wrap or clip
+          clonedElement.style.width = '2400px'; 
+          clonedElement.style.padding = '60px';
+          clonedElement.style.height = 'auto';
+          clonedElement.style.background = '#ffffff';
 
-            table {
-              border-collapse: collapse !important;
-              width: 100% !important;
-              table-layout: auto !important;
-            }
+          const overflowDivs = clonedElement.querySelectorAll('.overflow-x-auto, .overflow-y-auto, .overflow-auto');
+          overflowDivs.forEach(div => {
+            (div as HTMLElement).style.overflow = 'visible';
+            (div as HTMLElement).style.width = 'auto';
+            (div as HTMLElement).style.maxWidth = 'none';
+          });
 
-            th, td {
-              font-size: 11px !important;
-              padding: 6px 4px !important;
-              border: 1px solid #e7e5e4 !important;
-              color: #292524 !important;
-              white-space: nowrap !important;
-            }
+          const table = clonedElement.querySelector('table');
+          if (table) {
+            (table as HTMLElement).style.width = '100%';
+            (table as HTMLElement).style.tableLayout = 'auto';
+            (table as HTMLElement).style.borderCollapse = 'collapse';
+          }
 
-            .bg-white { background-color: #ffffff !important; }
-            .bg-stone-50 { background-color: #fafaf9 !important; }
-            .bg-stone-100 { background-color: #f5f5f4 !important; }
-            .bg-stone-200 { background-color: #e7e5e4 !important; }
-            .bg-red-50 { background-color: #fef2f2 !important; }
-            .bg-[#211e1d] { background-color: #211e1d !important; }
-            .text-stone-800 { color: #292524 !important; }
-            .text-stone-600 { color: #57534e !important; }
-            .text-stone-500 { color: #78716c !important; }
-            .text-stone-400 { color: #a8a29e !important; }
-            .text-white { color: #ffffff !important; }
-            .border-stone-200 { border-color: #e7e5e4 !important; }
-            .border-stone-100 { border-color: #f5f5f4 !important; }
+          const ths = clonedElement.querySelectorAll('th, td');
+          ths.forEach(cell => {
+            (cell as HTMLElement).style.fontSize = '12px';
+            (cell as HTMLElement).style.padding = '8px 4px';
+            (cell as HTMLElement).style.border = '1px solid #e7e5e4';
+          });
 
-            .print-header-content {
-              display: block !important;
-              visibility: visible !important;
-              opacity: 1 !important;
-              text-align: center !important;
-              margin-bottom: 30px !important;
-            }
-
-            .overflow-x-auto, .overflow-y-auto, .overflow-auto {
-              overflow: visible !important;
-              display: block !important;
-              width: auto !important;
-              height: auto !important;
-              max-width: none !important;
-              max-height: none !important;
-            }
-          `;
-          clonedDoc.head.appendChild(style);
-
-          // Second layer of defense: Programmatically strip oklch from computed styles
-          // html2canvas sometimes still tries to parse original styles even if overwritten
+          // 3. Robust fix for "oklch" unsupported color function
           const allElements = clonedDoc.querySelectorAll('*');
           allElements.forEach(el => {
-            const element = el as HTMLElement;
-            if (!element.style) return;
+            const e = el as HTMLElement;
+            if (!e.style) return;
 
-            // Check common properties that might have oklch
-            ['backgroundColor', 'color', 'borderColor', 'outlineColor', 'fill', 'stroke'].forEach(prop => {
-              const value = window.getComputedStyle(element).getPropertyValue(prop.replace(/[A-Z]/g, '-$&').toLowerCase());
+            // List of properties often containing colors with variables (which often resolve to oklch in Tailwind 4)
+            const styleProps = ['backgroundColor', 'color', 'borderColor', 'outlineColor', 'fill', 'stroke'];
+            const computed = window.getComputedStyle(e);
+
+            styleProps.forEach(prop => {
+              const value = computed.getPropertyValue(prop.replace(/[A-Z]/g, '-$&').toLowerCase());
               if (value && value.includes('oklch')) {
-                // If we detect oklch, force a fallback if it wasn't caught by the CSS rules above
-                if (prop === 'backgroundColor') element.style.backgroundColor = '#ffffff';
-                if (prop === 'color') element.style.color = '#292524';
-                if (prop === 'borderColor') element.style.borderColor = '#e7e5e4';
+                // Apply hardcoded fallbacks
+                if (prop === 'backgroundColor') e.style.setProperty(prop, '#ffffff', 'important');
+                else if (prop === 'color') e.style.setProperty(prop, '#292524', 'important');
+                else if (prop === 'borderColor') e.style.setProperty(prop, '#e7e5e4', 'important');
+                else e.style.setProperty(prop, 'transparent', 'important');
               }
             });
           });
@@ -222,9 +196,9 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
       const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF({
         orientation: 'landscape',
-        unit: 'px',
+        unit: 'mm',
         format: 'a2',
-        hotfixes: ['px_scaling'],
+        compress: true
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -233,10 +207,20 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
       
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const finalWidth = imgWidth * ratio;
-      const finalHeight = imgHeight * ratio;
+      // Calculate scaling to fit the A2 page with margins
+      const margin = 20; // 20mm margin
+      const availableWidth = pdfWidth - (margin * 2);
+      const availableHeight = pdfHeight - (margin * 2);
       
+      // Note: canvas width is doubled due to scale: 2
+      const canvasDisplayWidth = imgWidth / 2;
+      const canvasDisplayHeight = imgHeight / 2;
+      
+      const ratio = Math.min(availableWidth / canvasDisplayWidth, availableHeight / canvasDisplayHeight);
+      const finalWidth = canvasDisplayWidth * ratio;
+      const finalHeight = canvasDisplayHeight * ratio;
+      
+      // Center on page
       const x = (pdfWidth - finalWidth) / 2;
       const y = (pdfHeight - finalHeight) / 2;
 
