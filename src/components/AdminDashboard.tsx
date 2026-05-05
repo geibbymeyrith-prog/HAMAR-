@@ -117,21 +117,32 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     
     setLoading(true);
     try {
-      // Create a clone or just use the current ref
-      // We'll hide scrollbars and ensure width is sufficient for capture
       const element = calendarRef.current;
       
-      // html2canvas capture with 150 DPI equivalent scale
-      // 150 DPI approx 2x scale from standard 72/96 DPI
+      // html2canvas capture with better settings
       const canvas = await html2canvas(element, {
         scale: 2, 
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: 1400 // Fixed width for consistent layout
+        width: element.offsetWidth,
+        height: element.offsetHeight,
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById('calendar-to-export');
+          if (clonedElement) {
+            // Force the print-only header to be visible in the capture
+            const printHeader = clonedElement.querySelector('.print-header-content');
+            if (printHeader) {
+              (printHeader as HTMLElement).style.display = 'block';
+            }
+            // Ensure full width and no clipping
+            clonedElement.style.width = '1200px';
+            clonedElement.style.overflow = 'visible';
+          }
+        }
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
@@ -141,23 +152,26 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / (canvasWidth / 2), pdfHeight / (canvasHeight / 2));
       
-      const finalWidth = imgWidth * ratio;
-      const finalHeight = imgHeight * ratio;
+      const finalWidth = (canvasWidth / 2) * ratio;
+      const finalHeight = (canvasHeight / 2) * ratio;
       
-      // Center the image
-      const x = (pdfWidth - finalWidth) / 2;
-      const y = (pdfHeight - finalHeight) / 2;
+      // Add a bit of margin
+      const margin = 10;
+      const x = (pdfWidth - (finalWidth - margin * 2)) / 2;
+      const y = margin + 5;
 
-      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
-      const filename = `Database-Calendar-${getJavaneseMonthName(calendarMonth)}-${calendarYear}.pdf`;
+      pdf.addImage(imgData, 'PNG', x, y, finalWidth - margin * 2, finalHeight - margin * 2);
+      
+      const javaDetails = getJavaneseYearDetails(calendarYear);
+      const filename = `HAMARE-Calendar-${getJavaneseMonthName(calendarMonth)}-${calendarYear}.pdf`;
       pdf.save(filename);
     } catch (error) {
       console.error("PDF generation failed:", error);
-      alert("Gagal mengunduh PDF.");
+      alert("Gagal mengunduh PDF. Silakan coba lagi atau gunakan browser lain.");
     } finally {
       setLoading(false);
     }
@@ -531,8 +545,8 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                 </Select>
               </div>
             </CardHeader>
-            <CardContent ref={calendarRef} className="bg-white p-6">
-              <div className="mb-4 hidden print:block">
+            <CardContent ref={calendarRef} id="calendar-to-export" className="bg-white p-6">
+              <div className="mb-4 hidden print-header-content">
                 <h1 className="text-2xl font-serif font-bold text-center mb-2">
                   HAMARÉ - DATABASE CALENDAR
                 </h1>
