@@ -122,26 +122,45 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     try {
       const element = calendarRef.current;
       
-      // html2canvas capture logic
+      // Calculate full scrollable dimensions for capture
+      const scrollWidth = element.scrollWidth;
+      const scrollHeight = element.scrollHeight;
+
       const canvas = await html2canvas(element, {
         scale: 2, 
         useCORS: true,
         allowTaint: true,
         logging: true,
         backgroundColor: '#ffffff',
-        scrollX: 0,
-        scrollY: 0,
-        width: element.scrollWidth,
-        height: element.scrollHeight,
+        width: scrollWidth,
+        height: scrollHeight,
+        windowWidth: scrollWidth + 100,
         onclone: (clonedDoc, clonedElement) => {
-          // Fix for "oklch" unsupported color error in html2canvas
-          // We add a style tag to the cloned document to override common oklch usages with fallback colors
+          // Robust fix for "oklch" and layout optimization for PDF
           const style = clonedDoc.createElement('style');
           style.innerHTML = `
             * { 
               color-interpolation-filters: sRGB !important;
             }
-            /* Override common Tailwind 4 oklch colors with standard hex/rgb */
+
+            /* Global font size reduction for PDF density */
+            #calendar-to-export {
+              font-size: 8px !important;
+            }
+
+            table {
+              border-collapse: collapse !important;
+              width: 100% !important;
+              table-layout: auto !important;
+            }
+
+            th, td {
+              font-size: 7px !important;
+              padding: 2px !important;
+              border: 1px solid #e7e5e4 !important;
+            }
+
+            /* Fallback colors for oklch */
             .bg-white { background-color: #ffffff !important; }
             .bg-stone-50 { background-color: #fafaf9 !important; }
             .bg-stone-100 { background-color: #f5f5f4 !important; }
@@ -153,39 +172,29 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             .text-stone-400 { color: #a8a29e !important; }
             .border-stone-200 { border-color: #e7e5e4 !important; }
             .border-stone-100 { border-color: #f5f5f4 !important; }
+
+            .print-header-content {
+              display: block !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+
+            .overflow-x-auto, .overflow-y-auto, .overflow-auto {
+              overflow: visible !important;
+              display: block !important;
+              width: auto !important;
+              height: auto !important;
+              max-width: none !important;
+              max-height: none !important;
+            }
+
+            #calendar-to-export {
+              width: 1400px !important;
+              padding: 40px !important;
+              background: white !important;
+            }
           `;
           clonedDoc.head.appendChild(style);
-
-          const printHeader = clonedElement.querySelector('.print-header-content');
-          if (printHeader) {
-            (printHeader as HTMLElement).style.display = 'block';
-            (printHeader as HTMLElement).style.visibility = 'visible';
-            (printHeader as HTMLElement).style.opacity = '1';
-          }
-          
-          // Disable all scrolling and truncation
-          const allScrolls = clonedElement.querySelectorAll('.overflow-x-auto, .overflow-y-auto, .overflow-auto');
-          allScrolls.forEach(el => {
-            (el as HTMLElement).style.overflow = 'visible';
-            (el as HTMLElement).style.height = 'auto';
-            (el as HTMLElement).style.width = 'auto';
-            (el as HTMLElement).style.maxWidth = 'none';
-            (el as HTMLElement).style.display = 'block';
-          });
-
-          // Ensure the main container expands to fit everything
-          clonedElement.style.width = '1600px'; // Wide enough for A3 landscape
-          clonedElement.style.height = 'auto';
-          clonedElement.style.padding = '40px';
-          clonedElement.style.background = '#ffffff';
-          
-          // Ensure tables don't wrap or clip
-          const tables = clonedElement.querySelectorAll('table');
-          tables.forEach(table => {
-            (table as HTMLElement).style.width = '100%';
-            (table as HTMLElement).style.tableLayout = 'auto';
-            (table as HTMLElement).style.borderCollapse = 'collapse';
-          });
         }
       });
 
@@ -203,12 +212,10 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
       
-      // Calculate scaling to fit A3
       const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
       const finalWidth = imgWidth * ratio;
       const finalHeight = imgHeight * ratio;
       
-      // Center on page
       const x = (pdfWidth - finalWidth) / 2;
       const y = (pdfHeight - finalHeight) / 2;
 
