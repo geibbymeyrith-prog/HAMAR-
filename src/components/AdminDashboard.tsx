@@ -127,11 +127,14 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         scale: 2, 
         useCORS: true,
         allowTaint: true,
-        logging: true, // Enable logging to see if anything goes wrong in console
+        logging: true,
         backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
         onclone: (clonedDoc, clonedElement) => {
-          // The clonedElement is passed as second argument in newer html2canvas versions
-          // Search inside the cloned element for the print header
+          // The clonedElement is the node we are rendering
           const printHeader = clonedElement.querySelector('.print-header-content');
           if (printHeader) {
             (printHeader as HTMLElement).style.display = 'block';
@@ -139,18 +142,27 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             (printHeader as HTMLElement).style.opacity = '1';
           }
           
-          // Ensure the table is not scrollable and shows all data
-          const overflowDiv = clonedElement.querySelector('.overflow-x-auto');
-          if (overflowDiv) {
-            (overflowDiv as HTMLElement).style.overflow = 'visible';
-            (overflowDiv as HTMLElement).style.width = 'auto';
-            (overflowDiv as HTMLElement).style.maxWidth = 'none';
-          }
-          
-          // Set a solid width for the main export container
-          clonedElement.style.width = '1280px';
+          // Disable all scrolling and truncation
+          const allScrolls = clonedElement.querySelectorAll('.overflow-x-auto, .overflow-y-auto, .overflow-auto');
+          allScrolls.forEach(el => {
+            (el as HTMLElement).style.overflow = 'visible';
+            (el as HTMLElement).style.height = 'auto';
+            (el as HTMLElement).style.width = 'auto';
+            (el as HTMLElement).style.maxWidth = 'none';
+          });
+
+          // Ensure the main container expands to fit everything
+          clonedElement.style.width = 'fit-content';
+          clonedElement.style.height = 'auto';
+          clonedElement.style.minWidth = '1400px'; // Ensure some breadth
           clonedElement.style.padding = '40px';
-          clonedElement.style.background = '#ffffff';
+          
+          // Ensure tables don't wrap or clip
+          const tables = clonedElement.querySelectorAll('table');
+          tables.forEach(table => {
+            (table as HTMLElement).style.width = '100%';
+            (table as HTMLElement).style.tableLayout = 'auto';
+          });
         }
       });
 
