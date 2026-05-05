@@ -132,9 +132,9 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         allowTaint: true,
         logging: true,
         backgroundColor: '#ffffff',
-        width: scrollWidth,
-        height: scrollHeight,
-        windowWidth: scrollWidth + 100,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        windowWidth: 2600, // Very wide to accommodate A2 content spread
         onclone: (clonedDoc, clonedElement) => {
           // Robust fix for "oklch" and layout optimization for PDF
           const style = clonedDoc.createElement('style');
@@ -143,10 +143,12 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
               color-interpolation-filters: sRGB !important;
             }
 
-            /* Global font size reduction for PDF density */
             #calendar-to-export {
-              font-size: 8px !important;
+              font-size: 12px !important;
               color: #292524 !important;
+              width: 2500px !important;
+              padding: 60px !important;
+              background: white !important;
             }
 
             table {
@@ -156,13 +158,13 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             }
 
             th, td {
-              font-size: 7px !important;
-              padding: 2px !important;
+              font-size: 11px !important;
+              padding: 6px 4px !important;
               border: 1px solid #e7e5e4 !important;
               color: #292524 !important;
+              white-space: nowrap !important;
             }
 
-            /* Fallback colors for oklch */
             .bg-white { background-color: #ffffff !important; }
             .bg-stone-50 { background-color: #fafaf9 !important; }
             .bg-stone-100 { background-color: #f5f5f4 !important; }
@@ -181,6 +183,8 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
               display: block !important;
               visibility: visible !important;
               opacity: 1 !important;
+              text-align: center !important;
+              margin-bottom: 30px !important;
             }
 
             .overflow-x-auto, .overflow-y-auto, .overflow-auto {
@@ -190,12 +194,6 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
               height: auto !important;
               max-width: none !important;
               max-height: none !important;
-            }
-
-            #calendar-to-export {
-              width: 1400px !important;
-              padding: 40px !important;
-              background: white !important;
             }
           `;
           clonedDoc.head.appendChild(style);
@@ -225,7 +223,7 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'px',
-        format: 'a3',
+        format: 'a2',
         hotfixes: ['px_scaling'],
       });
 
