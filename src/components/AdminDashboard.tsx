@@ -146,6 +146,7 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             /* Global font size reduction for PDF density */
             #calendar-to-export {
               font-size: 8px !important;
+              color: #292524 !important;
             }
 
             table {
@@ -158,6 +159,7 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
               font-size: 7px !important;
               padding: 2px !important;
               border: 1px solid #e7e5e4 !important;
+              color: #292524 !important;
             }
 
             /* Fallback colors for oklch */
@@ -166,10 +168,12 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             .bg-stone-100 { background-color: #f5f5f4 !important; }
             .bg-stone-200 { background-color: #e7e5e4 !important; }
             .bg-red-50 { background-color: #fef2f2 !important; }
+            .bg-[#211e1d] { background-color: #211e1d !important; }
             .text-stone-800 { color: #292524 !important; }
             .text-stone-600 { color: #57534e !important; }
             .text-stone-500 { color: #78716c !important; }
             .text-stone-400 { color: #a8a29e !important; }
+            .text-white { color: #ffffff !important; }
             .border-stone-200 { border-color: #e7e5e4 !important; }
             .border-stone-100 { border-color: #f5f5f4 !important; }
 
@@ -195,6 +199,25 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             }
           `;
           clonedDoc.head.appendChild(style);
+
+          // Second layer of defense: Programmatically strip oklch from computed styles
+          // html2canvas sometimes still tries to parse original styles even if overwritten
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach(el => {
+            const element = el as HTMLElement;
+            if (!element.style) return;
+
+            // Check common properties that might have oklch
+            ['backgroundColor', 'color', 'borderColor', 'outlineColor', 'fill', 'stroke'].forEach(prop => {
+              const value = window.getComputedStyle(element).getPropertyValue(prop.replace(/[A-Z]/g, '-$&').toLowerCase());
+              if (value && value.includes('oklch')) {
+                // If we detect oklch, force a fallback if it wasn't caught by the CSS rules above
+                if (prop === 'backgroundColor') element.style.backgroundColor = '#ffffff';
+                if (prop === 'color') element.style.color = '#292524';
+                if (prop === 'borderColor') element.style.borderColor = '#e7e5e4';
+              }
+            });
+          });
         }
       });
 
