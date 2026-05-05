@@ -113,65 +113,77 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
   const calendarRef = useRef<HTMLDivElement>(null);
 
   const handleDownloadPDF = async () => {
-    if (!calendarRef.current) return;
+    if (!calendarRef.current) {
+      alert("Elemen kalender tidak ditemukan.");
+      return;
+    }
     
     setLoading(true);
     try {
       const element = calendarRef.current;
       
-      // html2canvas capture with better settings
+      // html2canvas capture logic
       const canvas = await html2canvas(element, {
         scale: 2, 
         useCORS: true,
-        logging: false,
+        allowTaint: true,
+        logging: true, // Enable logging to see if anything goes wrong in console
         backgroundColor: '#ffffff',
-        width: element.offsetWidth,
-        height: element.offsetHeight,
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.getElementById('calendar-to-export');
-          if (clonedElement) {
-            // Force the print-only header to be visible in the capture
-            const printHeader = clonedElement.querySelector('.print-header-content');
-            if (printHeader) {
-              (printHeader as HTMLElement).style.display = 'block';
-            }
-            // Ensure full width and no clipping
-            clonedElement.style.width = '1200px';
-            clonedElement.style.overflow = 'visible';
+        onclone: (clonedDoc, clonedElement) => {
+          // The clonedElement is passed as second argument in newer html2canvas versions
+          // Search inside the cloned element for the print header
+          const printHeader = clonedElement.querySelector('.print-header-content');
+          if (printHeader) {
+            (printHeader as HTMLElement).style.display = 'block';
+            (printHeader as HTMLElement).style.visibility = 'visible';
+            (printHeader as HTMLElement).style.opacity = '1';
           }
+          
+          // Ensure the table is not scrollable and shows all data
+          const overflowDiv = clonedElement.querySelector('.overflow-x-auto');
+          if (overflowDiv) {
+            (overflowDiv as HTMLElement).style.overflow = 'visible';
+            (overflowDiv as HTMLElement).style.width = 'auto';
+            (overflowDiv as HTMLElement).style.maxWidth = 'none';
+          }
+          
+          // Set a solid width for the main export container
+          clonedElement.style.width = '1280px';
+          clonedElement.style.padding = '40px';
+          clonedElement.style.background = '#ffffff';
         }
       });
 
       const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF({
         orientation: 'landscape',
-        unit: 'mm',
-        format: 'a3'
+        unit: 'px',
+        format: 'a3',
+        hotfixes: ['px_scaling'],
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / (canvasWidth / 2), pdfHeight / (canvasHeight / 2));
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
       
-      const finalWidth = (canvasWidth / 2) * ratio;
-      const finalHeight = (canvasHeight / 2) * ratio;
+      // Calculate scaling to fit A3
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
       
-      // Add a bit of margin
-      const margin = 10;
-      const x = (pdfWidth - (finalWidth - margin * 2)) / 2;
-      const y = margin + 5;
+      // Center on page
+      const x = (pdfWidth - finalWidth) / 2;
+      const y = (pdfHeight - finalHeight) / 2;
 
-      pdf.addImage(imgData, 'PNG', x, y, finalWidth - margin * 2, finalHeight - margin * 2);
+      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
       
-      const javaDetails = getJavaneseYearDetails(calendarYear);
       const filename = `HAMARE-Calendar-${getJavaneseMonthName(calendarMonth)}-${calendarYear}.pdf`;
       pdf.save(filename);
     } catch (error) {
       console.error("PDF generation failed:", error);
-      alert("Gagal mengunduh PDF. Silakan coba lagi atau gunakan browser lain.");
+      alert(`Gagal mengunduh PDF: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setLoading(false);
     }
