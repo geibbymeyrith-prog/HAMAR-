@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'motion/react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { 
   collection, 
   query, 
@@ -108,6 +110,58 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
   // Calendar state
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadPDF = async () => {
+    if (!calendarRef.current) return;
+    
+    setLoading(true);
+    try {
+      // Create a clone or just use the current ref
+      // We'll hide scrollbars and ensure width is sufficient for capture
+      const element = calendarRef.current;
+      
+      // html2canvas capture with 150 DPI equivalent scale
+      // 150 DPI approx 2x scale from standard 72/96 DPI
+      const canvas = await html2canvas(element, {
+        scale: 2, 
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 1400 // Fixed width for consistent layout
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a3'
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+      
+      // Center the image
+      const x = (pdfWidth - finalWidth) / 2;
+      const y = (pdfHeight - finalHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+      const filename = `Database-Calendar-${getJavaneseMonthName(calendarMonth)}-${calendarYear}.pdf`;
+      pdf.save(filename);
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+      alert("Gagal mengunduh PDF.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Blog form state
   const [isCreating, setIsCreating] = useState(false);
@@ -445,7 +499,16 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                   {getJavaneseMonthName(calendarMonth)}, {getJavaneseYearDetails(calendarYear).year} {getJavaneseYearDetails(calendarYear).name} ({new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(new Date(calendarYear, calendarMonth))}, {calendarYear})
                 </CardTitle>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                <Button 
+                  onClick={handleDownloadPDF} 
+                  variant="outline" 
+                  size="sm" 
+                  className="bg-red-50 text-red-700 border-red-100 hover:bg-red-100 mr-2"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Download PDF
+                </Button>
                 <Select value={calendarYear.toString()} onValueChange={v => setCalendarYear(parseInt(v))}>
                   <SelectTrigger className="w-24">
                     <SelectValue placeholder="Tahun" />
@@ -468,7 +531,15 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                 </Select>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent ref={calendarRef} className="bg-white p-6">
+              <div className="mb-4 hidden print:block">
+                <h1 className="text-2xl font-serif font-bold text-center mb-2">
+                  HAMARÉ - DATABASE CALENDAR
+                </h1>
+                <p className="text-center text-sm mb-4">
+                  {getJavaneseMonthName(calendarMonth)}, {getJavaneseYearDetails(calendarYear).year} {getJavaneseYearDetails(calendarYear).name} ({new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(new Date(calendarYear, calendarMonth))}, {calendarYear})
+                </p>
+              </div>
               <div className="overflow-x-auto rounded-xl border border-stone-200">
                 <table className="w-full text-left border-collapse table-auto">
                   <thead>
