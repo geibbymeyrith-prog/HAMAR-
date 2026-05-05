@@ -134,7 +134,28 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         width: element.scrollWidth,
         height: element.scrollHeight,
         onclone: (clonedDoc, clonedElement) => {
-          // The clonedElement is the node we are rendering
+          // Fix for "oklch" unsupported color error in html2canvas
+          // We add a style tag to the cloned document to override common oklch usages with fallback colors
+          const style = clonedDoc.createElement('style');
+          style.innerHTML = `
+            * { 
+              color-interpolation-filters: sRGB !important;
+            }
+            /* Override common Tailwind 4 oklch colors with standard hex/rgb */
+            .bg-white { background-color: #ffffff !important; }
+            .bg-stone-50 { background-color: #fafaf9 !important; }
+            .bg-stone-100 { background-color: #f5f5f4 !important; }
+            .bg-stone-200 { background-color: #e7e5e4 !important; }
+            .bg-red-50 { background-color: #fef2f2 !important; }
+            .text-stone-800 { color: #292524 !important; }
+            .text-stone-600 { color: #57534e !important; }
+            .text-stone-500 { color: #78716c !important; }
+            .text-stone-400 { color: #a8a29e !important; }
+            .border-stone-200 { border-color: #e7e5e4 !important; }
+            .border-stone-100 { border-color: #f5f5f4 !important; }
+          `;
+          clonedDoc.head.appendChild(style);
+
           const printHeader = clonedElement.querySelector('.print-header-content');
           if (printHeader) {
             (printHeader as HTMLElement).style.display = 'block';
@@ -149,19 +170,21 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             (el as HTMLElement).style.height = 'auto';
             (el as HTMLElement).style.width = 'auto';
             (el as HTMLElement).style.maxWidth = 'none';
+            (el as HTMLElement).style.display = 'block';
           });
 
           // Ensure the main container expands to fit everything
-          clonedElement.style.width = 'fit-content';
+          clonedElement.style.width = '1600px'; // Wide enough for A3 landscape
           clonedElement.style.height = 'auto';
-          clonedElement.style.minWidth = '1400px'; // Ensure some breadth
           clonedElement.style.padding = '40px';
+          clonedElement.style.background = '#ffffff';
           
           // Ensure tables don't wrap or clip
           const tables = clonedElement.querySelectorAll('table');
           tables.forEach(table => {
             (table as HTMLElement).style.width = '100%';
             (table as HTMLElement).style.tableLayout = 'auto';
+            (table as HTMLElement).style.borderCollapse = 'collapse';
           });
         }
       });
