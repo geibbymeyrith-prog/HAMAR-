@@ -129,73 +129,81 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
-        // Increased windowWidth to ensure no wrapping occurs during capture
-        windowWidth: 3500, 
+        // Extreme windowWidth to prevent any responsive wrapping during capture for A2
+        windowWidth: 4000, 
         onclone: (clonedDoc, clonedElement) => {
-          // 1. Force the print-only header to be visible in the capture
+          // 1. CRITICAL: Sanitize all stylesheets in the clone to remove oklch
+          // html2canvas parser crashes when it encounters oklch() in ANY stylesheet
+          const styleTags = clonedDoc.querySelectorAll('style');
+          styleTags.forEach(style => {
+            if (style.innerHTML.includes('oklch')) {
+              // Replace oklch(...) with a safe fallback hex color
+              style.innerHTML = style.innerHTML.replace(/oklch\([^)]+\)/g, '#292524');
+            }
+          });
+
+          // 2. Force the print-only header settings
           const printHeader = clonedElement.querySelector('.print-header-content');
           if (printHeader) {
             (printHeader as HTMLElement).style.display = 'block';
             (printHeader as HTMLElement).style.visibility = 'visible';
             (printHeader as HTMLElement).style.opacity = '1';
             (printHeader as HTMLElement).style.textAlign = 'center';
-            (printHeader as HTMLElement).style.marginBottom = '50px';
+            (printHeader as HTMLElement).style.marginBottom = '60px';
             (printHeader as HTMLElement).style.width = '100%';
+            (printHeader as HTMLElement).style.color = '#292524';
           }
 
-          // 2. Optimization: Ensure the table doesn't wrap or clip
-          // Use a very wide width for the container in the clone
-          clonedElement.style.width = '3200px'; 
-          clonedElement.style.padding = '80px';
+          // 3. Optimization: Force massive width and disable wrapping for A2 density
+          clonedElement.style.width = '3800px'; 
+          clonedElement.style.padding = '100px';
           clonedElement.style.height = 'auto';
           clonedElement.style.background = '#ffffff';
 
-          const overflowDivs = clonedElement.querySelectorAll('.overflow-x-auto, .overflow-y-auto, .overflow-auto');
-          overflowDivs.forEach(div => {
-            (div as HTMLElement).style.overflow = 'visible';
-            (div as HTMLElement).style.width = 'auto';
-            (div as HTMLElement).style.maxWidth = 'none';
-          });
+          // Ensure the table container is wide enough
+          const tableContainer = clonedElement.querySelector('.overflow-x-auto');
+          if (tableContainer) {
+            (tableContainer as HTMLElement).style.overflow = 'visible';
+            (tableContainer as HTMLElement).style.width = 'auto';
+            (tableContainer as HTMLElement).style.maxWidth = 'none';
+          }
 
           const table = clonedElement.querySelector('table');
           if (table) {
             (table as HTMLElement).style.width = '100%';
-            (table as HTMLElement).style.tableLayout = 'auto';
+            (table as HTMLElement).style.tableLayout = 'fixed'; // Use fixed for more predictable spacing
             (table as HTMLElement).style.borderCollapse = 'collapse';
           }
 
-          const ths = clonedElement.querySelectorAll('th, td');
-          ths.forEach(cell => {
-            (cell as HTMLElement).style.fontSize = '14px'; // Slightly larger for better readability
-            (cell as HTMLElement).style.padding = '12px 8px'; // More breathing room
-            (cell as HTMLElement).style.border = '1px solid #d6d3d1';
-            (cell as HTMLElement).style.whiteSpace = 'nowrap'; // Prevent wrapping within cells
+          // Improve cell readability for A2
+          const allCells = clonedElement.querySelectorAll('th, td');
+          allCells.forEach(cell => {
+            const c = cell as HTMLElement;
+            c.style.fontSize = '16px'; 
+            c.style.padding = '14px 10px';
+            c.style.border = '1px solid #d6d3d1';
+            c.style.whiteSpace = 'nowrap';
+            c.style.color = '#292524';
+            
+            // Fix text colors that might be using oklch
+            if (c.classList.contains('text-red-600')) c.style.color = '#dc2626';
+            if (c.classList.contains('text-white')) c.style.color = '#ffffff';
           });
 
-          // 3. Robust fix for "oklch" unsupported color function
-          const allElements = clonedDoc.querySelectorAll('*');
-          allElements.forEach(el => {
+          // Fix colored backgrounds
+          const coloredElements = clonedElement.querySelectorAll('.bg-black, .bg-yellow-300, .bg-red-500, .bg-\\#211e1d, .bg-\\#928f8e');
+          coloredElements.forEach(el => {
             const e = el as HTMLElement;
-            if (!e.style) return;
-
-            const styleProps = ['backgroundColor', 'color', 'borderColor', 'outlineColor', 'fill', 'stroke'];
-            const computed = window.getComputedStyle(e);
-
-            styleProps.forEach(prop => {
-              const value = computed.getPropertyValue(prop.replace(/[A-Z]/g, '-$&').toLowerCase());
-              if (value && value.includes('oklch')) {
-                if (prop === 'backgroundColor') e.style.setProperty(prop, '#ffffff', 'important');
-                else if (prop === 'color') e.style.setProperty(prop, '#292524', 'important');
-                else if (prop === 'borderColor') e.style.setProperty(prop, '#d6d3d1', 'important');
-                else e.style.setProperty(prop, 'transparent', 'important');
-              }
-            });
+            if (e.classList.contains('bg-black')) e.style.backgroundColor = '#000000';
+            if (e.classList.contains('bg-yellow-300')) e.style.backgroundColor = '#fde047';
+            if (e.classList.contains('bg-red-500')) e.style.backgroundColor = '#ef4444';
+            if (e.classList.contains('bg-[#211e1d]')) e.style.backgroundColor = '#211e1d';
+            if (e.classList.contains('bg-[#928f8e]')) e.style.backgroundColor = '#928f8e';
           });
         }
       });
 
       const imgData = canvas.toDataURL('image/png', 1.0);
-      // Using positional arguments for jsPDF to ensure legacy compatibility and strict orientation
       const pdf = new jsPDF('l', 'mm', 'a2');
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -204,20 +212,19 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
       
-      // Calculate scaling to fit the A2 page with margins
-      const margin = 20; // 20mm margin
+      // Calculate scaling to fill the A2 page with margins
+      const margin = 15; // 15mm margin
       const availableWidth = pdfWidth - (margin * 2);
       const availableHeight = pdfHeight - (margin * 2);
       
-      // Note: canvas width is doubled due to scale: 2
-      const canvasDisplayWidth = imgWidth / 2;
-      const canvasDisplayHeight = imgHeight / 2;
+      // Since scale: 2 was used in html2canvas
+      const sourceWidth = imgWidth / 2;
+      const sourceHeight = imgHeight / 2;
       
-      const ratio = Math.min(availableWidth / canvasDisplayWidth, availableHeight / canvasDisplayHeight);
-      const finalWidth = canvasDisplayWidth * ratio;
-      const finalHeight = canvasDisplayHeight * ratio;
+      const ratio = Math.min(availableWidth / sourceWidth, availableHeight / sourceHeight);
+      const finalWidth = sourceWidth * ratio;
+      const finalHeight = sourceHeight * ratio;
       
-      // Center on page
       const x = (pdfWidth - finalWidth) / 2;
       const y = (pdfHeight - finalHeight) / 2;
 
