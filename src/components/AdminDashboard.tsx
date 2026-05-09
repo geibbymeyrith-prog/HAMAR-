@@ -183,11 +183,18 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             c.style.padding = '14px 10px';
             c.style.border = '1px solid #d6d3d1';
             c.style.whiteSpace = 'nowrap';
-            c.style.color = '#292524';
             
-            // Fix text colors that might be using oklch
-            if (c.classList.contains('text-red-600')) c.style.color = '#dc2626';
-            if (c.classList.contains('text-white')) c.style.color = '#ffffff';
+            // Check if cell is in a dark header row
+            const parentRow = c.parentElement;
+            const isDarkRow = parentRow?.classList.contains('bg-[#211e1d]') || parentRow?.classList.contains('bg-black');
+            
+            if (isDarkRow || c.classList.contains('text-white')) {
+              c.style.color = '#ffffff';
+            } else if (c.classList.contains('text-red-600')) {
+              c.style.color = '#dc2626';
+            } else {
+              c.style.color = '#292524';
+            }
           });
 
           // Fix colored backgrounds
