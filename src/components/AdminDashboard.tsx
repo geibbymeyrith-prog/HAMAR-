@@ -127,10 +127,10 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         scale: 2, 
         useCORS: true,
         allowTaint: true,
-        logging: true,
+        logging: false,
         backgroundColor: '#ffffff',
-        // Crucial: ensure windowWidth is large enough to prevent responsive wrapping during capture
-        windowWidth: 2800, 
+        // Increased windowWidth to ensure no wrapping occurs during capture
+        windowWidth: 3500, 
         onclone: (clonedDoc, clonedElement) => {
           // 1. Force the print-only header to be visible in the capture
           const printHeader = clonedElement.querySelector('.print-header-content');
@@ -139,12 +139,14 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             (printHeader as HTMLElement).style.visibility = 'visible';
             (printHeader as HTMLElement).style.opacity = '1';
             (printHeader as HTMLElement).style.textAlign = 'center';
-            (printHeader as HTMLElement).style.marginBottom = '40px';
+            (printHeader as HTMLElement).style.marginBottom = '50px';
+            (printHeader as HTMLElement).style.width = '100%';
           }
 
           // 2. Optimization: Ensure the table doesn't wrap or clip
-          clonedElement.style.width = '2400px'; 
-          clonedElement.style.padding = '60px';
+          // Use a very wide width for the container in the clone
+          clonedElement.style.width = '3200px'; 
+          clonedElement.style.padding = '80px';
           clonedElement.style.height = 'auto';
           clonedElement.style.background = '#ffffff';
 
@@ -164,9 +166,10 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
           const ths = clonedElement.querySelectorAll('th, td');
           ths.forEach(cell => {
-            (cell as HTMLElement).style.fontSize = '12px';
-            (cell as HTMLElement).style.padding = '8px 4px';
-            (cell as HTMLElement).style.border = '1px solid #e7e5e4';
+            (cell as HTMLElement).style.fontSize = '14px'; // Slightly larger for better readability
+            (cell as HTMLElement).style.padding = '12px 8px'; // More breathing room
+            (cell as HTMLElement).style.border = '1px solid #d6d3d1';
+            (cell as HTMLElement).style.whiteSpace = 'nowrap'; // Prevent wrapping within cells
           });
 
           // 3. Robust fix for "oklch" unsupported color function
@@ -175,17 +178,15 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             const e = el as HTMLElement;
             if (!e.style) return;
 
-            // List of properties often containing colors with variables (which often resolve to oklch in Tailwind 4)
             const styleProps = ['backgroundColor', 'color', 'borderColor', 'outlineColor', 'fill', 'stroke'];
             const computed = window.getComputedStyle(e);
 
             styleProps.forEach(prop => {
               const value = computed.getPropertyValue(prop.replace(/[A-Z]/g, '-$&').toLowerCase());
               if (value && value.includes('oklch')) {
-                // Apply hardcoded fallbacks
                 if (prop === 'backgroundColor') e.style.setProperty(prop, '#ffffff', 'important');
                 else if (prop === 'color') e.style.setProperty(prop, '#292524', 'important');
-                else if (prop === 'borderColor') e.style.setProperty(prop, '#e7e5e4', 'important');
+                else if (prop === 'borderColor') e.style.setProperty(prop, '#d6d3d1', 'important');
                 else e.style.setProperty(prop, 'transparent', 'important');
               }
             });
@@ -194,12 +195,8 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
       });
 
       const imgData = canvas.toDataURL('image/png', 1.0);
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a2',
-        compress: true
-      });
+      // Using positional arguments for jsPDF to ensure legacy compatibility and strict orientation
+      const pdf = new jsPDF('l', 'mm', 'a2');
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
