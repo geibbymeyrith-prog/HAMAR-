@@ -77,6 +77,7 @@ import { Paywall } from '@/components/Paywall';
 import { AdminDashboard } from '@/components/AdminDashboard';
 import { UserDashboard } from '@/components/UserDashboard';
 import { AuthModal } from '@/components/AuthModal';
+import { MemberOfferModal } from '@/components/MemberOfferModal';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -284,57 +285,109 @@ function MainApp() {
 
   const wetonDetails = useMemo(() => getJavaneseDetails(selectedDate), [selectedDate]);
 
+  const [isMemberOfferOpen, setIsMemberOfferOpen] = useState(false);
+  const [pendingCalculation, setPendingCalculation] = useState<{
+    type: 'weton' | 'hariBaik' | 'jodoh';
+    payload: any;
+  } | null>(null);
+
   const currentCount = profile ? profile.generateCount : guestGenerateCount;
   const showPaywall = !isPremium && currentCount >= 3;
   const canDownload = isPremium || currentCount < 3;
 
   const handleCalculateWeton = (date: Date | null) => {
-    if (date) {
-      setBirthDateWeton(date);
-      const details = getJavaneseDetails(date);
-      if (profile) {
-        saveHistory('weton', `${details.masehiDayName} ${details.pasaranName}`, details);
-        if (!isPremium && profile.generateCount <= 3) {
-          incrementGenerateCount();
-        }
-      } else {
-        if (guestGenerateCount <= 3) {
-          incrementGuestGenerateCount();
-        }
+    if (!date) return;
+    
+    if (!user && !sessionStorage.getItem('hamare_login_offer_shown')) {
+      setPendingCalculation({ type: 'weton', payload: date });
+      setIsMemberOfferOpen(true);
+      return;
+    }
+
+    setBirthDateWeton(date);
+    const details = getJavaneseDetails(date);
+    if (profile) {
+      saveHistory('weton', `${details.masehiDayName} ${details.pasaranName}`, details);
+      if (!isPremium && profile.generateCount <= 3) {
+        incrementGenerateCount();
+      }
+    } else {
+      if (guestGenerateCount <= 3) {
+        incrementGuestGenerateCount();
       }
     }
   };
 
   const handleCalculateHariBaik = (date: Date | null) => {
-    if (date) {
-      setEventDateHariBaik(date);
-      const details = getJavaneseDetails(date);
-      if (profile) {
-        saveHistory('hariBaik', `${details.masehiDayName} ${details.pasaranName}`, details);
-        if (!isPremium && profile.generateCount <= 3) {
-          incrementGenerateCount();
-        }
-      } else {
-        if (guestGenerateCount <= 3) {
-          incrementGuestGenerateCount();
-        }
+    if (!date) return;
+
+    if (!user && !sessionStorage.getItem('hamare_login_offer_shown')) {
+      setPendingCalculation({ type: 'hariBaik', payload: date });
+      setIsMemberOfferOpen(true);
+      return;
+    }
+
+    setEventDateHariBaik(date);
+    const details = getJavaneseDetails(date);
+    if (profile) {
+      saveHistory('hariBaik', `${details.masehiDayName} ${details.pasaranName}`, details);
+      if (!isPremium && profile.generateCount <= 3) {
+        incrementGenerateCount();
+      }
+    } else {
+      if (guestGenerateCount <= 3) {
+        incrementGuestGenerateCount();
       }
     }
   };
 
   const handleCalculateJodoh = async () => {
-    if (mangsaSelfData && mangsaPartnerData) {
-      const result = getJodohPinasti(mangsaSelfData.name, mangsaPartnerData.name);
-      setJodohResult(result);
-      if (profile) {
-        saveHistory('jodoh', `${mangsaSelfData.name} x ${mangsaPartnerData.name}`, result);
-        if (!isPremium && profile.generateCount <= 3) {
-          incrementGenerateCount();
-        }
-      } else {
-        if (guestGenerateCount <= 3) {
-          incrementGuestGenerateCount();
-        }
+    if (!mangsaSelfData || !mangsaPartnerData) return;
+
+    if (!user && !sessionStorage.getItem('hamare_login_offer_shown')) {
+      setPendingCalculation({ type: 'jodoh', payload: null });
+      setIsMemberOfferOpen(true);
+      return;
+    }
+
+    const result = getJodohPinasti(mangsaSelfData.name, mangsaPartnerData.name);
+    setJodohResult(result);
+    if (profile) {
+      saveHistory('jodoh', `${mangsaSelfData.name} x ${mangsaPartnerData.name}`, result);
+      if (!isPremium && profile.generateCount <= 3) {
+        incrementGenerateCount();
+      }
+    } else {
+      if (guestGenerateCount <= 3) {
+        incrementGuestGenerateCount();
+      }
+    }
+  };
+
+  const handleConfirmLoginFromOffer = () => {
+    setIsMemberOfferOpen(false);
+    openLogin();
+  };
+
+  const handleConfirmRegisterFromOffer = () => {
+    setIsMemberOfferOpen(false);
+    openRegister();
+  };
+
+  const handleContinueAsGuestFromOffer = () => {
+    sessionStorage.setItem('hamare_login_offer_shown', 'true');
+    setIsMemberOfferOpen(false);
+    
+    // Execute the pending action
+    if (pendingCalculation) {
+      const { type, payload } = pendingCalculation;
+      setPendingCalculation(null);
+      if (type === 'weton') {
+        handleCalculateWeton(payload);
+      } else if (type === 'hariBaik') {
+        handleCalculateHariBaik(payload);
+      } else if (type === 'jodoh') {
+        handleCalculateJodoh();
       }
     }
   };
@@ -511,6 +564,15 @@ function MainApp() {
               isOpen={isAuthModalOpen} 
               onClose={() => setIsAuthModalOpen(false)} 
               defaultMode={authModalMode}
+            />
+
+            <MemberOfferModal
+              isOpen={isMemberOfferOpen}
+              onClose={() => setIsMemberOfferOpen(false)}
+              onLoginClick={handleConfirmLoginFromOffer}
+              onRegisterClick={handleConfirmRegisterFromOffer}
+              onContinueAsGuest={handleContinueAsGuestFromOffer}
+              guestCountRemaining={guestGenerateCount}
             />
 
         <motion.h1 

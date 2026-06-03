@@ -292,12 +292,12 @@ export const AdminDashboard: React.FC<{
       const userRef = doc(db, 'users', payment.userId);
       await updateDoc(paymentRef, { status: 'approved', updatedAt: serverTimestamp() });
       const now = new Date();
-      if (payment.package === '11000') {
+      if (payment.package === '11000' || payment.package === '15000') {
         await updateDoc(userRef, { temporaryUnlock: true });
-      } else if (payment.package === '111000') {
+      } else if (payment.package === '111000' || payment.package === '150000') {
         const expiry = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         await updateDoc(userRef, { subscriptionStatus: 'monthly', premiumExpiredAt: expiry, temporaryUnlock: false });
-      } else if (payment.package === '1111000') {
+      } else if (payment.package === '1111000' || payment.package === '1150000') {
         const expiry = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
         await updateDoc(userRef, { subscriptionStatus: 'yearly', premiumExpiredAt: expiry, temporaryUnlock: false });
       }

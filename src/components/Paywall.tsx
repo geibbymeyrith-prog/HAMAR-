@@ -66,9 +66,9 @@ export const Paywall: React.FC<PaywallProps> = ({ onUnlock }) => {
   }, [user]);
 
   const packages = [
-    { id: '11000', name: '1 Unlock (Hanya Hasil Ini)', price: 11000 },
-    { id: '111000', name: 'Unlimited 30 Hari', price: 111000 },
-    { id: '1111000', name: 'Unlimited 365 Hari', price: 1111000 },
+    { id: '15000', name: '1 Unlock (Hanya Hasil Ini)', price: 15000 },
+    { id: '150000', name: 'Unlimited 30 Hari', price: 150000 },
+    { id: '1150000', name: 'Unlimited 365 Hari', price: 1150000 },
   ];
 
   const handleSelectPackage = (pkg: typeof packages[0]) => {
@@ -148,13 +148,14 @@ Mohon segera diproses. Terima kasih.`;
   };
 
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-white/95 backdrop-blur-md">
-      <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-2xl border border-stone-100 flex flex-col items-center">
-        <div className="bg-stone-900 text-white w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-xl transform rotate-3">
-          <Lock className="w-8 h-8" />
-        </div>
-        
-        <AnimatePresence mode="wait">
+    <>
+      <div className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-white/95 backdrop-blur-md">
+        <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-2xl border border-stone-100 flex flex-col items-center">
+          <div className="bg-stone-900 text-white w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-xl transform rotate-3">
+            <Lock className="w-8 h-8" />
+          </div>
+          
+          <AnimatePresence mode="wait">
           {step === 'options' && (
             <motion.div
               key="options"
@@ -166,9 +167,6 @@ Mohon segera diproses. Terima kasih.`;
               <h2 className="text-xl font-serif font-bold text-stone-800">
                 {t('paywall.title') || 'Buka Seluruh Hasil'}
               </h2>
-              <p className="text-sm text-stone-500">
-                {t('paywall.description') || 'Anda telah mencapai batas 3x generate gratis. Pilih paket untuk melihat hasil lengkap.'}
-              </p>
               
               <div className="grid gap-3 pt-2">
                 {packages.map((pkg) => (
@@ -180,7 +178,7 @@ Mohon segera diproses. Terima kasih.`;
                     <div className="flex-1">
                       <p className="font-bold text-stone-800 text-sm">{pkg.name}</p>
                       <p className="text-xs text-stone-500">
-                        Rp {pkg.price.toLocaleString('id-ID')} {pkg.id === '11000' ? '' : '+ Nominal Unik'}
+                        Rp {pkg.price.toLocaleString('id-ID')}
                       </p>
                     </div>
                     {!user ? (
@@ -422,5 +420,58 @@ Mohon segera diproses. Terima kasih.`;
         </AnimatePresence>
       </div>
     </div>
+
+    {/* Pop-up modal for pending/instructions phase */}
+    {(step === 'instructions' || step === 'pending') && (
+      <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-md">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-stone-200 flex flex-col items-center text-center"
+        >
+          <div className="bg-amber-100 text-amber-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-5 animate-bounce">
+            <AlertCircle className="w-9 h-9" />
+          </div>
+
+          <h3 className="font-serif font-bold text-xl text-stone-900 mb-3" id="pending-pay-title">
+            {step === 'instructions' ? 'Lakukan Pembayaran' : 'Menunggu Persetujuan Admin'}
+          </h3>
+          
+          <p className="text-stone-700 text-sm font-semibold mb-2 leading-relaxed" id="pending-instructions-text">
+            Silakan hubungi admin dengan melampirkan bukti transfer
+          </p>
+
+          <div className="bg-[#2E7D32]/5 border border-[#2E7D32]/10 p-4 rounded-2xl w-full mb-6">
+            <p className="text-[10px] uppercase font-bold text-stone-400 tracking-widest mb-1">
+              WhatsApp Admin
+            </p>
+            <p className="text-xl font-mono font-bold text-[#2E7D32] tracking-wider">
+              0812-9999-6816
+            </p>
+            <p className="text-[11px] text-stone-500 mt-1">
+              (Geibby Meyrith Bolang)
+            </p>
+          </div>
+
+          <Button 
+            onClick={() => window.open(getWAUrl(), '_blank')}
+            className="w-full h-12 bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm shadow-md"
+            id="pending-contact-admin"
+          >
+            <Send className="w-4 h-4" />
+            KIRIM BUKTI TRANSFER SEKARANG
+          </Button>
+
+          <button 
+            onClick={() => setStep('options')} 
+            className="mt-4 text-xs font-bold text-stone-500 hover:text-stone-800 uppercase tracking-widest hover:underline"
+            id="pending-back-options"
+          >
+            Kembali ke Menu Paket
+          </button>
+        </motion.div>
+      </div>
+    )}
+  </>
   );
 };
