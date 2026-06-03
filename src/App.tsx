@@ -43,7 +43,9 @@ import {
   orderBy, 
   onSnapshot, 
   doc, 
-  updateDoc 
+  updateDoc,
+  addDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
@@ -86,6 +88,16 @@ interface Article {
   createdAt: any;
 }
 
+// Helper to get or generate a persistent visitor ID for stats tracking
+const getOrCreateVisitorId = (): string => {
+  let visitorId = localStorage.getItem('hamare_visitor_id');
+  if (!visitorId) {
+    visitorId = 'v_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 11);
+    localStorage.setItem('hamare_visitor_id', visitorId);
+  }
+  return visitorId;
+};
+
 export default function App() {
   return <MainApp />;
 }
@@ -99,6 +111,100 @@ function MainApp() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [publicArticles, setPublicArticles] = useState<Article[]>([]);
+  const [allVisits, setAllVisits] = useState<any[]>([]);
+
+  // Visitor tracking logic
+  useEffect(() => {
+    const trackVisit = async () => {
+      // Check if tracked in this sessionStorage session to prevent duplicate calls on refresh
+      if (sessionStorage.getItem('hamare_session_tracked')) {
+        return;
+      }
+
+      try {
+        const visitorId = getOrCreateVisitorId();
+        const now = new Date();
+        const monthYearStr = format(now, 'yyyy-MM'); // Format: YYYY-MM
+        
+        await addDoc(collection(db, 'visits'), {
+          visitorId,
+          monthYear: monthYearStr,
+          createdAt: serverTimestamp()
+        });
+
+        sessionStorage.setItem('hamare_session_tracked', 'true');
+      } catch (err) {
+        console.error('Error tracking visit:', err);
+      }
+    };
+
+    trackVisit();
+  }, []);
+
+  // Listen to ALL visits for realtime statistics
+  useEffect(() => {
+    const q = query(
+      collection(db, 'visits'),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setAllVisits(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.error("Error fetching visits for statistics:", error);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const visitorStats = useMemo(() => {
+    const stats = {
+      totalVisitorsAllTime: 0,
+      totalVisitorsCurrentMonth: 0,
+      returningVisitorsAllTime: 0,
+      returningVisitorsCurrentMonth: 0,
+    };
+
+    if (allVisits.length === 0) return stats;
+
+    const now = new Date();
+    const currentMonthStr = format(now, 'yyyy-MM');
+
+    // Group by visitorId for all time and current month
+    const visitsByVisitorAllTime: Record<string, number> = {};
+    const visitsByVisitorCurrentMonth: Record<string, number> = {};
+
+    allVisits.forEach((v) => {
+      const vid = v.visitorId;
+      if (!vid) return;
+
+      // Increment all time
+      visitsByVisitorAllTime[vid] = (visitsByVisitorAllTime[vid] || 0) + 1;
+
+      // Extract details for current month
+      const isCurrentMonth = v.monthYear === currentMonthStr;
+      if (isCurrentMonth) {
+        visitsByVisitorCurrentMonth[vid] = (visitsByVisitorCurrentMonth[vid] || 0) + 1;
+      }
+    });
+
+    // Count total unique visitors
+    stats.totalVisitorsAllTime = Object.keys(visitsByVisitorAllTime).length;
+    stats.totalVisitorsCurrentMonth = Object.keys(visitsByVisitorCurrentMonth).length;
+
+    // Count unique recurring visitors (visited >= 2 times)
+    let recurringAllTime = 0;
+    Object.values(visitsByVisitorAllTime).forEach((cnt) => {
+      if (cnt >= 2) recurringAllTime++;
+    });
+    stats.returningVisitorsAllTime = recurringAllTime;
+
+    let recurringCurrentMonth = 0;
+    Object.values(visitsByVisitorCurrentMonth).forEach((cnt) => {
+      if (cnt >= 2) recurringCurrentMonth++;
+    });
+    stats.returningVisitorsCurrentMonth = recurringCurrentMonth;
+
+    return stats;
+  }, [allVisits]);
   const [guestGenerateCount, setGuestGenerateCount] = useState<number>(() => {
     const saved = localStorage.getItem('hamare_guest_count');
     return saved ? parseInt(saved, 10) : 0;
@@ -325,7 +431,7 @@ function MainApp() {
   return (
     <div className="min-h-screen bg-[#F5F5F0] text-[#1A1A1A] p-4 md:p-8 font-sans" id="app-container">
       {isAdminMode && isAdmin ? (
-        <AdminDashboard onBack={() => setIsAdminMode(false)} />
+        <AdminDashboard onBack={() => setIsAdminMode(false)} visitorStats={visitorStats} />
       ) : isDashboardMode && profile ? (
         <UserDashboard onBack={() => setIsDashboardMode(false)} />
       ) : (
@@ -1059,6 +1165,53 @@ function MainApp() {
           </AnimatePresence>
         </div>
       </Tabs>
+
+      {/* Statistik Kunjungan Situs */}
+      <div className="mt-12 bg-white/60 backdrop-blur-md rounded-3xl p-6 md:p-8 border border-stone-200/60 shadow-lg text-stone-800" id="site-visitor-stats">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 className="font-serif text-xl font-bold text-stone-900 flex items-center gap-2">
+              <Users className="w-5 h-5 text-[#2E7D32]" />
+              Statistik Kunjungan Beranda
+            </h3>
+            <p className="text-xs text-stone-500">Data kunjungan real-time pengunjung situs HAMARÉ</p>
+          </div>
+          <div className="flex items-center gap-2 bg-stone-100/80 px-3 py-1.5 rounded-full text-[10px] font-bold text-stone-600">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            SINKRONISASI REAL-TIME
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          {/* Total Visitor - Bulan Berjalan */}
+          <div className="bg-stone-50/50 p-5 rounded-2xl border border-stone-100 shadow-sm">
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Visitor Bulan Ini</p>
+            <h4 className="text-3xl font-serif font-bold text-[#2E7D32]">{visitorStats.totalVisitorsCurrentMonth.toLocaleString('id-ID')}</h4>
+            <p className="text-[10px] text-stone-500 mt-2">Total pengunjung unik bulan berjalan</p>
+          </div>
+
+          {/* Total Visitor - Sejak Berdiri */}
+          <div className="bg-stone-50/50 p-5 rounded-2xl border border-stone-100 shadow-sm">
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Total Visitor</p>
+            <h4 className="text-3xl font-serif font-bold text-stone-900">{visitorStats.totalVisitorsAllTime.toLocaleString('id-ID')}</h4>
+            <p className="text-[10px] text-stone-500 mt-2">Akumulasi pengunjung unik sejak berdiri</p>
+          </div>
+
+          {/* Pengunjung Berulang - Bulan Berjalan */}
+          <div className="bg-stone-50/50 p-5 rounded-2xl border border-stone-100 shadow-sm">
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Visitor Berulang Bulan Ini</p>
+            <h4 className="text-3xl font-serif font-bold text-amber-600">{visitorStats.returningVisitorsCurrentMonth.toLocaleString('id-ID')}</h4>
+            <p className="text-[10px] text-stone-500 mt-2">Pengunjung unik berulang (2x+) bulan ini</p>
+          </div>
+
+          {/* Pengunjung Berulang - Sejak Berdiri */}
+          <div className="bg-stone-50/50 p-5 rounded-2xl border border-stone-100 shadow-sm">
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Total Visitor Berulang</p>
+            <h4 className="text-3xl font-serif font-bold text-stone-700">{visitorStats.returningVisitorsAllTime.toLocaleString('id-ID')}</h4>
+            <p className="text-[10px] text-stone-500 mt-2">Akumulasi unik berulang (2x+) keseluruhan</p>
+          </div>
+        </div>
+      </div>
       </main>
 
       <footer className="max-w-6xl mx-auto mt-20 pt-8 border-t border-stone-200 text-center text-stone-400 text-sm pb-12">

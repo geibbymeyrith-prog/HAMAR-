@@ -63,6 +63,17 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["title", "author", "content", "visibility", "status", "createdAt"]
+    },
+    "Visit": {
+      "title": "Visit",
+      "description": "Log of homepage visits to compute visitor statistics",
+      "type": "object",
+      "properties": {
+        "visitorId": { "type": "string" },
+        "monthYear": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["visitorId", "monthYear", "createdAt"]
     }
   },
   "firestore": {
@@ -81,6 +92,10 @@
     "/payments/{paymentId}": {
       "schema": "Payment",
       "description": "Payment records"
+    },
+    "/visits/{visitId}": {
+      "schema": "Visit",
+      "description": "Logs of visits used to compute homepage visitor statistics"
     }
   }
 }

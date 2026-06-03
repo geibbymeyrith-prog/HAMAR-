@@ -110,6 +110,12 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
 
+    function isValidVisit(data) {
+      return data.visitorId is string && data.visitorId.size() < 128 &&
+             data.monthYear is string && data.monthYear.size() == 7 &&
+             data.createdAt is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -140,6 +146,12 @@ service cloud.firestore {
     match /articles/{articleId} {
       allow read: if (resource.data.status == 'published' && (resource.data.visibility == 'public' || (resource.data.visibility == 'member' && isAuthenticated()))) || isAdmin();
       allow write: if isAdmin() && isValidArticle(request.resource.data);
+    }
+
+    match /visits/{visitId} {
+      allow read: if true;
+      allow create: if isValidVisit(request.resource.data);
+      allow update, delete: if isAdmin();
     }
   }
 }

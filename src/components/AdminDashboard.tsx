@@ -98,7 +98,15 @@ import {
   getJavaneseYearDetails
 } from '../lib/calendar-utils';
 
-export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+export const AdminDashboard: React.FC<{ 
+  onBack: () => void;
+  visitorStats?: {
+    totalVisitorsAllTime: number;
+    totalVisitorsCurrentMonth: number;
+    returningVisitorsAllTime: number;
+    returningVisitorsCurrentMonth: number;
+  };
+}> = ({ onBack, visitorStats }) => {
   const { isAdmin } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -394,6 +402,27 @@ export const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => 
           </TabsList>
         </Tabs>
       </div>
+
+      {visitorStats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-stone-50 border border-stone-200/80 p-4 rounded-2xl shadow-sm">
+          <div className="p-4 bg-white rounded-xl border border-stone-100 shadow-sm">
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Visitor Bulan Ini</p>
+            <h4 className="text-2xl font-serif font-bold text-[#2E7D32]">{visitorStats.totalVisitorsCurrentMonth.toLocaleString('id-ID')}</h4>
+          </div>
+          <div className="p-4 bg-white rounded-xl border border-stone-100 shadow-sm">
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Total Visitor</p>
+            <h4 className="text-2xl font-serif font-bold text-stone-900">{visitorStats.totalVisitorsAllTime.toLocaleString('id-ID')}</h4>
+          </div>
+          <div className="p-4 bg-white rounded-xl border border-stone-100 shadow-sm">
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Visitor Berulang Bulan Ini</p>
+            <h4 className="text-2xl font-serif font-bold text-amber-600">{visitorStats.returningVisitorsCurrentMonth.toLocaleString('id-ID')}</h4>
+          </div>
+          <div className="p-4 bg-white rounded-xl border border-stone-100 shadow-sm">
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Total Visitor Berulang</p>
+            <h4 className="text-2xl font-serif font-bold text-stone-700">{visitorStats.returningVisitorsAllTime.toLocaleString('id-ID')}</h4>
+          </div>
+        </div>
+      )}
 
       <Separator />
 
