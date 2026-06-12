@@ -70,7 +70,8 @@ import {
   getSifatHari, 
   getSTValue,
   getJavaneseMonthName,
-  getJavaneseYearDetails 
+  getJavaneseYearDetails,
+  getPasaran
 } from '@/lib/calendar-utils';
 import { useAuth } from '@/lib/AuthContext';
 import { Paywall } from '@/components/Paywall';
@@ -80,6 +81,12 @@ import { AuthModal } from '@/components/AuthModal';
 import { MemberOfferModal } from '@/components/MemberOfferModal';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+// @ts-ignore
+import hamareLogo from '@/assets/images/hamare_logo_1781266205700.jpg';
+// @ts-ignore
+import hnjLogo from '@/assets/images/hnj_logo_1781267773417.jpg';
+// @ts-ignore
+import halokaBhagyaLogo from '@/assets/images/haloka_bhagya_logo_1781268083448.jpg';
 
 interface Article {
   id: string;
@@ -284,6 +291,9 @@ function MainApp() {
   };
 
   const wetonDetails = useMemo(() => getJavaneseDetails(selectedDate), [selectedDate]);
+  const javaSelected = useMemo(() => getJavaDate(selectedDate), [selectedDate]);
+  const jYearSelected = useMemo(() => getJavaneseYearDetails(selectedDate.getFullYear()), [selectedDate]);
+  const pasaranSelected = useMemo(() => getPasaran(selectedDate), [selectedDate]);
 
   const [isMemberOfferOpen, setIsMemberOfferOpen] = useState(false);
   const [pendingCalculation, setPendingCalculation] = useState<{
@@ -575,6 +585,20 @@ function MainApp() {
               guestCountRemaining={guestGenerateCount}
             />
 
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="flex justify-center mb-6 mt-12 md:mt-16"
+            >
+              <img 
+                src={hamareLogo} 
+                alt="HAMARÉ Logo" 
+                className="w-24 h-24 md:w-28 md:h-28 rounded-full shadow-xl border-2 border-amber-50/50 hover:scale-105 transition-all duration-300 object-cover aspect-square"
+                referrerPolicy="no-referrer"
+              />
+            </motion.div>
+
         <motion.h1 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -604,9 +628,9 @@ function MainApp() {
       </header>
 
       <main className="max-w-6xl mx-auto space-y-8" id="main-content">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="w-full">
           {/* --- Infinite Calendar --- */}
-          <div className="lg:col-span-2">
+          <div className="w-full">
             <Card className="border-none shadow-xl bg-white/80 backdrop-blur-md overflow-hidden" id="calendar-card">
               <CardHeader className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 pb-7 bg-stone-900 text-white">
                 <div className="text-center md:text-left">
@@ -642,6 +666,8 @@ function MainApp() {
                     const pm = getPMDate(day);
                     const sifat = getSifatHari(day);
                     const st = getSTValue(java.day);
+                    const javaYearInfo = getJavaneseYearDetails(day.getFullYear());
+                    const pasaran = getPasaran(day);
                     
                     return (
                       <div
@@ -668,13 +694,13 @@ function MainApp() {
                         </div>
                         
                         <div className="mt-1 flex flex-col gap-0.5">
-                          <div className="flex justify-between items-center gap-1">
-                            <p className="text-[9px] md:text-[10px] font-bold text-[#2E7D32] truncate">
-                              {java.day} {java.month}
+                          <div className="flex justify-between items-start gap-1">
+                            <p className="text-[9px] md:text-[10px] font-bold text-[#2E7D32] leading-tight">
+                              {java.day} {java.month} {javaYearInfo.year} {javaYearInfo.name}
                             </p>
-                            <p className="text-[8px] md:text-[9px] font-mono font-bold text-stone-400">
-                              {details.pasaranName.split(' ')[0]}
-                            </p>
+                            <span className="text-[8px] md:text-[9px] font-mono font-bold text-stone-500 whitespace-nowrap bg-stone-100 px-1 rounded-sm">
+                              {pasaran.split('-')[0].trim()}
+                            </span>
                           </div>
                           
                           <p className="text-[8px] md:text-[9px] text-amber-700 font-medium truncate">
@@ -686,7 +712,7 @@ function MainApp() {
                           </p>
                           
                           <p className="text-[8px] text-stone-400 truncate opacity-0 group-hover:opacity-100 transition-opacity">
-                            {details.wuku}
+                            {pasaran} • {details.wuku}
                           </p>
                         </div>
                       </div>
@@ -695,45 +721,6 @@ function MainApp() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-
-          {/* --- Public Blog Feed --- */}
-          <div className="lg:col-span-1 space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="w-5 h-5 text-[#2E7D32]" />
-              <h3 className="font-serif font-bold text-xl text-stone-800">Artikel Terbaru</h3>
-            </div>
-            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-              {publicArticles.length === 0 ? (
-                <div className="p-8 text-center bg-white/50 rounded-2xl border border-dashed border-stone-200">
-                  <p className="text-sm text-stone-400 italic">Belum ada artikel publik.</p>
-                </div>
-              ) : (
-                publicArticles.map((article) => (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    key={article.id}
-                  >
-                    <Card className="border-none shadow-sm hover:shadow-md transition-all overflow-hidden group">
-                      <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-sm font-serif font-bold group-hover:text-[#2E7D32] transition-colors line-clamp-2">
-                          {article.title}
-                        </CardTitle>
-                        <CardDescription className="text-stone-500 flex items-center gap-2">
-                          <Clock className="w-3 h-3" /> {article.createdAt ? format(article.createdAt.toDate(), 'dd MMM yyyy') : '-'}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0">
-                        <p className="text-xs text-stone-500 line-clamp-3 leading-relaxed">
-                          {article.content}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))
-              )}
-            </div>
           </div>
         </div>
 
@@ -783,11 +770,15 @@ function MainApp() {
               <CardTitle className="font-serif text-2xl flex items-center gap-2">
                 <Info className="w-6 h-6" /> {t('weton.details')}
               </CardTitle>
+              <p className="text-stone-300 text-xs mt-1.5 font-medium leading-relaxed">
+                {format(selectedDate, 'EEEE, d MMMM yyyy', { locale: dateLocale })} — {javaSelected.day} {javaSelected.month} {jYearSelected.year} {jYearSelected.name} (Pasaran: {pasaranSelected.split('-')[0].trim()})
+              </p>
             </CardHeader>
             <CardContent className="p-0 relative">
               <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
                 {/* Visible Section (100%) */}
                 <div className="p-6 space-y-6">
+                  <DetailItem label="Tanggal Jawa" value={`${javaSelected.day} ${javaSelected.month} ${jYearSelected.year} ${jYearSelected.name}`} subValue={`Pasaran: ${pasaranSelected}`} icon={<Moon className="w-4 h-4" />} />
                   <DetailItem label={t('weton.labels.jawiDate')} value={`${wetonDetails.jawiDate} ${t(`calendar.months.${wetonDetails.jawiMonthName}`)}`} icon={<Moon className="w-4 h-4" />} />
                   <DetailItem label={t('weton.labels.dayLambang')} value={`${wetonDetails.jawiDayName} (${wetonDetails.dayLambang})`} icon={<Sun className="w-4 h-4" />} />
                   <DetailItem label={t('weton.labels.pasaranDewa')} value={`${wetonDetails.pasaranName} (${wetonDetails.pasaranDewa})`} icon={<Zap className="w-4 h-4" />} />
@@ -1234,7 +1225,7 @@ function MainApp() {
           <div>
             <h3 className="font-serif text-xl font-bold text-stone-900 flex items-center gap-2">
               <Users className="w-5 h-5 text-[#2E7D32]" />
-              Statistik Kunjungan Beranda
+              Statistik Kunjungan
             </h3>
             <p className="text-xs text-stone-500">Data kunjungan real-time pengunjung situs HAMARÉ</p>
           </div>
@@ -1274,21 +1265,116 @@ function MainApp() {
           </div>
         </div>
       </div>
+
+      {/* --- Public Blog Feed --- */}
+      <div className="mt-12 space-y-6" id="latest-articles-section">
+        <div className="flex items-center gap-2">
+          <FileText className="w-5 h-5 text-[#2E7D32]" />
+          <h3 className="font-serif font-bold text-xl text-stone-800">Artikel Terbaru</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {publicArticles.length === 0 ? (
+            <div className="col-span-full p-8 text-center bg-white/50 rounded-2xl border border-dashed border-stone-200">
+              <p className="text-sm text-stone-400 italic">Belum ada artikel publik.</p>
+            </div>
+          ) : (
+            publicArticles.map((article) => (
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                key={article.id}
+                className="h-full"
+              >
+                <Card className="border-none shadow-md hover:shadow-lg transition-all overflow-hidden group h-full flex flex-col bg-white">
+                  <CardHeader className="p-6 pb-2">
+                    <CardTitle className="text-base font-serif font-bold group-hover:text-[#2E7D32] transition-colors line-clamp-2">
+                      {article.title}
+                    </CardTitle>
+                    <CardDescription className="text-stone-500 flex items-center gap-2 text-xs mt-1">
+                      <Clock className="w-3.5 h-3.5 text-stone-400" /> {article.createdAt ? format(article.createdAt.toDate(), 'dd MMM yyyy') : '-'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6 pt-0 flex-1">
+                    <p className="text-xs text-stone-500 line-clamp-4 leading-relaxed">
+                      {article.content}
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
+          )}
+        </div>
+      </div>
       </main>
 
-      <footer className="max-w-6xl mx-auto mt-20 pt-8 border-t border-stone-200 text-center text-stone-400 text-sm pb-12">
-        <p>© 2026 {t('title')} - {t('description')}</p>
-        <div className="mt-4 flex items-center justify-center gap-4">
-          {isAdmin && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setIsAdminMode(true)}
-              className="text-[10px] font-bold text-stone-400 hover:text-stone-900 border border-transparent hover:border-stone-200"
+      <footer className="max-w-6xl mx-auto mt-20 pt-10 border-t border-stone-200 pb-12 px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 text-center md:text-left">
+          {/* Left: HNJ Indonesia Logo */}
+          <div className="flex justify-center md:justify-start">
+            <a 
+              href="https://hnj-indonesia.com/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="flex items-center gap-3 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-3 rounded-full shadow-sm transition-all group"
+              id="hnj-footer-link"
             >
-              <Shield className="w-3 h-3 mr-1" /> ADMIN DASHBOARD
-            </Button>
-          )}
+              <img 
+                src={hnjLogo} 
+                alt="HNJ Indonesia Logo" 
+                className="w-10 h-10 rounded-full shadow-sm border border-white object-cover aspect-square shrink-0 transition-transform group-hover:scale-105"
+                referrerPolicy="no-referrer"
+              />
+              <div className="text-left select-none">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none mb-0.5">Supported By</p>
+                <p className="text-xs font-bold text-stone-700 leading-none">HNJ Indonesia</p>
+              </div>
+            </a>
+          </div>
+
+          {/* Center: HAMARÉ */}
+          <div className="flex flex-col items-center gap-2 text-center">
+            <img 
+              src={hamareLogo} 
+              alt="HAMARÉ Logo" 
+              className="w-16 h-16 rounded-full shadow-lg border border-amber-100 hover:scale-105 transition-transform duration-300 object-cover aspect-square shrink-0"
+              referrerPolicy="no-referrer"
+            />
+            <p className="text-[#2E7D32] font-serif font-bold text-base tracking-wider mt-0.5">HAMARÉ</p>
+            <p className="text-xs text-stone-400">© 2026 {t('title')} - Hak Cipta Dilindungi</p>
+          </div>
+
+          {/* Right: Haloka Bhagya Logo & Optional Admin Button */}
+          <div className="flex flex-col md:flex-row justify-center md:justify-end items-center gap-4">
+            {isAdmin && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setIsAdminMode(true)}
+                className="text-[10px] font-bold text-stone-400 hover:text-stone-900 border border-transparent hover:border-stone-200"
+                id="admin-dashboard-btn"
+              >
+                <Shield className="w-3.5 h-3.5 mr-1" /> ADMIN DASHBOARD
+              </Button>
+            )}
+            <a 
+              href="https://halokabhagya.com/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="flex items-center gap-3 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-3 rounded-full shadow-sm transition-all group"
+              id="haloka-footer-link"
+            >
+              <img 
+                src={halokaBhagyaLogo} 
+                alt="Haloka Bhagya Logo" 
+                className="w-10 h-10 rounded-full shadow-sm border border-white object-cover aspect-square shrink-0 transition-transform group-hover:scale-105"
+                referrerPolicy="no-referrer"
+              />
+              <div className="text-left select-none">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none mb-0.5">Supported By</p>
+                <p className="text-xs font-bold text-stone-700 leading-none">Haloka Bhagya</p>
+              </div>
+            </a>
+          </div>
         </div>
       </footer>
     </>
