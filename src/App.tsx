@@ -115,10 +115,10 @@ function MainApp() {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [publicArticles, setPublicArticles] = useState<Article[]>([]);
   const [allVisits, setAllVisits] = useState<any[]>([]);
-  const [segeraHadirData, setSegeraHadirData] = useState<{ title: string; desc: string } | null>(null);
+  const [segeraHadirData, setSegeraHadirData] = useState<{ type: 'donation' | 'business' | 'research' } | null>(null);
 
-  const handleShowSegeraHadir = (title: string, desc: string) => {
-    setSegeraHadirData({ title, desc });
+  const handleShowSegeraHadir = (type: 'donation' | 'business' | 'research') => {
+    setSegeraHadirData({ type });
   };
 
   // Visitor tracking logic
@@ -499,7 +499,7 @@ function MainApp() {
         <UserDashboard onBack={() => setIsDashboardMode(false)} />
       ) : (
         <>
-          <header className="max-w-6xl mx-auto mb-8 text-center relative" id="header">
+          <header className="max-w-6xl mx-auto mb-8 text-center" id="header">
             {isExpired && !isDashboardMode && (
               <motion.div 
                 initial={{ opacity: 0, y: -10 }}
@@ -524,50 +524,57 @@ function MainApp() {
               </motion.div>
             )}
 
-            <div className="absolute top-0 right-0 flex gap-2">
-              <div className="flex gap-1">
-                {['id', 'jv', 'en'].map((lng) => (
-                  <Button 
-                    key={lng}
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => i18nInstance.changeLanguage(lng)}
-                    className={cn("text-[10px] font-bold px-2 h-7", i18nInstance.language === lng ? "text-[#2E7D32] bg-stone-200/50" : "text-stone-600")}
-                  >
-                    {lng.toUpperCase()}
-                  </Button>
-                ))}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full border-b border-stone-200/60 pb-4 mb-6" id="header-top-bar">
+              <div className="flex items-center gap-2" id="brand-logo">
+                <span className="font-serif font-bold text-lg text-[#2E7D32] tracking-wider">HAMARÉ</span>
+                <span className="text-[9px] bg-[#E8F5E9] text-[#2E7D32] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">Weton & Wisdom</span>
               </div>
-              
-              {profile ? (
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setIsDashboardMode(true)}
-                    className="h-7 text-[10px] font-bold px-2 text-[#2E7D32] border border-[#2E7D32]/20 hover:bg-[#2E7D32]/10"
-                  >
-                    <LayoutDashboard className="w-3 h-3 mr-1" /> DASHBOARD
-                  </Button>
-                  {isAdmin && (
+
+              <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3" id="header-controls">
+                <div className="flex gap-0.5 bg-stone-200/40 p-0.5 rounded-full" id="lang-selector-group">
+                  {['id', 'jv', 'en'].map((lng) => (
                     <Button 
-                      variant="default" 
+                      key={lng}
+                      variant="ghost" 
                       size="sm" 
-                      onClick={() => setIsAdminMode(true)}
-                      className="h-7 text-[10px] font-bold px-3 bg-amber-500 hover:bg-amber-600 text-white border-none shadow-sm rounded-full"
+                      onClick={() => i18nInstance.changeLanguage(lng)}
+                      className={cn("text-[10px] font-extrabold px-2.5 h-6 rounded-full transition-all", i18nInstance.language === lng ? "text-white bg-[#2E7D32] shadow-sm" : "text-stone-600 hover:bg-stone-200/30")}
                     >
-                      <Shield className="w-3 h-3 mr-1" /> PANEL ADMIN
+                      {lng.toUpperCase()}
                     </Button>
-                  )}
-                  <Button variant="outline" size="sm" onClick={logout} className="h-7 text-[10px] font-bold px-2 text-stone-600">
-                    <LogOut className="w-3 h-3 mr-1" /> KELUAR
-                  </Button>
+                  ))}
                 </div>
-              ) : (
-                <Button variant="outline" size="sm" onClick={openLogin} className="h-7 text-[10px] font-bold px-4 text-[#2E7D32] border-[#2E7D32]/30 hover:bg-[#2E7D32]/10 rounded-full">
-                  <LogIn className="w-3 h-3 mr-1" /> MASUK / DAFTAR
-                </Button>
-              )}
+                
+                {profile ? (
+                  <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2" id="user-controls-group">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setIsDashboardMode(true)}
+                      className="h-7 text-[10px] font-bold px-3 text-[#2E7D32] border border-[#2E7D32]/25 hover:bg-[#2E7D32]/10 rounded-full transition-all"
+                    >
+                      <LayoutDashboard className="w-3.5 h-3.5 mr-1" /> DASHBOARD
+                    </Button>
+                    {isAdmin && (
+                      <Button 
+                        variant="default" 
+                        size="sm" 
+                        onClick={() => setIsAdminMode(true)}
+                        className="h-7 text-[10px] font-bold px-3 bg-amber-500 hover:bg-amber-600 text-white border-none shadow-sm rounded-full transition-all"
+                      >
+                        <Shield className="w-3.5 h-3.5 mr-1" /> PANEL ADMIN
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" onClick={logout} className="h-7 text-[10px] font-bold px-3 text-stone-600 border-stone-300 hover:bg-stone-100 rounded-full transition-all">
+                      <LogOut className="w-3.5 h-3.5 mr-1" /> KELUAR
+                    </Button>
+                  </div>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={openLogin} className="h-7 text-[10px] font-bold px-4 text-[#2E7D32] border-[#2E7D32]/30 hover:bg-[#2E7D32]/10 rounded-full transition-all" id="auth-button">
+                    <LogIn className="w-3.5 h-3.5 mr-1" /> MASUK / DAFTAR
+                  </Button>
+                )}
+              </div>
             </div>
 
             <AuthModal 
@@ -585,7 +592,7 @@ function MainApp() {
               guestCountRemaining={guestGenerateCount}
             />
 
-            <div className="mt-12 md:mt-16"></div>
+            <div className="mt-4 md:mt-6"></div>
 
         <motion.h1 
           initial={{ opacity: 0, y: -20 }}
@@ -1301,7 +1308,7 @@ function MainApp() {
       <div className="max-w-6xl mx-auto mt-16 space-y-6 w-full" id="partnership-support-section">
         <div className="flex items-center gap-2">
           <Info className="w-5 h-5 text-[#2E7D32]" />
-          <h3 className="font-serif font-bold text-xl text-stone-800">Kemitraan & Dukungan</h3>
+          <h3 className="font-serif font-bold text-xl text-stone-800">{t('partnership.title')}</h3>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1312,9 +1319,9 @@ function MainApp() {
                 <Heart className="w-5 h-5 text-red-500" />
               </div>
               <div className="space-y-2">
-                <h4 className="font-serif font-bold text-base text-stone-800">Dukungan Donasi</h4>
+                <h4 className="font-serif font-bold text-base text-stone-800">{t('partnership.donation.title')}</h4>
                 <p className="text-xs text-stone-500 leading-relaxed">
-                  Kami membuka dukungan donasi bagi siapa saja yang ingin berkontribusi dalam kontinuitas, pemeliharaan, serta pengembangan fitur-fitur baru di situs HAMARÉ.
+                  {t('partnership.donation.desc')}
                 </p>
               </div>
             </div>
@@ -1322,11 +1329,11 @@ function MainApp() {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => handleShowSegeraHadir("Dukungan Donasi", "Fitur pembayaran dan saluran donasi otomatis sedang dalam persiapan. Untuk saat ini, kami sangat menghargai niat baik Anda dan akan segera meluncurkan halaman donasi resmi dalam pembaruan berikutnya.")}
+                onClick={() => handleShowSegeraHadir("donation")}
                 className="w-full text-xs font-bold border-stone-200 hover:bg-stone-50 hover:text-stone-900 group"
                 id="donation-detail-btn"
               >
-                Detil <ArrowRight className="w-3 h-3 ml-1.5 transition-transform group-hover:translate-x-1" />
+                {t('partnership.detailBtn')} <ArrowRight className="w-3 h-3 ml-1.5 transition-transform group-hover:translate-x-1" />
               </Button>
             </div>
           </div>
@@ -1338,9 +1345,9 @@ function MainApp() {
                 <Zap className="w-5 h-5 text-amber-500" />
               </div>
               <div className="space-y-2">
-                <h4 className="font-serif font-bold text-base text-stone-800">Kemitraan Bisnis & Iklan</h4>
+                <h4 className="font-serif font-bold text-base text-stone-800">{t('partnership.business.title')}</h4>
                 <p className="text-xs text-stone-500 leading-relaxed">
-                  Kami menyambut baik kerjasama kemitraan bisnis untuk pengembangan usaha situs, serta ruang kolaborasi pemasangan iklan media bagi brand atau usaha yang relevan.
+                  {t('partnership.business.desc')}
                 </p>
               </div>
             </div>
@@ -1348,11 +1355,11 @@ function MainApp() {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => handleShowSegeraHadir("Kemitraan Bisnis & Iklan", "Formulir pengajuan kemitraan dan proposal kerjasama pemasangan iklan sedang dalam tahap penyelarasan. Kami akan segera menghadirkan dasbor relasi bisnis profesional.")}
+                onClick={() => handleShowSegeraHadir("business")}
                 className="w-full text-xs font-bold border-stone-200 hover:bg-stone-50 hover:text-stone-900 group"
                 id="business-detail-btn"
               >
-                Detil <ArrowRight className="w-3 h-3 ml-1.5 transition-transform group-hover:translate-x-1" />
+                {t('partnership.detailBtn')} <ArrowRight className="w-3 h-3 ml-1.5 transition-transform group-hover:translate-x-1" />
               </Button>
             </div>
           </div>
@@ -1364,9 +1371,9 @@ function MainApp() {
                 <Compass className="w-5 h-5 text-[#2E7D32]" />
               </div>
               <div className="space-y-2">
-                <h4 className="font-serif font-bold text-base text-stone-800">Kerjasama Penelitian</h4>
+                <h4 className="font-serif font-bold text-base text-stone-800">{t('partnership.research.title')}</h4>
                 <p className="text-xs text-stone-500 leading-relaxed">
-                  Kami berkeinginan luas dalam memajujan keilmuan weton Jawa. Terbuka kolaborasi riset antropologi, kebudayaan, maupun sains data filosofi weton secara akademis.
+                  {t('partnership.research.desc')}
                 </p>
               </div>
             </div>
@@ -1374,11 +1381,11 @@ function MainApp() {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => handleShowSegeraHadir("Kerjasama Penelitian", "Media koordinasi dan jaringan forum peneliti weton Nusantara sedang digarap. Segera hadir ruang diskusi ilmiah dan integrasi dataset riset budaya.")}
+                onClick={() => handleShowSegeraHadir("research")}
                 className="w-full text-xs font-bold border-stone-200 hover:bg-stone-50 hover:text-stone-900 group"
                 id="research-detail-btn"
               >
-                Detil <ArrowRight className="w-3 h-3 ml-1.5 transition-transform group-hover:translate-x-1" />
+                {t('partnership.detailBtn')} <ArrowRight className="w-3 h-3 ml-1.5 transition-transform group-hover:translate-x-1" />
               </Button>
             </div>
           </div>
@@ -1409,15 +1416,15 @@ function MainApp() {
               </div>
               
               <div className="bg-amber-100/60 text-amber-800 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-widest mb-3">
-                Segera Hadir
+                {t('partnership.comingSoon')}
               </div>
 
               <h4 className="font-serif font-bold text-xl text-stone-900 mb-2">
-                {segeraHadirData.title}
+                {t(`partnership.${segeraHadirData.type}.popTitle`)}
               </h4>
               
               <p className="text-sm text-stone-600 leading-relaxed mb-6">
-                {segeraHadirData.desc}
+                {t(`partnership.${segeraHadirData.type}.popDesc`)}
               </p>
 
               <Button 
@@ -1425,7 +1432,7 @@ function MainApp() {
                 className="w-full bg-[#2E7D32] hover:bg-[#1B5E20] text-white font-bold py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all"
                 id="segera-hadir-close-btn"
               >
-                Mengerti
+                {t('partnership.closeBtn')}
               </Button>
             </motion.div>
           </div>

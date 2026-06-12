@@ -323,6 +323,30 @@ const resources = {
           Wurung: 'Api: Semangat, kreatif, namun bisa menghancurkan.',
           Dadi: 'Kayu: Tumbuh, berkembang, dan memberi manfaat.'
         }
+      },
+      partnership: {
+        title: 'Kemitraan & Dukungan',
+        donation: {
+          title: 'Dukungan Donasi',
+          desc: 'Kami membuka dukungan donasi bagi siapa saja yang ingin berkontribusi dalam kontinuitas, pemeliharaan, serta pengembangan fitur-fitur baru di situs HAMARÉ.',
+          popTitle: 'Dukungan Donasi',
+          popDesc: 'Fitur pembayaran dan saluran donasi otomatis sedang dalam persiapan. Untuk saat ini, kami sangat menghargai niat baik Anda dan akan segera meluncurkan halaman donasi resmi dalam pembaruan berikutnya.'
+        },
+        business: {
+          title: 'Kemitraan Bisnis & Iklan',
+          desc: 'Kami menyambut baik kerjasama kemitraan bisnis untuk pengembangan usaha situs, serta ruang kolaborasi pemasangan iklan media bagi brand atau usaha yang relevan.',
+          popTitle: 'Kemitraan Bisnis & Iklan',
+          popDesc: 'Formulir pengajuan kemitraan dan proposal kerjasama pemasangan iklan sedang dalam tahap penyelarasan. Kami akan segera menghadirkan dasbor relasi bisnis profesional.'
+        },
+        research: {
+          title: 'Kerjasama Penelitian',
+          desc: 'Kami berkeinginan luas dalam memajukan keilmuan weton Jawa. Terbuka kolaborasi riset antropologi, kebudayaan, maupun sains data filosofi weton secara akademis.',
+          popTitle: 'Kerjasama Penelitian',
+          popDesc: 'Media koordinasi dan jaringan forum peneliti weton Nusantara sedang digarap. Segera hadir ruang diskusi ilmiah dan integrasi dataset riset budaya.'
+        },
+        detailBtn: 'Detil',
+        closeBtn: 'Mengerti',
+        comingSoon: 'Segera Hadir'
       }
     }
   },
@@ -646,6 +670,30 @@ const resources = {
           Wurung: 'Fire: Spirited, creative, but can be destructive.',
           Dadi: 'Wood: Growing, developing, and beneficial.'
         }
+      },
+      partnership: {
+        title: 'Partnership & Support',
+        donation: {
+          title: 'Donation Support',
+          desc: 'We open support for donations for anyone who wants to contribute to the continuity, maintenance, and development of new features on the HAMARÉ website.',
+          popTitle: 'Donation Support',
+          popDesc: 'The payment feature and automated donation channels are currently in preparation. For now, we highly appreciate your goodwill and will soon launch our official donation page in the next update.'
+        },
+        business: {
+          title: 'Business & Advertising Partnership',
+          desc: 'We welcome business partnership collaborations for site enterprise development, as well as media advertisement placement opportunities for relevant brands or businesses.',
+          popTitle: 'Business & Advertising Partnership',
+          popDesc: 'The partnership submission forms and advertising media collaboration proposals are currently being aligned. We will soon bring a professional business relations dashboard.'
+        },
+        research: {
+          title: 'Research Collaboration',
+          desc: 'We have a broad desire to advance the wisdom and science of Javanese Weton. We are open to research collaboration in anthropology, culture, and weton philosophy data science academically.',
+          popTitle: 'Research Collaboration',
+          popDesc: 'Coordination media and the networks of Javanese weton research forums are being developed. A scientific discussion space and cultural research dataset integration are coming soon.'
+        },
+        detailBtn: 'Detail',
+        closeBtn: 'Understood',
+        comingSoon: 'Coming Soon'
       }
     }
   },
@@ -969,6 +1017,30 @@ const resources = {
           Wurung: 'Latu: Semangat, kreatif, nanging saged ngrusak.',
           Dadi: 'Kayu: Tuwuh, mekar, lan maringi paedah.'
         }
+      },
+      partnership: {
+        title: 'Kemitraan & Panyengkuyung',
+        donation: {
+          title: 'Panyengkuyung Dana (Donasi)',
+          desc: 'Kita mbukak panyengkuyung donasi kagem sinten kemawon ingkang kersa paring pambiyantu kagem kalajengan, pangrumatan, sarta pangembangan fitur-fitur anyar wonten ing situs HAMARÉ.',
+          popTitle: 'Panyengkuyung Dana (Donasi)',
+          popDesc: 'Fitur pambayaran lan saluran donasi otomatis nembe dipungarap. Kagem wektu menika, kita sanget ngaturaken panuwun dhateng kesaenan Panjenengan lan badhe enggal ngluncuraken kaca donasi resmi ing wektu salajengipun.'
+        },
+        business: {
+          title: 'Kemitraan Bisnis & Pasang Iklan',
+          desc: 'Kita nampi kanthi sae kerjasama kemitraan bisnis kagem pangembangan usaha situs, sarta papan kolaborasi kagem masang iklan media kagem brand utawi usaha ingkang cocok.',
+          popTitle: 'Kemitraan Bisnis & Pasang Iklan',
+          popDesc: 'Formulir pengajuan kemitraan lan proposal kerjasama masang iklan nembe dipunselarasaken. Kita badhe enggal ngawontenaken dasbor relasi bisnis profesional.'
+        },
+        research: {
+          title: 'Kerjasama Panaliten (Riset)',
+          desc: 'Kita gadhah pepenginan ingkang wiyar kagem majengaken keilmuan weton Jawi. Terbuka kolaborasi riset antropologi, kabudayan, sarta sains data filosofi weton kanthi akademis.',
+          popTitle: 'Kerjasama Panaliten (Riset)',
+          popDesc: 'Sarana koordinasi lan jaringan forum panaliti weton Nusantara nembe dipungarap. Badhe enggal wonten papan dhiskusi ilmiah lan integrasi dhata panaliten budaya.'
+        },
+        detailBtn: 'Detil',
+        closeBtn: 'Ngerti',
+        comingSoon: 'Enggal Rawuh'
       }
     }
   }
