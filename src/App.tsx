@@ -115,6 +115,11 @@ function MainApp() {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [publicArticles, setPublicArticles] = useState<Article[]>([]);
   const [allVisits, setAllVisits] = useState<any[]>([]);
+  const [segeraHadirData, setSegeraHadirData] = useState<{ title: string; desc: string } | null>(null);
+
+  const handleShowSegeraHadir = (title: string, desc: string) => {
+    setSegeraHadirData({ title, desc });
+  };
 
   // Visitor tracking logic
   useEffect(() => {
@@ -1288,7 +1293,142 @@ function MainApp() {
           )}
         </div>
       </div>
+
+      {/* Kemitraan & Dukungan Section */}
+      <div className="mt-16 space-y-6" id="partnership-support-section">
+        <div className="flex items-center gap-2">
+          <Info className="w-5 h-5 text-[#2E7D32]" />
+          <h3 className="font-serif font-bold text-xl text-stone-800">Kemitraan & Dukungan</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Kotak 1 */}
+          <div className="bg-white hover:bg-stone-50/50 p-6 rounded-2xl border border-stone-200/80 shadow-md hover:shadow-lg transition-all flex flex-col justify-between h-full group" id="support-box-donation">
+            <div className="space-y-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+                <Heart className="w-5 h-5 text-red-500" />
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-serif font-bold text-base text-stone-800">Dukungan Donasi</h4>
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  Kami membuka dukungan donasi bagi siapa saja yang ingin berkontribusi dalam kontinuitas, pemeliharaan, serta pengembangan fitur-fitur baru di situs HAMARÉ.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleShowSegeraHadir("Dukungan Donasi", "Fitur pembayaran dan saluran donasi otomatis sedang dalam persiapan. Untuk saat ini, kami sangat menghargai niat baik Anda dan akan segera meluncurkan halaman donasi resmi dalam pembaruan berikutnya.")}
+                className="w-full text-xs font-bold border-stone-200 hover:bg-stone-50 hover:text-stone-900 group"
+                id="donation-detail-btn"
+              >
+                Detil <ArrowRight className="w-3 h-3 ml-1.5 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Kotak 2 */}
+          <div className="bg-white hover:bg-stone-50/50 p-6 rounded-2xl border border-stone-200/80 shadow-md hover:shadow-lg transition-all flex flex-col justify-between h-full group" id="support-box-business">
+            <div className="space-y-4">
+              <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-amber-500" />
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-serif font-bold text-base text-stone-800">Kemitraan Bisnis & Iklan</h4>
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  Kami menyambut baik kerjasama kemitraan bisnis untuk pengembangan usaha situs, serta ruang kolaborasi pemasangan iklan media bagi brand atau usaha yang relevan.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleShowSegeraHadir("Kemitraan Bisnis & Iklan", "Formulir pengajuan kemitraan dan proposal kerjasama pemasangan iklan sedang dalam tahap penyelarasan. Kami akan segera menghadirkan dasbor relasi bisnis profesional.")}
+                className="w-full text-xs font-bold border-stone-200 hover:bg-stone-50 hover:text-stone-900 group"
+                id="business-detail-btn"
+              >
+                Detil <ArrowRight className="w-3 h-3 ml-1.5 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Kotak 3 */}
+          <div className="bg-white hover:bg-stone-50/50 p-6 rounded-2xl border border-stone-200/80 shadow-md hover:shadow-lg transition-all flex flex-col justify-between h-full group" id="support-box-research">
+            <div className="space-y-4">
+              <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
+                <Compass className="w-5 h-5 text-emerald-500" />
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-serif font-bold text-base text-stone-800">Kerjasama Penelitian</h4>
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  Kami berkeinginan luas dalam memajukan keilmuan weton Jawa. Terbuka kolaborasi riset antropologi, kebudayaan, maupun sains data filosofi weton secara akademis.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleShowSegeraHadir("Kerjasama Penelitian", "Media koordinasi dan jaringan forum peneliti weton Nusantara sedang digarap. Segera hadir ruang diskusi ilmiah dan integrasi dataset riset budaya.")}
+                className="w-full text-xs font-bold border-stone-200 hover:bg-stone-50 hover:text-stone-900 group"
+                id="research-detail-btn"
+              >
+                Detil <ArrowRight className="w-3 h-3 ml-1.5 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
       </main>
+
+      {/* Segera Hadir Modal Pop-up */}
+      <AnimatePresence>
+        {segeraHadirData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 selection:bg-amber-100" id="segera-hadir-overlay">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm"
+              onClick={() => setSegeraHadirData(null)}
+            />
+            <motion.div
+              initial={{ scale: 0.95, y: 15, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 15, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-stone-100 relative z-10 flex flex-col items-center text-center"
+              id="segera-hadir-modal"
+            >
+              <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center mb-4">
+                <Clock className="w-8 h-8 text-amber-600 animate-pulse" />
+              </div>
+              
+              <div className="bg-amber-100/60 text-amber-800 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-widest mb-3">
+                Segera Hadir
+              </div>
+
+              <h4 className="font-serif font-bold text-xl text-stone-900 mb-2">
+                {segeraHadirData.title}
+              </h4>
+              
+              <p className="text-sm text-stone-600 leading-relaxed mb-6">
+                {segeraHadirData.desc}
+              </p>
+
+              <Button 
+                onClick={() => setSegeraHadirData(null)}
+                className="w-full bg-[#2E7D32] hover:bg-[#1B5E20] text-white font-bold py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all"
+                id="segera-hadir-close-btn"
+              >
+                Mengerti
+              </Button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <footer className="max-w-6xl mx-auto mt-20 pt-10 border-t border-stone-200 pb-12 px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 text-center md:text-left">
