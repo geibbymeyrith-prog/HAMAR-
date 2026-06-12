@@ -99,9 +99,11 @@ const resources = {
       },
       jodoh: {
         title: 'Cek Jodoh Pinasti',
-        desc: 'Hitung kecocokan berdasarkan Mangsa kelahiran Anda dan pasangan.',
+        desc: 'Hitung kecocokan berdasarkan Mangsa kelahiran dan analisis aksara nama lengkap Anda dan pasangan.',
         birthDateSelf: 'Tanggal Lahir Anda',
         birthDatePartner: 'Tanggal Lahir Pasangan',
+        fullNameSelf: 'Nama Lengkap Anda',
+        fullNamePartner: 'Nama Lengkap Pasangan',
         mangsaSelf: 'Mangsa Anda',
         mangsaPartner: 'Mangsa Pasangan',
         calculate: 'Hitung Kecocokan',
@@ -117,7 +119,41 @@ const resources = {
           },
           kendala: {
             status: 'Kendala Berjodoh',
-            pesan: 'Dalam Petung Jawa, hitungan Jodoh Pinasti adalah tidak untuk dilanggar jika ingin mendapatkan kehidupan pernikahan dan rumah tangga yang harmonis dan bahagia. Namun, jika sudah terlanjur menikah maka dapat melakukan lelaku untuk mengatasinya, salah satunya adalah dengan melakukan Seratan Winadi di setiap weton pernikahannya.'
+            pesan: 'Dalam Petung Jawa, hitungan Jodoh Pinasti adalah tidak untuk dilanggar jika ingin mendapatkan kehidupan pernikahan dan rumah tangga yang harmonis dan bahagia. Namun, jika sudah terlanjur menikah maka dapat melakukan lelaku untuk mengatasi hasil perhitungan yang kurang baik, salah satunya adalah dengan melakukan Seratan Winadi di setiap weton pernikahannya.'
+          }
+        },
+        nameResults: {
+          tunggak: {
+            title: 'Tunggak Tan Semi',
+            desc: 'Anaknya banyak yang meninggal'
+          },
+          pisang: {
+            title: 'Pisang Punggel',
+            desc: 'Cerai'
+          },
+          lumbung: {
+            title: 'Lumbung Gumuling',
+            desc: 'Boros'
+          },
+          sanggar: {
+            title: 'Sanggar Waringin',
+            desc: 'Menjadi Perlindungan'
+          },
+          pendaringan: {
+            title: 'Pendaringan Penuh',
+            desc: 'Kaya Harta'
+          },
+          satriya: {
+            title: 'Satriya Lelaku',
+            desc: 'Baik Jika Berdagang'
+          },
+          pandikta: {
+            title: 'Pandikta Mukti',
+            desc: 'Ayem, Tentrem, dan Slamet'
+          },
+          unknown: {
+            title: 'Tidak Ada Hasil',
+            desc: 'Silakan isi nama dengan benar untuk menghitung jodoh berdasarkan aksara nama.'
           }
         }
       },
@@ -446,9 +482,11 @@ const resources = {
       },
       jodoh: {
         title: 'Check Jodoh Pinasti',
-        desc: 'Calculate compatibility based on your and your partner\'s birth Mangsa.',
+        desc: 'Calculate compatibility based on birth Mangsa and the analysis of your and your partner\'s full names.',
         birthDateSelf: 'Your Birth Date',
         birthDatePartner: 'Partner\'s Birth Date',
+        fullNameSelf: 'Your Full Name',
+        fullNamePartner: 'Partner\'s Full Name',
         mangsaSelf: 'Your Mangsa',
         mangsaPartner: 'Partner\'s Mangsa',
         calculate: 'Calculate Compatibility',
@@ -464,7 +502,41 @@ const resources = {
           },
           kendala: {
             status: 'Compatibility Obstacles',
-            pesan: 'In Petung Jawa, the Jodoh Pinasti calculation is not to be violated if you want a harmonious and happy marriage and household. However, if already married, you can perform rituals to overcome it, one of which is by performing Seratan Winadi on every wedding weton.'
+            pesan: 'In Petung Jawa, the Jodoh Pinasti calculation is not to be violated if you want a harmonious and happy marriage and household. However, if already married, you can perform rituals to overcome poor calculation results, one of which is by performing Seratan Winadi on every wedding weton.'
+          }
+        },
+        nameResults: {
+          tunggak: {
+            title: 'Tunggak Tan Semi',
+            desc: 'Many of their children pass away'
+          },
+          pisang: {
+            title: 'Pisang Punggel',
+            desc: 'Divorce / Separation'
+          },
+          lumbung: {
+            title: 'Lumbung Gumuling',
+            desc: 'Spendthrift / Extravagant'
+          },
+          sanggar: {
+            title: 'Sanggar Waringin',
+            desc: 'Becoming a Sanctuary / Shelter'
+          },
+          pendaringan: {
+            title: 'Pendaringan Penuh',
+            desc: 'Wealthy / Rich in Assets'
+          },
+          satriya: {
+            title: 'Satriya Lelaku',
+            desc: 'Good if Trading / Business'
+          },
+          pandikta: {
+            title: 'Pandikta Mukti',
+            desc: 'Peaceful, Harmonious, and Safe'
+          },
+          unknown: {
+            title: 'No Result',
+            desc: 'Please enter names correctly to calculate compatibility based on name letters.'
           }
         }
       },
@@ -793,9 +865,11 @@ const resources = {
       },
       jodoh: {
         title: 'Cek Jodoh Pinasti',
-        desc: 'Ngetung kacocokan adhedhasar Mangsa wiyosan Panjenengan lan pasangan.',
+        desc: 'Ngetung kacocokan adhedhasar Mangsa wiyosan sarta analisis aksara asma jangkep Panjenengan lan pasangan.',
         birthDateSelf: 'Tanggal Wiyosan Panjenengan',
         birthDatePartner: 'Tanggal Wiyosan Pasangan',
+        fullNameSelf: 'Asma Jangkep Panjenengan',
+        fullNamePartner: 'Asma Jangkep Pasangan',
         mangsaSelf: 'Mangsa Panjenengan',
         mangsaPartner: 'Mangsa Pasangan',
         calculate: 'Etung Kacocokan',
@@ -811,7 +885,41 @@ const resources = {
           },
           kendala: {
             status: 'Kendala Berjodoh',
-            pesan: 'Ing Petung Jawa, etungan Jodoh Pinasti menika boten kagem dipunlanggar menawi kersa pikantuk gesang bebrayan ingkang harmonis lan bagya. Nanging, menawi sampun kelajeng krama, saged nindakaken lelaku kagem nanggulangi, salah satunggalipun kanthi nindakaken Seratan Winadi ing saben weton kramanipun.'
+            pesan: 'Ing Petung Jawa, etungan Jodoh Pinasti menika boten kagem dipunlanggar menawi kersa pikantuk gesang bebrayan ingkang harmonis lan bagya. Nanging, menawi sampun kelajeng krama, saged nindakaken lelaku kagem nanggulangi asil etungan ingkang kirang sae, salah satunggalipun kanthi nindakaken Seratan Winadi ing saben weton kramanipun.'
+          }
+        },
+        nameResults: {
+          tunggak: {
+            title: 'Tunggak Tan Semi',
+            desc: 'Katurunanipun kathah ingkang tilar donya'
+          },
+          pisang: {
+            title: 'Pisang Punggel',
+            desc: 'Pegatan / Pisah ranjang'
+          },
+          lumbung: {
+            title: 'Lumbung Gumuling',
+            desc: 'Boros'
+          },
+          sanggar: {
+            title: 'Sanggar Waringin',
+            desc: 'Dados Pangayoman'
+          },
+          pendaringan: {
+            title: 'Pendaringan Penuh',
+            desc: 'Sugih Bandha'
+          },
+          satriya: {
+            title: 'Satriya Lelaku',
+            desc: 'Sae Menawi Sadeyan / Bisnis'
+          },
+          pandikta: {
+            title: 'Pandikta Mukti',
+            desc: 'Ayem, Tentrem, lan Slamet'
+          },
+          unknown: {
+            title: 'Boten Wonten Hasil',
+            desc: 'Sumangga isi asma kanthi leres kagem ngetung jodoh adhedhasar aksara asma.'
           }
         }
       },

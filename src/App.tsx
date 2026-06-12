@@ -61,6 +61,7 @@ import {
   getJavaneseDetails, 
   getJodohPinasti, 
   getMangsaFromDate,
+  calculateJodohNama,
   PRANATA_MANGSA,
   type JavaneseDetails 
 } from '@/lib/javanese-calendar';
@@ -267,6 +268,9 @@ function MainApp() {
   // Jodoh Pinasti State
   const [birthDateSelf, setBirthDateSelf] = useState<Date>(new Date(1990, 0, 1));
   const [birthDatePartner, setBirthDatePartner] = useState<Date>(new Date(1992, 0, 1));
+  const [nameSelf, setNameSelf] = useState<string>('');
+  const [namePartner, setNamePartner] = useState<string>('');
+  const [jodohNamaResult, setJodohNamaResult] = useState<ReturnType<typeof calculateJodohNama> | null>(null);
   
   const mangsaSelfData = useMemo(() => {
     const name = getMangsaFromDate(birthDateSelf);
@@ -283,11 +287,13 @@ function MainApp() {
   const handleDateSelfChange = (date: Date) => {
     setBirthDateSelf(date);
     setJodohResult(null); // Reset result when date changes
+    setJodohNamaResult(null);
   };
 
   const handleDatePartnerChange = (date: Date) => {
     setBirthDatePartner(date);
     setJodohResult(null); // Reset result when date changes
+    setJodohNamaResult(null);
   };
 
   const wetonDetails = useMemo(() => getJavaneseDetails(selectedDate), [selectedDate]);
@@ -362,8 +368,12 @@ function MainApp() {
 
     const result = getJodohPinasti(mangsaSelfData.name, mangsaPartnerData.name);
     setJodohResult(result);
+
+    const nameResult = calculateJodohNama(nameSelf, namePartner);
+    setJodohNamaResult(nameResult);
+
     if (profile) {
-      saveHistory('jodoh', `${mangsaSelfData.name} x ${mangsaPartnerData.name}`, result);
+      saveHistory('jodoh', `${mangsaSelfData.name} x ${mangsaPartnerData.name} (${nameSelf || '-'} x ${namePartner || '-'})`, result);
       if (!isPremium && profile.generateCount <= 3) {
         incrementGenerateCount();
       }
@@ -937,17 +947,33 @@ function MainApp() {
                     <CardDescription className="text-stone-400">{t('jodoh.desc')}</CardDescription>
                   </CardHeader>
                   <CardContent className="p-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8" id="jodoh-inputs-grid">
                       <div className="space-y-4">
-                        <Label className="flex items-center gap-2 font-bold"><User className="w-4 h-4" /> {t('jodoh.birthDateSelf')}</Label>
-                        <Input 
-                          type="date" 
-                          min="1582-01-01"
-                          max="2100-12-31"
-                          value={format(birthDateSelf, 'yyyy-MM-dd')}
-                          onChange={(e) => handleDateSelfChange(new Date(e.target.value))}
-                          className="bg-stone-50 border-stone-200 h-12"
-                        />
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2 font-bold"><User className="w-4 h-4 text-[#2E7D32]" /> {t('jodoh.fullNameSelf')}</Label>
+                          <Input 
+                            type="text" 
+                            placeholder={t('jodoh.fullNameSelf')}
+                            value={nameSelf}
+                            onChange={(e) => {
+                              setNameSelf(e.target.value);
+                              setJodohResult(null);
+                              setJodohNamaResult(null);
+                            }}
+                            className="bg-stone-50 border-stone-200 h-12"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2 font-bold"><CalendarIcon className="w-4 h-4 text-[#2E7D32]" /> {t('jodoh.birthDateSelf')}</Label>
+                          <Input 
+                            type="date" 
+                            min="1582-01-01"
+                            max="2100-12-31"
+                            value={format(birthDateSelf, 'yyyy-MM-dd')}
+                            onChange={(e) => handleDateSelfChange(new Date(e.target.value))}
+                            className="bg-stone-50 border-stone-200 h-12"
+                          />
+                        </div>
                         <div className="p-3 bg-green-50 rounded-lg border border-green-100">
                           <p className="text-[10px] font-bold text-green-600 uppercase">{t('jodoh.mangsaSelf')}</p>
                           <p className="font-bold text-green-800">{mangsaSelfData?.name}</p>
@@ -955,15 +981,31 @@ function MainApp() {
                         </div>
                       </div>
                       <div className="space-y-4">
-                        <Label className="flex items-center gap-2 font-bold"><Users className="w-4 h-4" /> {t('jodoh.birthDatePartner')}</Label>
-                        <Input 
-                          type="date" 
-                          min="1582-01-01"
-                          max="2100-12-31"
-                          value={format(birthDatePartner, 'yyyy-MM-dd')}
-                          onChange={(e) => handleDatePartnerChange(new Date(e.target.value))}
-                          className="bg-stone-50 border-stone-200 h-12"
-                        />
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2 font-bold"><Users className="w-4 h-4 text-[#2E7D32]" /> {t('jodoh.fullNamePartner')}</Label>
+                          <Input 
+                            type="text" 
+                            placeholder={t('jodoh.fullNamePartner')}
+                            value={namePartner}
+                            onChange={(e) => {
+                              setNamePartner(e.target.value);
+                              setJodohResult(null);
+                              setJodohNamaResult(null);
+                            }}
+                            className="bg-stone-50 border-stone-200 h-12"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2 font-bold"><CalendarIcon className="w-4 h-4 text-[#2E7D32]" /> {t('jodoh.birthDatePartner')}</Label>
+                          <Input 
+                            type="date" 
+                            min="1582-01-01"
+                            max="2100-12-31"
+                            value={format(birthDatePartner, 'yyyy-MM-dd')}
+                            onChange={(e) => handleDatePartnerChange(new Date(e.target.value))}
+                            className="bg-stone-50 border-stone-200 h-12"
+                          />
+                        </div>
                         <div className="p-3 bg-green-50 rounded-lg border border-green-100">
                           <p className="text-[10px] font-bold text-green-600 uppercase">{t('jodoh.mangsaPartner')}</p>
                           <p className="font-bold text-green-800">{mangsaPartnerData?.name}</p>
@@ -995,11 +1037,17 @@ function MainApp() {
                             
                             {/* Detailed Info for PDF */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <Card className="border border-stone-100 bg-stone-50/50">
+                              <Card className="border border-stone-100 bg-stone-50/50" id="jodoh-card-self">
                                 <CardHeader className="p-4 bg-stone-100/50">
                                   <CardTitle className="text-xs font-bold uppercase text-stone-500">Data Diri</CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-4 space-y-3">
+                                  {nameSelf && (
+                                    <div>
+                                      <p className="text-[10px] text-stone-400 uppercase font-bold">Nama Lengkap</p>
+                                      <p className="font-serif font-bold text-stone-800">{nameSelf}</p>
+                                    </div>
+                                  )}
                                   <div>
                                     <p className="text-[10px] text-stone-400 uppercase font-bold">Tanggal Lahir</p>
                                     <p className="font-serif font-bold text-stone-800">{format(birthDateSelf, 'EEEE, d MMMM yyyy', { locale: dateLocale })}</p>
@@ -1012,11 +1060,17 @@ function MainApp() {
                                 </CardContent>
                               </Card>
 
-                              <Card className="border border-stone-100 bg-stone-50/50">
+                              <Card className="border border-stone-100 bg-stone-50/50" id="jodoh-card-partner">
                                 <CardHeader className="p-4 bg-stone-100/50">
                                   <CardTitle className="text-xs font-bold uppercase text-stone-500">Data Pasangan</CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-4 space-y-3">
+                                  {namePartner && (
+                                    <div>
+                                      <p className="text-[10px] text-stone-400 uppercase font-bold">Nama Lengkap</p>
+                                      <p className="font-serif font-bold text-stone-800">{namePartner}</p>
+                                    </div>
+                                  )}
                                   <div>
                                     <p className="text-[10px] text-stone-400 uppercase font-bold">Tanggal Lahir</p>
                                     <p className="font-serif font-bold text-stone-800">{format(birthDatePartner, 'EEEE, d MMMM yyyy', { locale: dateLocale })}</p>
@@ -1030,8 +1084,9 @@ function MainApp() {
                               </Card>
                             </div>
 
-                            <div className="p-8 rounded-2xl bg-stone-50 border-2 border-stone-100 text-center relative overflow-hidden">
-                              <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-2">{t('jodoh.status')}</h3>
+                            <div className="p-8 rounded-2xl bg-stone-50 border-2 border-stone-100 text-center relative overflow-hidden" id="jodoh-mangsa-result-box">
+                              <div className="text-xs text-stone-400 font-bold uppercase tracking-widest mb-1">PERHITUNGAN PRANATA MANGSA</div>
+                              <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-stone-500 mb-2">{t('jodoh.status')}</h3>
                               <p className={cn(
                                 "text-3xl font-serif font-bold",
                                 jodohResult.status.includes('Berjodoh') ? "text-[#2E7D32]" : "text-stone-700"
@@ -1046,6 +1101,46 @@ function MainApp() {
                                 "{jodohResult.status.includes('Pinasti') ? t('jodoh.results.pinasti.pesan') : 
                                   jodohResult.status === 'Serasi' ? t('jodoh.results.serasi.pesan') : 
                                   t('jodoh.results.kendala.pesan')}"
+                              </p>
+                            </div>
+
+                             {jodohNamaResult && (
+                              <Card className="border border-stone-200 bg-[#FBC02D]/10 overflow-hidden" id="jodoh-name-result-box">
+                                <CardHeader className="bg-amber-100/40 border-b border-amber-200/50 p-5">
+                                  <CardTitle className="text-base font-serif font-bold text-amber-900 flex items-center justify-center gap-2">
+                                    <Heart className="w-5 h-5 text-amber-600 fill-amber-500 animate-pulse" />
+                                    Hasil Perhitungan Aksara Nama (Petung Aksara Jawa)
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-6 space-y-4 text-center">
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-serif text-stone-700 animate-pulse">
+                                      Total Skor: <span className="font-bold text-stone-950">{jodohNamaResult.selfResult.score}</span> (Anda) + <span className="font-bold text-stone-950">{jodohNamaResult.partnerResult.score}</span> (Pasangan) = <span className="font-bold text-stone-950">{jodohNamaResult.totalScore}</span>
+                                    </div>
+                                    <div className="text-sm font-serif text-stone-700">
+                                      Sisa: <span className="font-bold text-[#2E7D32]">{jodohNamaResult.sisa}</span>
+                                    </div>
+                                    <div className="text-sm font-serif text-stone-700">
+                                      Hasil: <span className="font-bold text-stone-900">{t(jodohNamaResult.titleKey)}</span>
+                                    </div>
+                                    <div className="text-sm font-serif text-stone-700">
+                                      Arti: <span className="font-bold text-stone-800">"{t(jodohNamaResult.descKey)}"</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <Separator className="my-2 border-stone-200" />
+
+                                  <div className="text-xs text-[#1B5E20] bg-white/70 p-4 rounded-xl border border-green-100 max-w-xl mx-auto leading-relaxed font-medium">
+                                    Jika sudah terlanjur menikah maka anda dapat mengatasinya dengan melakukan Seratan Winadi di setiap weton diri, weton pernikahan, weton pasangan, dan weton setiap anak keturunannya
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )}
+
+                            {/* Keterangan Akhir Hasil */}
+                            <div className="p-6 rounded-2xl bg-[#FFF9C4]/20 border border-[#FBC02D]/30 text-center max-w-2xl mx-auto my-4" id="jodoh-final-disclaimer">
+                              <p className="text-xs sm:text-sm text-stone-700 leading-relaxed italic font-medium">
+                                "Dalam Petung Jawa, hitungan Jodoh Pinasti adalah tidak untuk dilanggar jika ingin mendapatkan kehidupan pernikahan dan rumah tangga yang harmonis dan bahagia. Namun, jika sudah terlanjur menikah maka dapat melakukan lelaku untuk mengatasi hasil perhitungan yang kurang baik, salah satunya adalah dengan melakukan Seratan Winadi di setiap weton pernikahannya."
                               </p>
                             </div>
                           </div>

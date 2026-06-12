@@ -538,3 +538,109 @@ export function getJodohPinasti(mangsa1: string, mangsa2: string) {
     };
   }
 }
+
+export function extractConsonants(name: string): string[] {
+  const normalized = name.toLowerCase().replace(/[^a-z\s]/g, '');
+  // Rule 8: Semua konsonan jika menggandeng kata 'ar', maka 'r' nya tidak dihitung.
+  const cleaned = normalized.replace(/(dh|th|ny|ng|[hwyldmncrkstsjbpg])ar/g, '$1a');
+  
+  const consonants: string[] = [];
+  let i = 0;
+  while (i < cleaned.length) {
+    // Check multi-character consonants first
+    const twoChar = cleaned.substring(i, i + 2);
+    if (twoChar === 'dh' || twoChar === 'th' || twoChar === 'ny' || twoChar === 'ng') {
+      consonants.push(twoChar);
+      i += 2;
+    } else {
+      const oneChar = cleaned.charAt(i);
+      if ('hwyldmncrkstsjbpg'.includes(oneChar)) {
+        consonants.push(oneChar);
+      }
+      i += 1;
+    }
+  }
+  return consonants;
+}
+
+export function getConsonantValue(c: string): number {
+  if (c === 'h' || c === 'w') return 6;
+  if (c === 'y') return 8;
+  if (c === 'd' || c === 'l' || c === 'm') return 5;
+  if (c === 'dh' || c === 'th') return 4;
+  if (c === 'n' || c === 'c' || c === 'r' || c === 'k' || c === 't' || c === 's' || c === 'j' || c === 'ny') return 3;
+  if (c === 'b' || c === 'ng') return 2;
+  if (c === 'p' || c === 'g') return 1;
+  return 0;
+}
+
+export function getNameScore(name: string) {
+  const list = extractConsonants(name);
+  if (list.length === 0) {
+    return { score: 0, front: '', back: '', frontVal: 0, backVal: 0, list };
+  }
+  const front = list[0];
+  const back = list[list.length - 1];
+  const frontVal = getConsonantValue(front);
+  const backVal = getConsonantValue(back);
+  return {
+    score: frontVal + backVal,
+    front,
+    back,
+    frontVal,
+    backVal,
+    list
+  };
+}
+
+export function calculateJodohNama(nameSelf: string, namePartner: string) {
+  const selfResult = getNameScore(nameSelf);
+  const partnerResult = getNameScore(namePartner);
+  const totalScore = selfResult.score + partnerResult.score;
+  const sisa = totalScore === 0 ? 0 : ((totalScore % 7) === 0 ? 7 : (totalScore % 7));
+  
+  const resultsMap: Record<number, { titleKey: string; descKey: string }> = {
+    1: { 
+      titleKey: 'jodoh.nameResults.tunggak.title', 
+      descKey: 'jodoh.nameResults.tunggak.desc' 
+    },
+    2: { 
+      titleKey: 'jodoh.nameResults.pisang.title', 
+      descKey: 'jodoh.nameResults.pisang.desc' 
+    },
+    3: { 
+      titleKey: 'jodoh.nameResults.lumbung.title', 
+      descKey: 'jodoh.nameResults.lumbung.desc' 
+    },
+    4: { 
+      titleKey: 'jodoh.nameResults.sanggar.title', 
+      descKey: 'jodoh.nameResults.sanggar.desc' 
+    },
+    5: { 
+      titleKey: 'jodoh.nameResults.pendaringan.title', 
+      descKey: 'jodoh.nameResults.pendaringan.desc' 
+    },
+    6: { 
+      titleKey: 'jodoh.nameResults.satriya.title', 
+      descKey: 'jodoh.nameResults.satriya.desc' 
+    },
+    7: { 
+      titleKey: 'jodoh.nameResults.pandikta.title', 
+      descKey: 'jodoh.nameResults.pandikta.desc' 
+    }
+  };
+
+  const sisaInfo = resultsMap[sisa] || { 
+    titleKey: 'jodoh.nameResults.unknown.title', 
+    descKey: 'jodoh.nameResults.unknown.desc' 
+  };
+
+  return {
+    selfResult,
+    partnerResult,
+    totalScore,
+    sisa,
+    titleKey: sisaInfo.titleKey,
+    descKey: sisaInfo.descKey
+  };
+}
