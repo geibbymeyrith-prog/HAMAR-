@@ -423,45 +423,6 @@ export const UserDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           )}
         </TabsContent>
       </Tabs>
-
-      <footer className="mt-16 pt-8 border-t border-stone-200 pb-12 px-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 text-center md:text-left">
-          {/* Left: HNJ Indonesia Name only */}
-          <div className="flex justify-center md:justify-start">
-            <a 
-              href="https://hnj-indonesia.com/" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="flex items-center gap-2 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-4 rounded-full shadow-sm transition-all group"
-            >
-              <div className="text-left select-none">
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none mb-0.5">Supported By</p>
-                <p className="text-xs font-bold text-stone-700 leading-none">HNJ Indonesia</p>
-              </div>
-            </a>
-          </div>
-
-          {/* Center: HAMARÉ */}
-          <div className="flex flex-col items-center gap-1 text-center">
-            <p className="text-xs text-stone-400 font-medium">© 2026 HAMARÉ - Member Area</p>
-          </div>
-
-          {/* Right: Haloka Bhagya Name only */}
-          <div className="flex justify-center md:justify-end items-center">
-            <a 
-              href="https://halokabhagya.com/" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="flex items-center gap-2 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-4 rounded-full shadow-sm transition-all group"
-            >
-              <div className="text-left select-none">
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none mb-0.5">Supported By</p>
-                <p className="text-xs font-bold text-stone-700 leading-none">Haloka Bhagya</p>
-              </div>
-            </a>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

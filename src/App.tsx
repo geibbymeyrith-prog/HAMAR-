@@ -1293,9 +1293,12 @@ function MainApp() {
           )}
         </div>
       </div>
+      </main>
+    </>
+    )}
 
-      {/* Kemitraan & Dukungan Section */}
-      <div className="mt-16 space-y-6" id="partnership-support-section">
+      {/* Kemitraan & Dukungan Section - Now visible on every page */}
+      <div className="max-w-6xl mx-auto mt-16 space-y-6 w-full" id="partnership-support-section">
         <div className="flex items-center gap-2">
           <Info className="w-5 h-5 text-[#2E7D32]" />
           <h3 className="font-serif font-bold text-xl text-stone-800">Kemitraan & Dukungan</h3>
@@ -1357,13 +1360,13 @@ function MainApp() {
           {/* Kotak 3 */}
           <div className="bg-white hover:bg-stone-50/50 p-6 rounded-2xl border border-stone-200/80 shadow-md hover:shadow-lg transition-all flex flex-col justify-between h-full group" id="support-box-research">
             <div className="space-y-4">
-              <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
-                <Compass className="w-5 h-5 text-emerald-500" />
+              <div className="w-10 h-10 rounded-full bg-[#E8F5E9] flex items-center justify-center">
+                <Compass className="w-5 h-5 text-[#2E7D32]" />
               </div>
               <div className="space-y-2">
                 <h4 className="font-serif font-bold text-base text-stone-800">Kerjasama Penelitian</h4>
                 <p className="text-xs text-stone-500 leading-relaxed">
-                  Kami berkeinginan luas dalam memajukan keilmuan weton Jawa. Terbuka kolaborasi riset antropologi, kebudayaan, maupun sains data filosofi weton secara akademis.
+                  Kami berkeinginan luas dalam memajujan keilmuan weton Jawa. Terbuka kolaborasi riset antropologi, kebudayaan, maupun sains data filosofi weton secara akademis.
                 </p>
               </div>
             </div>
@@ -1381,7 +1384,6 @@ function MainApp() {
           </div>
         </div>
       </div>
-      </main>
 
       {/* Segera Hadir Modal Pop-up */}
       <AnimatePresence>
@@ -1430,7 +1432,7 @@ function MainApp() {
         )}
       </AnimatePresence>
 
-      <footer className="max-w-6xl mx-auto mt-20 pt-10 border-t border-stone-200 pb-12 px-4">
+      <footer className="max-w-6xl mx-auto mt-20 pt-10 border-t border-stone-200 pb-12 px-4 w-full">
         <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 text-center md:text-left">
           {/* Left: HNJ Indonesia Name only */}
           <div className="flex justify-center md:justify-start">
@@ -1482,8 +1484,6 @@ function MainApp() {
           </div>
         </div>
       </footer>
-    </>
-    )}
     </div>
   );
 }
