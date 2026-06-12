@@ -35,12 +35,7 @@ import { Separator } from './ui/separator';
 import { useAuth } from '../lib/AuthContext';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
-// @ts-ignore
-import hamareLogo from '@/assets/images/hamare_logo_1781266205700.jpg';
-// @ts-ignore
-import hnjLogo from '@/assets/images/hnj_logo_1781267773417.jpg';
-// @ts-ignore
-import halokaBhagyaLogo from '@/assets/images/haloka_bhagya_logo_1781268083448.jpg';
+// Logo imports removed
 
 interface HistoryItem {
   id: string;
@@ -431,20 +426,14 @@ export const UserDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       <footer className="mt-16 pt-8 border-t border-stone-200 pb-12 px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 text-center md:text-left">
-          {/* Left: HNJ Indonesia Logo */}
+          {/* Left: HNJ Indonesia Name only */}
           <div className="flex justify-center md:justify-start">
             <a 
               href="https://hnj-indonesia.com/" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="flex items-center gap-3 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-3 rounded-full shadow-sm transition-all group"
+              className="flex items-center gap-2 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-4 rounded-full shadow-sm transition-all group"
             >
-              <img 
-                src={hnjLogo} 
-                alt="HNJ Indonesia Logo" 
-                className="w-10 h-10 rounded-full shadow-sm border border-white object-cover aspect-square shrink-0 transition-transform group-hover:scale-105"
-                referrerPolicy="no-referrer"
-              />
               <div className="text-left select-none">
                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none mb-0.5">Supported By</p>
                 <p className="text-xs font-bold text-stone-700 leading-none">HNJ Indonesia</p>
@@ -453,30 +442,18 @@ export const UserDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
 
           {/* Center: HAMARÉ */}
-          <div className="flex flex-col items-center gap-1.5 text-center">
-            <img 
-              src={hamareLogo} 
-              alt="HAMARÉ Logo" 
-              className="w-12 h-12 rounded-full shadow-md border border-amber-100 object-cover aspect-square shrink-0"
-              referrerPolicy="no-referrer"
-            />
+          <div className="flex flex-col items-center gap-1 text-center">
             <p className="text-xs text-stone-400 font-medium">© 2026 HAMARÉ - Member Area</p>
           </div>
 
-          {/* Right: Haloka Bhagya Logo */}
+          {/* Right: Haloka Bhagya Name only */}
           <div className="flex justify-center md:justify-end items-center">
             <a 
               href="https://halokabhagya.com/" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="flex items-center gap-3 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-3 rounded-full shadow-sm transition-all group"
+              className="flex items-center gap-2 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-4 rounded-full shadow-sm transition-all group"
             >
-              <img 
-                src={halokaBhagyaLogo} 
-                alt="Haloka Bhagya Logo" 
-                className="w-10 h-10 rounded-full shadow-sm border border-white object-cover aspect-square shrink-0 transition-transform group-hover:scale-105"
-                referrerPolicy="no-referrer"
-              />
               <div className="text-left select-none">
                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none mb-0.5">Supported By</p>
                 <p className="text-xs font-bold text-stone-700 leading-none">Haloka Bhagya</p>

@@ -81,12 +81,7 @@ import { AuthModal } from '@/components/AuthModal';
 import { MemberOfferModal } from '@/components/MemberOfferModal';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-// @ts-ignore
-import hamareLogo from '@/assets/images/hamare_logo_1781266205700.jpg';
-// @ts-ignore
-import hnjLogo from '@/assets/images/hnj_logo_1781267773417.jpg';
-// @ts-ignore
-import halokaBhagyaLogo from '@/assets/images/haloka_bhagya_logo_1781268083448.jpg';
+// Logo imports removed
 
 interface Article {
   id: string;
@@ -585,19 +580,7 @@ function MainApp() {
               guestCountRemaining={guestGenerateCount}
             />
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="flex justify-center mb-6 mt-12 md:mt-16"
-            >
-              <img 
-                src={hamareLogo} 
-                alt="HAMARÉ Logo" 
-                className="w-24 h-24 md:w-28 md:h-28 rounded-full shadow-xl border-2 border-amber-50/50 hover:scale-105 transition-all duration-300 object-cover aspect-square"
-                referrerPolicy="no-referrer"
-              />
-            </motion.div>
+            <div className="mt-12 md:mt-16"></div>
 
         <motion.h1 
           initial={{ opacity: 0, y: -20 }}
@@ -1309,21 +1292,15 @@ function MainApp() {
 
       <footer className="max-w-6xl mx-auto mt-20 pt-10 border-t border-stone-200 pb-12 px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 text-center md:text-left">
-          {/* Left: HNJ Indonesia Logo */}
+          {/* Left: HNJ Indonesia Name only */}
           <div className="flex justify-center md:justify-start">
             <a 
               href="https://hnj-indonesia.com/" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="flex items-center gap-3 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-3 rounded-full shadow-sm transition-all group"
+              className="flex items-center gap-2 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-4 rounded-full shadow-sm transition-all group"
               id="hnj-footer-link"
             >
-              <img 
-                src={hnjLogo} 
-                alt="HNJ Indonesia Logo" 
-                className="w-10 h-10 rounded-full shadow-sm border border-white object-cover aspect-square shrink-0 transition-transform group-hover:scale-105"
-                referrerPolicy="no-referrer"
-              />
               <div className="text-left select-none">
                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none mb-0.5">Supported By</p>
                 <p className="text-xs font-bold text-stone-700 leading-none">HNJ Indonesia</p>
@@ -1332,18 +1309,12 @@ function MainApp() {
           </div>
 
           {/* Center: HAMARÉ */}
-          <div className="flex flex-col items-center gap-2 text-center">
-            <img 
-              src={hamareLogo} 
-              alt="HAMARÉ Logo" 
-              className="w-16 h-16 rounded-full shadow-lg border border-amber-100 hover:scale-105 transition-transform duration-300 object-cover aspect-square shrink-0"
-              referrerPolicy="no-referrer"
-            />
+          <div className="flex flex-col items-center gap-1 text-center">
             <p className="text-[#2E7D32] font-serif font-bold text-base tracking-wider mt-0.5">HAMARÉ</p>
             <p className="text-xs text-stone-400">© 2026 {t('title')} - Hak Cipta Dilindungi</p>
           </div>
 
-          {/* Right: Haloka Bhagya Logo & Optional Admin Button */}
+          {/* Right: Haloka Bhagya Name & Optional Admin Button */}
           <div className="flex flex-col md:flex-row justify-center md:justify-end items-center gap-4">
             {isAdmin && (
               <Button 
@@ -1360,15 +1331,9 @@ function MainApp() {
               href="https://halokabhagya.com/" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="flex items-center gap-3 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-3 rounded-full shadow-sm transition-all group"
+              className="flex items-center gap-2 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-4 rounded-full shadow-sm transition-all group"
               id="haloka-footer-link"
             >
-              <img 
-                src={halokaBhagyaLogo} 
-                alt="Haloka Bhagya Logo" 
-                className="w-10 h-10 rounded-full shadow-sm border border-white object-cover aspect-square shrink-0 transition-transform group-hover:scale-105"
-                referrerPolicy="no-referrer"
-              />
               <div className="text-left select-none">
                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none mb-0.5">Supported By</p>
                 <p className="text-xs font-bold text-stone-700 leading-none">Haloka Bhagya</p>
