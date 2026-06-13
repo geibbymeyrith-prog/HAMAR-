@@ -635,6 +635,15 @@ function MainApp() {
         >
           {t('description')}
         </motion.p>
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="text-stone-500 font-sans text-xs md:text-sm max-w-2xl mx-auto mt-3 leading-relaxed"
+          id="main-opening-narrative"
+        >
+          {t('openingNarrative')}
+        </motion.p>
       </header>
 
       <main className="max-w-6xl mx-auto space-y-8" id="main-content">

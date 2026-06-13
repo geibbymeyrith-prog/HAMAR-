@@ -8,6 +8,7 @@ const resources = {
       title: 'HAMARÉ',
       subtitle: 'Weton Jawa (Hari Kelahiran) menurut Petung Jawa',
       description: 'Infinite Calendar with Javanesse Wisdom',
+      openingNarrative: 'HAMARÉ adalah gerbang untuk mengenal diri melalui kebijaksanaan kalender Jawa. Berlandaskan warisan budaya Nusantara yang kaya akan makna, HAMARÉ membantu Anda memahami weton, karakter kelahiran, serta berbagai potensi yang tersimpan dalam perjalanan hidup. Karena setiap manusia lahir pada waktu yang unik, dan setiap waktu menyimpan cerita yang layak dipahami.',
       common: {
         login: 'Login',
         logout: 'Logout',
@@ -392,6 +393,7 @@ const resources = {
       title: 'HAMARÉ',
       subtitle: 'Weton Jawa (Birth Date) according to Petung Jawa',
       description: 'Infinite Calendar with Javanesse Wisdom',
+      openingNarrative: 'HAMARÉ is a gateway to self-discovery through the wisdom of the Javanese calendar. Grounded in the rich cultural heritage of the Indonesian archipelago, HAMARÉ helps you understand weton, birth character, and the various potentials stored within life\'s journey. Because each person is born at a unique time, and every moment holds a story worth understanding.',
       common: {
         login: 'Login',
         logout: 'Logout',
@@ -776,6 +778,7 @@ const resources = {
       title: 'HAMARÉ',
       subtitle: 'Weton Jawa (Dinten Wiyosan) miturut Petung Jawa',
       description: 'Infinite Calendar with Javanesse Wisdom',
+      openingNarrative: 'HAMARÉ punika dados margi kagem wanuh dhumateng dhiri pribadi mawi kawicaksanan tanggalan Jawi. Adhedhasar warisan budaya Nusantara ingkang sugih teges, HAMARÉ biyantu panjenengan mangertosi weton, karakter lair, sarta sakathahe potensi ingkang kasimpen salebeting lampahing gesang. Amargi saben manungsa lair ing wektu ingkang mirunggan, lan saben wektu gadhah cariyos ingkang pantes dipunrungu.',
       common: {
         login: 'Mlebet',
         logout: 'Metu',
