@@ -324,8 +324,8 @@ export const AdminDashboard: React.FC<{
       alert("Judul dan isi artikel wajib diisi!");
       return;
     }
-    if (articleContent.length > 1000) {
-      alert("Artikel maksimal 1000 karakter!");
+    if (articleContent.length > 10000) {
+      alert("Artikel maksimal 10000 karakter!");
       return;
     }
 
@@ -503,8 +503,8 @@ export const AdminDashboard: React.FC<{
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label>Isi Artikel (Maks 1000 karakter)</Label>
-                    <span className="text-[10px] text-stone-400">{articleContent.length}/1000</span>
+                    <Label>Isi Artikel (Maks 10000 karakter)</Label>
+                    <span className="text-[10px] text-stone-400">{articleContent.length}/10000</span>
                   </div>
                   
                   {/* Mock Toolbar */}
@@ -523,7 +523,7 @@ export const AdminDashboard: React.FC<{
                   
                   <Textarea 
                     value={articleContent} 
-                    onChange={e => setArticleContent(e.target.value.slice(0, 1000))} 
+                    onChange={e => setArticleContent(e.target.value.slice(0, 10000))} 
                     className="min-h-[300px] rounded-t-none border-stone-200"
                     placeholder="Tulis artikel di sini..."
                   />
