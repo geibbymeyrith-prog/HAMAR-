@@ -62,6 +62,7 @@ import {
   getJodohPinasti, 
   getMangsaFromDate,
   calculateJodohNama,
+  calculateHitungNama,
   PRANATA_MANGSA,
   type JavaneseDetails 
 } from '@/lib/javanese-calendar';
@@ -283,6 +284,10 @@ function MainApp() {
   }, [birthDatePartner]);
 
   const [jodohResult, setJodohResult] = useState<ReturnType<typeof getJodohPinasti> | null>(null);
+
+  // Hitung Nama State
+  const [nameInput, setNameInput] = useState<string>('');
+  const [hitungNamaResult, setHitungNamaResult] = useState<ReturnType<typeof calculateHitungNama> | null>(null);
 
   const handleDateSelfChange = (date: Date) => {
     setBirthDateSelf(date);
@@ -822,27 +827,34 @@ function MainApp() {
         </motion.div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" id="main-tabs">
-          <TabsList className="grid w-full grid-cols-3 mb-8 bg-stone-200/50 p-1 rounded-xl" id="tabs-list">
+          <TabsList className="grid w-full grid-cols-4 mb-8 bg-stone-200/50 p-1 rounded-xl" id="tabs-list">
             <TabsTrigger 
               value="weton" 
-              className="rounded-lg transition-all data-[state=active]:bg-[#FBC02D] data-[state=inactive]:bg-[#2E7D32] data-[state=inactive]:text-white data-[state=active]:text-black font-bold" 
+              className="rounded-lg transition-all data-[state=active]:bg-[#FBC02D] data-[state=inactive]:bg-[#2E7D32] data-[state=inactive]:text-white data-[state=active]:text-black font-bold text-xs sm:text-sm" 
               id="tab-weton"
             >
               {t('tabs.weton')}
             </TabsTrigger>
             <TabsTrigger 
               value="jodoh" 
-              className="rounded-lg transition-all data-[state=active]:bg-[#FBC02D] data-[state=inactive]:bg-[#2E7D32] data-[state=inactive]:text-white data-[state=active]:text-black font-bold" 
+              className="rounded-lg transition-all data-[state=active]:bg-[#FBC02D] data-[state=inactive]:bg-[#2E7D32] data-[state=inactive]:text-white data-[state=active]:text-black font-bold text-xs sm:text-sm" 
               id="tab-jodoh"
             >
               {t('tabs.jodoh')}
             </TabsTrigger>
             <TabsTrigger 
               value="hari-baik" 
-              className="rounded-lg transition-all data-[state=active]:bg-[#FBC02D] data-[state=inactive]:bg-[#2E7D32] data-[state=inactive]:text-white data-[state=active]:text-black font-bold" 
+              className="rounded-lg transition-all data-[state=active]:bg-[#FBC02D] data-[state=inactive]:bg-[#2E7D32] data-[state=inactive]:text-white data-[state=active]:text-black font-bold text-xs sm:text-sm" 
               id="tab-hari-baik"
             >
               {t('tabs.hariBaik')}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="hitung-nama" 
+              className="rounded-lg transition-all data-[state=active]:bg-[#FBC02D] data-[state=inactive]:bg-[#2E7D32] data-[state=inactive]:text-white data-[state=active]:text-black font-bold text-xs sm:text-sm" 
+              id="tab-hitung-nama"
+            >
+              {t('tabs.hitungNama')}
             </TabsTrigger>
           </TabsList>
 
@@ -1127,12 +1139,6 @@ function MainApp() {
                                       Arti: <span className="font-bold text-stone-800">"{t(jodohNamaResult.descKey)}"</span>
                                     </div>
                                   </div>
-                                  
-                                  <Separator className="my-2 border-stone-200" />
-
-                                  <div className="text-xs text-[#1B5E20] bg-white/70 p-4 rounded-xl border border-green-100 max-w-xl mx-auto leading-relaxed font-medium">
-                                    Jika sudah terlanjur menikah maka anda dapat mengatasinya dengan melakukan Seratan Winadi di setiap weton diri, weton pernikahan, weton pasangan, dan weton setiap anak keturunannya
-                                  </div>
                                 </CardContent>
                               </Card>
                             )}
@@ -1298,6 +1304,88 @@ function MainApp() {
                               </CardContent>
                             </Card>
                           </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+
+            {/* --- Hitung Nama --- */}
+            <TabsContent value="hitung-nama" key="hitung-nama" id="content-hitung-nama">
+              <motion.div 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="max-w-4xl mx-auto space-y-8"
+              >
+                <Card className="border-none shadow-xl bg-white/90 backdrop-blur-lg overflow-hidden" id="hitung-nama-input-card">
+                  <CardHeader className="bg-stone-900 text-white text-center py-6">
+                    <Compass className="w-10 h-10 mx-auto mb-2 text-[#FBC02D] animate-pulse" />
+                    <CardTitle className="font-serif text-2xl">Hitung Nama & Brand</CardTitle>
+                    <CardDescription className="text-stone-300">
+                      Fitur ini dapat digunakan untuk menghitung nama orang maupun nama usaha/ brand berdasarkan Petung Jawa dan Sengkalan.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-8 space-y-6">
+                    <div className="max-w-md mx-auto space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="input-nama-hitung" className="font-bold text-stone-700">Nama Lengkap / Nama Bisnis</Label>
+                        <Input 
+                          id="input-nama-hitung"
+                          type="text" 
+                          placeholder="Masukkan nama lengkap atau nama brand..."
+                          value={nameInput}
+                          onChange={(e) => {
+                            setNameInput(e.target.value);
+                            setHitungNamaResult(null);
+                          }}
+                          className="bg-stone-50 border-stone-200 h-12"
+                        />
+                      </div>
+                      <Button 
+                        className="w-full h-12 bg-[#2E7D32] hover:bg-[#1B5E20] text-white font-bold rounded-xl shadow-lg transition-transform hover:scale-[1.01]"
+                        onClick={() => {
+                          if (nameInput.trim()) {
+                            const res = calculateHitungNama(nameInput);
+                            setHitungNamaResult(res);
+                          }
+                        }}
+                      >
+                        Mulai Hitung
+                      </Button>
+                    </div>
+
+                    {hitungNamaResult && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-8 space-y-6"
+                      >
+                        <Card className="border border-stone-200 bg-[#FBC02D]/10 overflow-hidden" id="hitung-nama-result-box">
+                          <CardHeader className="bg-amber-100/40 border-b border-amber-200/50 p-5">
+                            <CardTitle className="text-base font-serif font-bold text-amber-900 flex items-center justify-center gap-2 font-medium">
+                              Hasil Perhitungan Aksara Nama
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-6 space-y-4 text-center">
+                            <div className="space-y-2">
+                              <div className="text-sm font-serif text-stone-700">
+                                Hasil: <span className="font-bold text-stone-900">{hitungNamaResult.title}</span>
+                              </div>
+                              <div className="text-sm font-serif text-stone-700">
+                                Arti: <span className="font-bold text-stone-800">"{hitungNamaResult.desc}"</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Keterangan Akhir Hasil */}
+                        <div className="p-6 rounded-2xl bg-[#FFF9C4]/20 border border-[#FBC02D]/30 text-center max-w-2xl mx-auto" id="hitung-nama-final-disclaimer">
+                          <p className="text-xs sm:text-sm text-stone-700 leading-relaxed italic font-medium">
+                            "Dalam Petung Jawa, hitungan ini adalah tidak untuk dilanggar. Namun, jika sudah terlanjur maka dapat melakukan lelaku untuk mengatasi hasil perhitungan yang kurang baik, salah satunya adalah dengan melakukan Seratan Winadi di setiap weton kelahirannya atau weton berdirinya usaha tersebut."
+                          </p>
                         </div>
                       </motion.div>
                     )}

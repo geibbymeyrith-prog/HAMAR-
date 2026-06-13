@@ -38,7 +38,8 @@ const resources = {
       tabs: {
         weton: 'Weton Jawa',
         jodoh: 'Jodoh Pinasti',
-        hariBaik: 'Hari Baik'
+        hariBaik: 'Hari Baik',
+        hitungNama: 'Hitung Nama'
       },
       calendar: {
         title: 'Kalender',
@@ -421,7 +422,8 @@ const resources = {
       tabs: {
         weton: 'Weton Jawa',
         jodoh: 'Jodoh Pinasti',
-        hariBaik: 'Auspicious Days'
+        hariBaik: 'Auspicious Days',
+        hitungNama: 'Calculate Name'
       },
       calendar: {
         title: 'Calendar',
@@ -804,7 +806,8 @@ const resources = {
       tabs: {
         weton: 'Weton Jawa',
         jodoh: 'Jodoh Pinasti',
-        hariBaik: 'Dinten Sae'
+        hariBaik: 'Dinten Sae',
+        hitungNama: 'Etung Jeneng'
       },
       calendar: {
         title: 'Almanak',

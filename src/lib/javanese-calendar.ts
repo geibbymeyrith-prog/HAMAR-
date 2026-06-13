@@ -644,3 +644,168 @@ export function calculateJodohNama(nameSelf: string, namePartner: string) {
     descKey: sisaInfo.descKey
   };
 }
+
+// Sengkalan database for Hitung Nama
+export const SENGKALAN_DB: Record<string, number> = {
+  // 0: Sirna, Ilang, Kosong, Muluk (Terbang), Langit, Dhuwur, Tawang, Sunya, Suwung, Mumbul/ Umbul, Tumenga, Mesat, Akasa, Gegana, Dirgantara, Luhur
+  sirna: 0, ilang: 0, kosong: 0, muluk: 0, terbang: 0, langit: 0, dhuwur: 0, tawang: 0, sunya: 0, suwung: 0,
+  mumbul: 0, umbul: 0, tumenga: 0, mesat: 0, akasa: 0, gegana: 0, dirgantara: 0, luhur: 0,
+
+  // 1: Gusti, Bumi, Manusia, Ratu, Candra (Bulan), Surya (Matahari). Tunggal, Eka, Dewa, Kartika, Budi, Jagad, Hyang, Buddha, Srengenge, Lintang, Urip, Praja, Wutuh, Nyata, Dhara (Perut), Bangsa, Aji, Nata (Raja), Wani (Berani), Wiji (Biji), Negara, Buana, Sri
+  gusti: 1, bumi: 1, manusia: 1, ratu: 1, candra: 1, surya: 1, tunggal: 1, eka: 1, dewa: 1, kartika: 1, budi: 1,
+  jagad: 1, hyang: 1, buddha: 1, srengenge: 1, lintang: 1, urip: 1, praja: 1, wutuh: 1, nyata: 1, dhara: 1,
+  bangsa: 1, aji: 1, nata: 1, wani: 1, wiji: 1, negara: 1, buana: 1, sri: 1,
+
+  // 2: Netra (Mata), Asta (Tangan), Suku (Kaki), Miyat, Rupa, Mripat, Apasang, Kembar, Swiwi, Alis, Penganten, Nembah, Nyawang, Nyekel, Mireng, Lumaku, Mabur, Dwi, Kuping, Soca, Paninggal, Sungu, Supit, Ndeleng, Ndulu, Ngrungu, Bekti
+  netra: 2, asta: 2, suku: 2, miyat: 2, rupa: 2, mripat: 2, apasang: 2, kembar: 2, swiwi: 2, alis: 2,
+  penganten: 2, nembah: 2, nyawang: 2, nyekel: 2, mireng: 2, lumaku: 2, mabur: 2, dwi: 2, kuping: 2, soca: 2,
+  paninggal: 2, sungu: 2, supit: 2, ndeleng: 2, ndulu: 2, ngrungu: 2, bekti: 2,
+
+  // 3: Geni (Api), Bahni, Tri, Kaya, Agni, Panas, Estri, Welut, Jurit, Guna, Cacing, Sorot, Murub, Gebyar
+  geni: 3, bahni: 3, tri: 3, kaya: 3, agni: 3, panas: 3, estri: 3, welut: 3, jurit: 3, guna: 3, cacing: 3,
+  sorot: 3, murub: 3, gebyar: 3,
+
+  // 4: Kerta (Tata), Catur, Pat, Patang, Banyu, Segara, Warih, Karya, Bun, Dadya Gawe, Karti, Jaladri, Jalanidi, Sindu, Samudra, Papat, Nadi, Keblat, Satriya, Sudra, Bening, Brahmana
+  kerta: 4, catur: 4, pat: 4, patang: 4, banyu: 4, segara: 4, warih: 4, karya: 4, bun: 4,
+  'dadya gawe': 4, dadyagawe: 4, karti: 4, jaladri: 4, jalanidi: 4, sindu: 4, samudra: 4, papat: 4, nadi: 4,
+  keblat: 4, satriya: 4, sudra: 4, bening: 4, brahmana: 4,
+
+  // 5: Pandawa, Angin, Isining (Isi), Panah, Bayu, Iswara, Buta, Alas, Jemparing, Panca, Tumata
+  pandawa: 5, angin: 5, isining: 5, panah: 5, bayu: 5, iswara: 5, buta: 5, alas: 5, jemparing: 5, panca: 5, tumata: 5,
+
+  // 6: Sad, Retu, Rasa, Angga (Tubuh), Anggana (Lebah), Rasa (Legi, Pait, Asin), Lemur, Obah, Wayang, Mangsa, Kayu
+  sad: 6, retu: 6, rasa: 6, angga: 6, anggana: 6, legi: 6, pait: 6, asin: 6, lemur: 6, obah: 6, wayang: 6, mangsa: 6, kayu: 6,
+
+  // 7: Pandita, Sapta, Giri (Gunung), Tinitian, Rsi, Acala, Ardi, Arga, Ajar, Angsa, Biksu, Biksuka, Dwija Giri, Gita, Kaswareng, Kuda, Muni, Nabda, Pitu, Tunggangan, Swara, Guru, Mulang, Sapi, Sinangga, Cakra
+  pandita: 7, sapta: 7, giri: 7, tinitian: 7, rsi: 7, acala: 7, ardi: 7, arga: 7, ajar: 7, angsa: 7,
+  biksu: 7, biksuka: 7, 'dwija giri': 7, dwijagiri: 7, dwija: 7, gita: 7, kaswareng: 7, kuda: 7, muni: 7, nabda: 7,
+  pitu: 7, tunggangan: 7, swara: 7, guru: 7, mulang: 7, sapi: 7, sinangga: 7, cakra: 7,
+
+  // 8: Naga, Gajah, Panggung, Beku, Ula, Dipangga, Buta: 8 (Pujangga, Baya, Wasu, Astha, Salira, Manggala)
+  naga: 8, gajah: 8, panggung: 8, beku: 8, ula: 8, dipangga: 8, pujangga: 8, baya: 8, wasu: 8, astha: 8, salira: 8, manggala: 8,
+
+  // 9: Bolong, Gapura, Trusing, Dwara (Pintu), Wiwara, Sanga, Lubang, Ambuka, Anggangsir, Angleng, Angrong, Arum, Babahan, Bedah, Butul, Gatra, Ganda, Guwa, Jawata, Kori, Kusuma, Lawang, Menga, Nawa, Hanggatra, Bunga
+  bolong: 9, gapura: 9, trusing: 9, dwara: 9, wiwara: 9, sanga: 9, lubang: 9, ambuka: 9, anggangsir: 9, angleng: 9,
+  angrong: 9, arum: 9, babahan: 9, bedah: 9, butul: 9, gatra: 9, ganda: 9, guwa: 9, jawata: 9, kori: 9, kusuma: 9,
+  lawang: 9, menga: 9, nawa: 9, hanggatra: 9, bunga: 9
+};
+
+export function getHitungNamaScore(word: string): number {
+  let cleaned = word.toLowerCase().trim().replace(/[^a-z]/g, '');
+  if (!cleaned) return 0;
+
+  // 1. Check if the word is in the Sengkalan lookup database
+  if (SENGKALAN_DB[cleaned] !== undefined) {
+    return SENGKALAN_DB[cleaned];
+  }
+
+  // 2. Rule j: "Jika konsonan menggandeng kata 'KRA' maka yang dihitung adalah konsonan sebelumnya."
+  // E.g. MAKRA -> MA (ignore/delete KRA)
+  cleaned = cleaned.replace(/(dh|th|ny|ng|[hdpmnatgcsjbrwykl])kra/gi, '$1');
+
+  // 3. Rule f: "Semua konsonan jika menggandeng kata 'ar'..."
+  // E.g. KAR -> KA (ignore R)
+  cleaned = cleaned.replace(/(dh|th|ny|ng|[hdpmnatgcsjbrwykl])ar/gi, '$1a');
+
+  // 4. Rule i: "Jika konsonan menggandeng kata 'AH'..."
+  // E.g. NAH -> NA (ignore H)
+  cleaned = cleaned.replace(/(dh|th|ny|ng|[hdpmnatgcsjbrwykl])ah/gi, '$1a');
+
+  // 5. Rule k: "Jika konsonan menggandeng kata 'ang'..."
+  // E.g. AANG -> NG is ignored.
+  cleaned = cleaned.replace(/(dh|th|ny|ng|[hdpmnatgcsjbrwykl])ang/gi, '$1a');
+
+  // Virtual H addition for initial vowels (Rule h)
+  if (/^[aeiou]/.test(cleaned)) {
+    cleaned = 'h' + cleaned;
+  }
+
+  // Virtual H addition between non-identical consecutive vowels
+  let withH = '';
+  for (let i = 0; i < cleaned.length; i++) {
+    withH += cleaned[i];
+    if (i < cleaned.length - 1) {
+      if ('aeiou'.includes(cleaned[i]) && 'aeiou'.includes(cleaned[i + 1]) && cleaned[i] !== cleaned[i + 1]) {
+        withH += 'h';
+      }
+    }
+  }
+  cleaned = withH;
+
+  // Clean trailing 'ang' again in case H-insert created a new 'ang' pattern
+  cleaned = cleaned.replace(/(dh|th|ny|ng|[hdpmnatgcsjbrwykl])ang/gi, '$1a');
+
+  // Extract Javanese consonant tokens
+  const consonants: string[] = [];
+  let j = 0;
+  while (j < cleaned.length) {
+    const doubleChar = cleaned.substring(j, j + 2);
+    if (doubleChar === 'dh' || doubleChar === 'th' || doubleChar === 'ny' || doubleChar === 'ng') {
+      consonants.push(doubleChar);
+      j += 2;
+    } else {
+      const singleChar = cleaned.charAt(j);
+      if ('hdpmnatgcsjbrwykl'.includes(singleChar)) {
+        consonants.push(singleChar);
+      }
+      j += 1;
+    }
+  }
+
+  // Sum value scores
+  // a. Konsonan H, D, P, dan M bernilai 1
+  // b. Konsonan N, T, Dh, G bernilai 2
+  // c. Konsonan C, S, J, B bernilai 3
+  // d. Konsonan R, W, Y, Th bernilai 4
+  // e. Konsonan K, L, Ny, Ng bernilai 5
+  let score = 0;
+  for (const c of consonants) {
+    if ('hdpm'.includes(c)) {
+      score += 1;
+    } else if ('ntg'.includes(c) || c === 'dh') {
+      score += 2;
+    } else if ('csjb'.includes(c)) {
+      score += 3;
+    } else if ('rwy'.includes(c) || c === 'th') {
+      score += 4;
+    } else if ('kl'.includes(c) || c === 'ny' || c === 'ng') {
+      score += 5;
+    }
+  }
+
+  return score;
+}
+
+export function calculateHitungNama(fullName: string) {
+  const words = fullName.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  let totalScore = 0;
+  const wordDetails: { word: string; score: number }[] = [];
+
+  for (const w of words) {
+    const score = getHitungNamaScore(w);
+    totalScore += score;
+    wordDetails.push({ word: w, score });
+  }
+
+  // Result is modulo 5. If remainder is 0, it means 5 (PATI).
+  const sisa = totalScore === 0 ? 5 : ((totalScore % 5) === 0 ? 5 : (totalScore % 5));
+
+  const resultsMap: Record<number, { title: string; desc: string }> = {
+    1: { title: 'SRI', desc: 'Rejeki selalu ada dan mengalir terus' },
+    2: { title: 'LUNGGUH', desc: 'Duduk tidak berkarya maupun berkembang' },
+    3: { title: 'GENDONG', desc: 'Membawa beban pendudukan' },
+    4: { title: 'LARA', desc: 'Sering sakit-sakitan/ menderita' },
+    5: { title: 'PATI', desc: 'Mati penghidupan dan atau kehidupannya' }
+  };
+
+  const info = resultsMap[sisa] || { title: 'PATI', desc: 'Mati penghidupan dan atau kehidupannya' };
+
+  return {
+    totalScore,
+    sisa,
+    title: info.title,
+    desc: info.desc,
+    wordDetails
+  };
+}
+
