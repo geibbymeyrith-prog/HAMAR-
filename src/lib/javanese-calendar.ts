@@ -24,6 +24,7 @@ export interface JavaneseDetails {
   tahunJawiSifat: string;
   pranataMangsa: string;
   pranataMangsaSifat: string;
+  pranataMangsaDay: number;
   nagadinaDewa: string;
   nagadinaWarna: string;
   nagadinaArah: string;
@@ -330,6 +331,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   // 8. Pranata Mangsa
   let pranataMangsa = 'Unknown';
   let pranataMangsaSifat = '';
+  let pranataMangsaDay = 1;
   const m = targetDate.getMonth() + 1;
   const d = targetDate.getDate();
   
@@ -338,19 +340,32 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
     const end = pm.end.m * 100 + pm.end.d;
     const current = m * 100 + d;
     
+    let isMatch = false;
     if (start <= end) {
       if (current >= start && current <= end) {
-        pranataMangsa = pm.name;
-        pranataMangsaSifat = `javanese_calendar.pranata_mangsa_sifat.${pranataMangsa}`;
-        break;
+        isMatch = true;
       }
     } else {
       // Wraps around year end
       if (current >= start || current <= end) {
-        pranataMangsa = pm.name;
-        pranataMangsaSifat = `javanese_calendar.pranata_mangsa_sifat.${pranataMangsa}`;
-        break;
+        isMatch = true;
       }
+    }
+
+    if (isMatch) {
+      pranataMangsa = pm.name;
+      pranataMangsaSifat = `javanese_calendar.pranata_mangsa_sifat.${pranataMangsa}`;
+      
+      const year = targetDate.getFullYear();
+      let startYear = year;
+      if (pm.start.m > pm.end.m) {
+        if (m <= pm.end.m) {
+          startYear = year - 1;
+        }
+      }
+      const startDate = new Date(startYear, pm.start.m - 1, pm.start.d);
+      pranataMangsaDay = differenceInDays(targetDate, startDate) + 1;
+      break;
     }
   }
 
@@ -465,6 +480,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
     tahunJawiSifat,
     pranataMangsa,
     pranataMangsaSifat,
+    pranataMangsaDay,
     nagadinaDewa,
     nagadinaWarna,
     nagadinaArah,

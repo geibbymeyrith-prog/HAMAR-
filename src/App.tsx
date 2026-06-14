@@ -33,7 +33,8 @@ import {
   LayoutDashboard,
   FileText,
   Clock,
-  Lock
+  Lock,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -114,6 +115,7 @@ function MainApp() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [isDashboardMode, setIsDashboardMode] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [isCalendarDetailModalOpen, setIsCalendarDetailModalOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [publicArticles, setPublicArticles] = useState<Article[]>([]);
   const [allVisits, setAllVisits] = useState<any[]>([]);
@@ -782,11 +784,14 @@ function MainApp() {
                       <div
                         key={idx}
                         className={cn(
-                          "h-24 md:h-32 p-1.5 border-r border-b border-stone-50 text-left transition-all group relative overflow-hidden",
+                          "h-24 md:h-32 p-1.5 border-r border-b border-stone-50 text-left transition-all group relative overflow-hidden cursor-pointer hover:bg-stone-50/80 active:scale-[0.98]",
                           !isCurrentMonth && "opacity-30",
                           isSelected && "bg-stone-50 ring-1 ring-inset ring-stone-200 shadow-inner"
                         )}
-                        onClick={() => setSelectedDate(day)}
+                        onClick={() => {
+                          setSelectedDate(day);
+                          setIsCalendarDetailModalOpen(true);
+                        }}
                       >
                         <div className="flex justify-between items-start">
                           <span className={cn(
@@ -896,11 +901,12 @@ function MainApp() {
                 <div className="p-6 space-y-6 bg-stone-50/50">
                   <DetailItem label={t('weton.labels.daySifat')} value={t(wetonDetails.daySifat)} isLongText />
                   <DetailItem label={t('weton.labels.pasaranSifat')} value={t(wetonDetails.pasaranSifat)} isLongText />
+                  <DetailItem label={t('hariBaik.gisir') || 'Gisir Harian'} value={wetonDetails.gisir} subValue={t(wetonDetails.gisirSifat)} icon={<Info className="w-4 h-4" />} />
                   <DetailItem label={t('weton.labels.tahunSaka')} value={`${wetonDetails.tahunSaka}`} subValue={t(wetonDetails.tahunSakaSifat)} icon={<CalendarIcon className="w-4 h-4" />} />
                   <DetailItem label={t('weton.labels.windu')} value={`${wetonDetails.windu}`} subValue={t(wetonDetails.winduSifat)} icon={<Wind className="w-4 h-4" />} />
                   <DetailItem label={t('weton.labels.lambang')} value={`${wetonDetails.lambang}`} subValue={t(wetonDetails.lambangSifat)} icon={<Info className="w-4 h-4" />} />
                   <DetailItem label={t('weton.labels.tahunJawi')} value={`${wetonDetails.tahunJawi}`} subValue={t(wetonDetails.tahunJawiSifat)} icon={<ArrowRight className="w-4 h-4" />} />
-                  <DetailItem label={t('weton.labels.pranataMangsa')} value={`${wetonDetails.pranataMangsa}`} subValue={t(wetonDetails.pranataMangsaSifat)} icon={<Compass className="w-4 h-4" />} />
+                  <DetailItem label={t('weton.labels.pranataMangsa')} value={`Tanggal ${wetonDetails.pranataMangsaDay} ${wetonDetails.pranataMangsa}`} subValue={t(wetonDetails.pranataMangsaSifat)} icon={<Compass className="w-4 h-4" />} />
                   <DetailItem label={t('weton.labels.wuku')} value={`${wetonDetails.wuku}`} subValue={t(wetonDetails.wukuSifat)} icon={<Zap className="w-4 h-4" />} />
                 </div>
               </div>
@@ -1736,6 +1742,143 @@ function MainApp() {
               >
                 {t('partnership.closeBtn')}
               </Button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Calendar Date Detail Modal Pop-up */}
+      <AnimatePresence>
+        {isCalendarDetailModalOpen && (
+          <div className="fixed inset-0 z-55 flex items-center justify-center p-4 selection:bg-amber-100" id="calendar-detail-overlay">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
+              onClick={() => setIsCalendarDetailModalOpen(false)}
+            />
+            <motion.div
+              initial={{ scale: 0.95, y: 15, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 15, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-stone-100 relative z-10 flex flex-col overflow-hidden max-h-[90vh]"
+              id="calendar-detail-modal"
+            >
+              {/* Top Banner with Javanese Aesthetic */}
+              <div className="bg-stone-900 text-white p-6 relative">
+                <button
+                  onClick={() => setIsCalendarDetailModalOpen(false)}
+                  className="absolute top-4 right-4 text-stone-400 hover:text-white transition-colors p-1.5 hover:bg-white/10 rounded-full"
+                  aria-label="Tutup"
+                  id="close-calendar-detail-modal"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="space-y-1 pr-6 text-left">
+                  <span className="text-[10px] bg-[#2E7D32] text-green-50 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                    {t('weton.selectedDate') || 'Detail Weton'}
+                  </span>
+                  <h3 className="font-serif font-bold text-2xl md:text-3xl mt-1.5 leading-tight">
+                    {format(selectedDate, 'EEEE, d MMMM yyyy', { locale: dateLocale })}
+                  </h3>
+                  <p className="text-stone-300 text-xs font-serif font-medium mt-1">
+                    {javaSelected.day} {javaSelected.month} {jYearSelected.year} {jYearSelected.name} (Pasaran: {pasaranSelected.split('-')[0].trim()})
+                  </p>
+                </div>
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="p-6 md:p-8 space-y-6 overflow-y-auto flex-1 text-left">
+                {/* Highlight Stats (Neptu & Pasaran) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-stone-50 border border-stone-150 p-4 rounded-2xl text-center">
+                    <p className="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Neptu Weton</p>
+                    <p className="text-2xl font-serif font-extrabold text-[#2E7D32]">
+                      {wetonDetails.neptuValue}
+                    </p>
+                    <p className="text-[10px] text-stone-500 mt-1 font-medium">
+                      ({wetonDetails.dayValue} + {wetonDetails.pasaranValue})
+                    </p>
+                  </div>
+                  <div className="bg-[#2E7D32]/10 border border-[#2E7D32]/25 p-4 rounded-2xl text-center">
+                    <p className="text-[10px] font-bold text-[#1B5E20] uppercase tracking-widest mb-1">Weton Pasaran</p>
+                    <p className="text-xl md:text-2xl font-serif font-extrabold text-stone-900 leading-tight">
+                      {wetonDetails.masehiDayName} {wetonDetails.pasaranName.split('-')[0]}
+                    </p>
+                    <p className="text-[10px] text-stone-600 mt-1 font-medium">
+                      {wetonDetails.jawiDayName} ({wetonDetails.dayLambang})
+                    </p>
+                  </div>
+                </div>
+
+                {/* Grid details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 divide-y md:divide-y-0 md:divide-x divide-stone-100">
+                  <div className="space-y-5">
+                    <DetailItem label="Tanggal Jawa" value={`${javaSelected.day} ${javaSelected.month} ${jYearSelected.year} ${jYearSelected.name}`} subValue={`Pasaran: ${pasaranSelected}`} icon={<Moon className="w-4 h-4 text-[#2E7D32]" />} />
+                    <DetailItem label={t('weton.labels.jawiDate')} value={`${wetonDetails.jawiDate} ${t(`calendar.months.${wetonDetails.jawiMonthName}`)}`} icon={<Moon className="w-4 h-4 text-[#2E7D32]" />} />
+                    <DetailItem label={t('weton.labels.dayLambang')} value={`${wetonDetails.jawiDayName} (${wetonDetails.dayLambang})`} icon={<Sun className="w-4 h-4 text-amber-500" />} />
+                    <DetailItem label={t('weton.labels.pasaranDewa')} value={`${wetonDetails.pasaranName} (${wetonDetails.pasaranDewa})`} icon={<Zap className="w-4 h-4 text-amber-500" />} />
+                  </div>
+                  <div className="space-y-5 md:pl-6 pt-5 md:pt-0 bg-stone-50/50 p-4 rounded-2xl border border-stone-100 md:border-none md:bg-transparent md:p-0">
+                    <DetailItem label={t('weton.labels.daySifat')} value={t(wetonDetails.daySifat)} isLongText />
+                    <DetailItem label={t('weton.labels.pasaranSifat')} value={t(wetonDetails.pasaranSifat)} isLongText />
+                    <DetailItem label={t('hariBaik.gisir') || 'Gisir Harian'} value={wetonDetails.gisir} subValue={t(wetonDetails.gisirSifat)} icon={<Info className="w-4 h-4 text-[#2E7D32]" />} />
+                    <DetailItem label={t('weton.labels.tahunSaka')} value={`${wetonDetails.tahunSaka}`} subValue={t(wetonDetails.tahunSakaSifat)} icon={<CalendarIcon className="w-4 h-4 text-stone-600" />} />
+                    <DetailItem label={t('weton.labels.windu')} value={`${wetonDetails.windu}`} subValue={t(wetonDetails.winduSifat)} icon={<Wind className="w-4 h-4 text-stone-600" />} />
+                    <DetailItem label={t('weton.labels.lambang')} value={`${wetonDetails.lambang}`} subValue={t(wetonDetails.lambangSifat)} icon={<Info className="w-4 h-4 text-stone-600" />} />
+                    <DetailItem label={t('weton.labels.tahunJawi')} value={`${wetonDetails.tahunJawi}`} subValue={t(wetonDetails.tahunJawiSifat)} icon={<ArrowRight className="w-4 h-4 text-stone-600" />} />
+                    <DetailItem label={t('weton.labels.pranataMangsa')} value={`Tanggal ${wetonDetails.pranataMangsaDay} ${wetonDetails.pranataMangsa}`} subValue={t(wetonDetails.pranataMangsaSifat)} icon={<Compass className="w-4 h-4 text-[#2E7D32]" />} />
+                    <DetailItem label={t('weton.labels.wuku')} value={`${wetonDetails.wuku}`} subValue={t(wetonDetails.wukuSifat)} icon={<Zap className="w-4 h-4 text-amber-500" />} />
+                  </div>
+                </div>
+
+                {/* Nagadina */}
+                <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-[#2E7D32] mb-4 text-center font-sans tracking-widest">{t('weton.nagadina')}</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center bg-white p-3 rounded-xl border border-stone-100">
+                      <p className="text-[10px] font-semibold text-stone-400 mb-0.5">{t('weton.dewa')}</p>
+                      <p className="font-serif font-bold text-stone-850 text-xs sm:text-sm md:text-base truncate">{wetonDetails.nagadinaDewa}</p>
+                    </div>
+                    <div className="text-center bg-white p-3 rounded-xl border border-stone-100">
+                      <p className="text-[10px] font-semibold text-stone-400 mb-0.5">{t('weton.warna')}</p>
+                      <p className="font-serif font-bold text-stone-850 text-xs sm:text-sm md:text-base truncate">{wetonDetails.nagadinaWarna}</p>
+                    </div>
+                    <div className="text-center bg-white p-3 rounded-xl border border-stone-100">
+                      <p className="text-[10px] font-semibold text-stone-400 mb-0.5">{t('weton.arah')}</p>
+                      <p className="font-serif font-bold text-[#2E7D32] text-xs sm:text-sm md:text-base truncate">{t(wetonDetails.nagadinaArah)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Actions */}
+              <div className="p-4 bg-stone-50 border-t border-stone-100 flex flex-col sm:flex-row gap-3 justify-end items-center">
+                <Button
+                  onClick={() => setIsCalendarDetailModalOpen(false)}
+                  variant="outline"
+                  className="w-full sm:w-auto h-11 border-stone-200 text-stone-700 hover:bg-stone-100 px-6 font-bold rounded-xl"
+                  id="calendar-detail-modal-close-btn"
+                >
+                  Tutup
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsCalendarDetailModalOpen(false);
+                    setActiveTab('weton');
+                    setBirthDateWeton(selectedDate);
+                    setTimeout(() => {
+                      document.getElementById('weton-details-card')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }}
+                  className="w-full sm:w-auto h-11 bg-[#2E7D32] hover:bg-[#1B5E20] text-white px-6 font-bold rounded-xl flex items-center justify-center gap-2 shadow-md transition-transform hover:scale-[1.01]"
+                  id="calendar-detail-modal-action-btn"
+                >
+                  Gunakan Sebagai Tanggal Lahir
+                </Button>
+              </div>
             </motion.div>
           </div>
         )}
