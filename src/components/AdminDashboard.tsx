@@ -131,96 +131,238 @@ export const AdminDashboard: React.FC<{
     try {
       const element = calendarRef.current;
       
-      // html2canvas capture logic with robust settings
+      // Color translation helpers inside download code block to prevent pollution
+      const parseOklchLocal = (str: string) => {
+        const regex = /oklch\s*\(\s*([\d.]+\%?)\s+([\d.]+)\s+([\d.]+(?:deg|rad)?)\s*(?:\/\s*([\d.]+\%?))?\s*\)/i;
+        const commaRegex = /oklch\s*\(\s*([\d.]+\%?)\s*,\s*([\d.]+)\s*,\s*([\d.]+(?:deg|rad)?)\s*(?:,\s*([\d.]+\%?))?\s*\)/i;
+        const match = str.match(regex) || str.match(commaRegex);
+        if (!match) return null;
+        const L_str = match[1];
+        const C_str = match[2];
+        const H_str = match[3];
+        const A_str = match[4] || "1";
+        const L = L_str.endsWith('%') ? parseFloat(L_str) / 100 : parseFloat(L_str);
+        const C = parseFloat(C_str);
+        let H = parseFloat(H_str);
+        if (H_str.endsWith('rad')) H = H * (180 / Math.PI);
+        const A = A_str.endsWith('%') ? parseFloat(A_str) / 100 : parseFloat(A_str);
+        const theta = H * (Math.PI / 180);
+        const a_ok = C * Math.cos(theta);
+        const b_ok = C * Math.sin(theta);
+        const l_ = L + 0.3963377774 * a_ok + 0.2158037573 * b_ok;
+        const m_ = L - 0.1055613458 * a_ok - 0.0638541728 * b_ok;
+        const s_ = L - 0.0894841775 * a_ok - 1.2914855480 * b_ok;
+        const l = Math.pow(Math.max(0, l_), 3);
+        const m = Math.pow(Math.max(0, m_), 3);
+        const s = Math.pow(Math.max(0, s_), 3);
+        const r_linear = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+        const g_linear = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+        const b_linear = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+        const f = (u: number) => u <= 0.0031308 ? 12.92 * u : 1.055 * Math.pow(u, 1 / 2.4) - 0.055;
+        const r = Math.min(255, Math.max(0, Math.round(f(r_linear) * 255)));
+        const g = Math.min(255, Math.max(0, Math.round(f(g_linear) * 255)));
+        const b = Math.min(255, Math.max(0, Math.round(f(b_linear) * 255)));
+        return { r, g, b, a: A };
+      };
+
+      const parseOklabLocal = (str: string) => {
+        const regex = /oklab\s*\(\s*([\d.]+\%?)\s+([+-]?[\d.]+)\s+([+-]?[\d.]+)\s*(?:\/\s*([\d.]+\%?))?\s*\)/i;
+        const commaRegex = /oklab\s*\(\s*([\d.]+\%?)\s*,\s*([+-]?[\d.]+)\s*,\s*([+-]?[\d.]+)\s*(?:,\s*([\d.]+\%?))?\s*\)/i;
+        const match = str.match(regex) || str.match(commaRegex);
+        if (!match) return null;
+        const L_str = match[1];
+        const a_str = match[2];
+        const b_str = match[3];
+        const A_str = match[4] || "1";
+        const L = L_str.endsWith('%') ? parseFloat(L_str) / 100 : parseFloat(L_str);
+        const a_ok = parseFloat(a_str);
+        const b_ok = parseFloat(b_str);
+        const A = A_str.endsWith('%') ? parseFloat(A_str) / 100 : parseFloat(A_str);
+        const l_ = L + 0.3963377774 * a_ok + 0.2158037573 * b_ok;
+        const m_ = L - 0.1055613458 * a_ok - 0.0638541728 * b_ok;
+        const s_ = L - 0.0894841775 * a_ok - 1.2914855480 * b_ok;
+        const l = Math.pow(Math.max(0, l_), 3);
+        const m = Math.pow(Math.max(0, m_), 3);
+        const s = Math.pow(Math.max(0, s_), 3);
+        const r_linear = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+        const g_linear = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+        const b_linear = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+        const f = (u: number) => u <= 0.0031308 ? 12.92 * u : 1.055 * Math.pow(u, 1 / 2.4) - 0.055;
+        const r = Math.min(255, Math.max(0, Math.round(f(r_linear) * 255)));
+        const g = Math.min(255, Math.max(0, Math.round(f(g_linear) * 255)));
+        const b = Math.min(255, Math.max(0, Math.round(f(b_linear) * 255)));
+        return { r, g, b, a: A };
+      };
+
+      const cleanModernColorsStr = (str: string): string => {
+        if (!str) return str;
+        let res = str;
+        if (res.includes('oklch')) {
+          const matches = res.match(/oklch\s*\([^)]+\)/gi);
+          if (matches) {
+            for (const match of matches) {
+              const p = parseOklchLocal(match);
+              if (p) res = res.replace(match, `rgba(${p.r}, ${p.g}, ${p.b}, ${p.a})`);
+            }
+          }
+        }
+        if (res.includes('oklab')) {
+          const matches = res.match(/oklab\s*\([^)]+\)/gi);
+          if (matches) {
+            for (const match of matches) {
+              const p = parseOklabLocal(match);
+              if (p) res = res.replace(match, `rgba(${p.r}, ${p.g}, ${p.b}, ${p.a})`);
+            }
+          }
+        }
+        return res;
+      };
+
+      // html2canvas capture logic with enhanced clarity and precise sizing settings
       const canvas = await html2canvas(element, {
-        scale: 2, 
+        scale: 2.5, // 2.5x scale for razor-sharp printed details
         useCORS: true,
         allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
-        // Extreme windowWidth to prevent any responsive wrapping during capture for A2
-        windowWidth: 4000, 
+        windowWidth: 2600, // Generous capture canvas viewport preventing unwanted wrap
         onclone: (clonedDoc, clonedElement) => {
-          // 1. CRITICAL: Sanitize all stylesheets in the clone to remove oklch
-          // html2canvas parser crashes when it encounters oklch() in ANY stylesheet
+          // 1. Sanitize all style sheets in clone to eradicate any oklch parser errors
           const styleTags = clonedDoc.querySelectorAll('style');
           styleTags.forEach(style => {
             if (style.innerHTML.includes('oklch')) {
-              // Replace oklch(...) with a safe fallback hex color
               style.innerHTML = style.innerHTML.replace(/oklch\([^)]+\)/g, '#292524');
+            }
+            if (style.innerHTML.includes('oklab')) {
+              style.innerHTML = style.innerHTML.replace(/oklab\([^)]+\)/g, '#292524');
             }
           });
 
-          // 2. Force the print-only header settings
+          // Translate all computed colors from oklch elements of the clone
+          const allWebElements = clonedElement.getElementsByTagName("*");
+          for (let i = 0; i < allWebElements.length; i++) {
+            const el = allWebElements[i] as HTMLElement;
+            const styleProps = ['color', 'background-color', 'border-color', 'fill', 'stroke'];
+            styleProps.forEach(prop => {
+              const val = window.getComputedStyle(el).getPropertyValue(prop);
+              if (val && (val.includes('oklch') || val.includes('oklab'))) {
+                const clean = cleanModernColorsStr(val);
+                const camel = prop.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+                try {
+                  // @ts-ignore
+                  el.style[camel] = clean;
+                } catch (e) {}
+              }
+            });
+          }
+
+          // 2. Format the print-only header elements correctly
           const printHeader = clonedElement.querySelector('.print-header-content');
           if (printHeader) {
             (printHeader as HTMLElement).style.display = 'block';
             (printHeader as HTMLElement).style.visibility = 'visible';
             (printHeader as HTMLElement).style.opacity = '1';
             (printHeader as HTMLElement).style.textAlign = 'center';
-            (printHeader as HTMLElement).style.marginBottom = '60px';
+            (printHeader as HTMLElement).style.marginBottom = '40px';
             (printHeader as HTMLElement).style.width = '100%';
-            (printHeader as HTMLElement).style.color = '#292524';
+            (printHeader as HTMLElement).style.color = '#1c1917';
+            (printHeader as HTMLElement).style.borderBottom = '2px solid #1c1917';
+            (printHeader as HTMLElement).style.paddingBottom = '15px';
           }
 
-          // 3. Optimization: Force massive width and disable wrapping for A2 density
-          clonedElement.style.width = '3800px'; 
-          clonedElement.style.padding = '100px';
+          // 3. Remove/Hide bottom page selection buttons (pagination) entirely from PDF
+          const paginationBlock = clonedElement.querySelector('.mt-8');
+          if (paginationBlock) {
+            (paginationBlock as HTMLElement).style.display = 'none';
+          }
+
+          // 4. Force a magnificent large sheet layout inside the clone for 100% column visibility
+          clonedElement.style.width = '2400px'; 
+          clonedElement.style.padding = '60px';
           clonedElement.style.height = 'auto';
           clonedElement.style.background = '#ffffff';
 
-          // Ensure the table container is wide enough
           const tableContainer = clonedElement.querySelector('.overflow-x-auto');
           if (tableContainer) {
             (tableContainer as HTMLElement).style.overflow = 'visible';
-            (tableContainer as HTMLElement).style.width = 'auto';
+            (tableContainer as HTMLElement).style.width = '100%';
             (tableContainer as HTMLElement).style.maxWidth = 'none';
+            (tableContainer as HTMLElement).style.border = 'none';
           }
 
           const table = clonedElement.querySelector('table');
           if (table) {
             (table as HTMLElement).style.width = '100%';
-            (table as HTMLElement).style.tableLayout = 'fixed'; // Use fixed for more predictable spacing
+            (table as HTMLElement).style.tableLayout = 'auto'; // auto layout computes columns gracefully based on text sizes
             (table as HTMLElement).style.borderCollapse = 'collapse';
           }
 
-          // Improve cell readability for A2
-          const allCells = clonedElement.querySelectorAll('th, td');
-          allCells.forEach(cell => {
-            const c = cell as HTMLElement;
-            c.style.fontSize = '16px'; 
-            c.style.padding = '14px 10px';
-            c.style.border = '1px solid #d6d3d1';
-            c.style.whiteSpace = 'nowrap';
+          // Ensure pristine cells headers and alternate days colors are applied explicitly
+          const tableRows = clonedElement.querySelectorAll('tr');
+          tableRows.forEach(row => {
+            const trElement = row as HTMLElement;
+            const hasHeaders = trElement.querySelector('th') !== null;
             
-            // Check if cell is in a dark header row
-            const parentRow = c.parentElement;
-            const isDarkRow = parentRow?.classList.contains('bg-[#211e1d]') || parentRow?.classList.contains('bg-black');
-            
-            if (isDarkRow || c.classList.contains('text-white')) {
-              c.style.color = '#ffffff';
-            } else if (c.classList.contains('text-red-600')) {
-              c.style.color = '#dc2626';
+            if (hasHeaders) {
+              trElement.style.backgroundColor = '#1c1917';
+              trElement.style.color = '#ffffff';
+              const headers = trElement.querySelectorAll('th');
+              headers.forEach(h => {
+                const headerCell = h as HTMLElement;
+                headerCell.style.backgroundColor = '#1c1917';
+                headerCell.style.color = '#ffffff';
+                headerCell.style.fontSize = '13px';
+                headerCell.style.fontWeight = 'bold';
+                headerCell.style.padding = '12px 6px';
+                headerCell.style.border = '1px solid #1c1917';
+                headerCell.style.textAlign = 'center';
+              });
             } else {
-              c.style.color = '#292524';
-            }
-          });
+              // Alternate row coloring (isThirdDay row) check
+              const isThirdDay = trElement.classList.contains('bg-[#928f8e]');
+              if (isThirdDay) {
+                trElement.style.backgroundColor = '#e4e4e7'; // Beautiful light zinc gray
+              } else {
+                trElement.style.backgroundColor = '#ffffff';
+              }
 
-          // Fix colored backgrounds
-          const coloredElements = clonedElement.querySelectorAll('.bg-black, .bg-yellow-300, .bg-red-500, .bg-\\#211e1d, .bg-\\#928f8e');
-          coloredElements.forEach(el => {
-            const e = el as HTMLElement;
-            if (e.classList.contains('bg-black')) e.style.backgroundColor = '#000000';
-            if (e.classList.contains('bg-yellow-300')) e.style.backgroundColor = '#fde047';
-            if (e.classList.contains('bg-red-500')) e.style.backgroundColor = '#ef4444';
-            if (e.classList.contains('bg-[#211e1d]')) e.style.backgroundColor = '#211e1d';
-            if (e.classList.contains('bg-[#928f8e]')) e.style.backgroundColor = '#928f8e';
+              const cells = trElement.querySelectorAll('td');
+              cells.forEach(c => {
+                const cell = c as HTMLElement;
+                cell.style.fontSize = '12px';
+                cell.style.padding = '10px 8px';
+                cell.style.border = '1px solid #e4e4e7';
+                cell.style.whiteSpace = 'nowrap';
+                
+                // Keep text-red-600 colored Sundays clearly red
+                if (cell.classList.contains('text-red-600')) {
+                  cell.style.color = '#dc2626';
+                  cell.style.fontWeight = 'bold';
+                } else {
+                  // Standard black table cells text color
+                  cell.style.color = '#0c0a09';
+                  cell.style.fontWeight = 'bold';
+                }
+
+                // Explicitly render Nagadina directions colored cells
+                if (cell.classList.contains('bg-black')) {
+                  cell.style.backgroundColor = '#000000';
+                  cell.style.color = '#ffffff';
+                } else if (cell.classList.contains('bg-yellow-300')) {
+                  cell.style.backgroundColor = '#fde047';
+                  cell.style.color = '#000000';
+                } else if (cell.classList.contains('bg-red-500')) {
+                  cell.style.backgroundColor = '#fca5a5'; // Softer red highlight for clean printing
+                  cell.style.color = '#7f1d1d';
+                }
+              });
+            }
           });
         }
       });
 
       const imgData = canvas.toDataURL('image/png', 1.0);
-      const pdf = new jsPDF('l', 'mm', 'a2');
+      const pdf = new jsPDF('l', 'mm', 'a2'); // landscape A2 provides massive resolution for professional printing
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -228,14 +370,14 @@ export const AdminDashboard: React.FC<{
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
       
-      // Calculate scaling to fill the A2 page with margins
-      const margin = 15; // 15mm margin
+      // Calculate scaling to fill the a2 page with elegant 15mm margins
+      const margin = 15; 
       const availableWidth = pdfWidth - (margin * 2);
       const availableHeight = pdfHeight - (margin * 2);
       
-      // Since scale: 2 was used in html2canvas
-      const sourceWidth = imgWidth / 2;
-      const sourceHeight = imgHeight / 2;
+      // scale parameter was 2.5
+      const sourceWidth = imgWidth / 2.5;
+      const sourceHeight = imgHeight / 2.5;
       
       const ratio = Math.min(availableWidth / sourceWidth, availableHeight / sourceHeight);
       const finalWidth = sourceWidth * ratio;
@@ -246,7 +388,7 @@ export const AdminDashboard: React.FC<{
 
       pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
       
-      const filename = `HAMARE-Calendar-${getJavaneseMonthName(calendarMonth)}-${calendarYear}.pdf`;
+      const filename = `HAMARE-Database_Calendar-${getJavaneseMonthName(calendarMonth)}-${calendarYear}.pdf`;
       pdf.save(filename);
     } catch (error) {
       console.error("PDF generation failed:", error);

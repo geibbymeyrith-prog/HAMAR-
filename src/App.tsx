@@ -468,19 +468,76 @@ function MainApp() {
     return { r, g, b, a: A };
   };
 
-  const replaceAllOklchInString = (str: string): string => {
-    if (!str || !str.includes('oklch')) return str;
-    const oklchMatches = str.match(/oklch\s*\([^)]+\)/gi);
-    if (!oklchMatches) return str;
+  const parseOklab = (str: string): { r: number; g: number; b: number; a: number } | null => {
+    const regex = /oklab\s*\(\s*([\d.]+\%?)\s+([+-]?[\d.]+)\s+([+-]?[\d.]+)\s*(?:\/\s*([\d.]+\%?))?\s*\)/i;
+    const commaRegex = /oklab\s*\(\s*([\d.]+\%?)\s*,\s*([+-]?[\d.]+)\s*,\s*([+-]?[\d.]+)\s*(?:,\s*([\d.]+\%?))?\s*\)/i;
     
+    const match = str.match(regex) || str.match(commaRegex);
+    if (!match) return null;
+    
+    const L_str = match[1];
+    const a_str = match[2];
+    const b_str = match[3];
+    const A_str = match[4] || "1";
+    
+    const L = L_str.endsWith('%') ? parseFloat(L_str) / 100 : parseFloat(L_str);
+    const a_ok = parseFloat(a_str);
+    const b_ok = parseFloat(b_str);
+    const A = A_str.endsWith('%') ? parseFloat(A_str) / 100 : parseFloat(A_str);
+    
+    const l_ = L + 0.3963377774 * a_ok + 0.2158037573 * b_ok;
+    const m_ = L - 0.1055613458 * a_ok - 0.0638541728 * b_ok;
+    const s_ = L - 0.0894841775 * a_ok - 1.2914855480 * b_ok;
+    
+    const l = Math.pow(Math.max(0, l_), 3);
+    const m = Math.pow(Math.max(0, m_), 3);
+    const s = Math.pow(Math.max(0, s_), 3);
+    
+    const r_linear = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+    const g_linear = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+    const b_linear = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+    
+    const f = (u: number) => {
+      return u <= 0.0031308 ? 12.92 * u : 1.055 * Math.pow(u, 1 / 2.4) - 0.055;
+    };
+    
+    const r = Math.min(255, Math.max(0, Math.round(f(r_linear) * 255)));
+    const g = Math.min(255, Math.max(0, Math.round(f(g_linear) * 255)));
+    const b = Math.min(255, Math.max(0, Math.round(f(b_linear) * 255)));
+    
+    return { r, g, b, a: A };
+  };
+
+  const replaceAllModernColorsInString = (str: string): string => {
+    if (!str) return str;
     let result = str;
-    for (const match of oklchMatches) {
-      const parsed = parseOklch(match);
-      if (parsed) {
-        const rgbStr = `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, ${parsed.a})`;
-        result = result.replace(match, rgbStr);
+    
+    if (result.includes('oklch')) {
+      const oklchMatches = result.match(/oklch\s*\([^)]+\)/gi);
+      if (oklchMatches) {
+        for (const match of oklchMatches) {
+          const parsed = parseOklch(match);
+          if (parsed) {
+            const rgbStr = `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, ${parsed.a})`;
+            result = result.replace(match, rgbStr);
+          }
+        }
       }
     }
+    
+    if (result.includes('oklab')) {
+      const oklabMatches = result.match(/oklab\s*\([^)]+\)/gi);
+      if (oklabMatches) {
+        for (const match of oklabMatches) {
+          const parsed = parseOklab(match);
+          if (parsed) {
+            const rgbStr = `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, ${parsed.a})`;
+            result = result.replace(match, rgbStr);
+          }
+        }
+      }
+    }
+    
     return result;
   };
 
@@ -494,7 +551,7 @@ function MainApp() {
         useCORS: true,
         backgroundColor: '#F5F5F0',
         logging: false,
-        onclone: (clonedDoc) => {
+        onclone: (clonedDoc, clonedElement) => {
           // Add Branding / Header for PDF
           const header = clonedDoc.createElement('div');
           header.style.textAlign = 'center';
@@ -507,11 +564,21 @@ function MainApp() {
             <p style="font-size: 10px; color: #78716c; margin: 5px 0 0 0;">Generated on ${format(new Date(), 'EEEE, d MMMM yyyy HH:mm')}</p>
           `;
           
-          const target = clonedDoc.querySelector('[ref="resultRef"]') || clonedDoc.body.firstChild;
-          if (target && target.parentNode) {
-            target.parentNode.insertBefore(header, target);
+          if (clonedElement) {
+            clonedElement.insertBefore(header, clonedElement.firstChild);
           }
 
+          // CRITICAL: Sanitize all style tags inside the cloned document as well
+          const styleTags = clonedDoc.querySelectorAll('style');
+          styleTags.forEach(style => {
+            if (style.innerHTML.includes('oklch')) {
+              style.innerHTML = style.innerHTML.replace(/oklch\([^)]+\)/g, '#292524');
+            }
+            if (style.innerHTML.includes('oklab')) {
+              style.innerHTML = style.innerHTML.replace(/oklab\([^)]+\)/g, '#292524');
+            }
+          });
+          
           const allElements = clonedDoc.getElementsByTagName("*");
           for (let i = 0; i < allElements.length; i++) {
             const el = allElements[i] as HTMLElement;
@@ -529,11 +596,11 @@ function MainApp() {
               'text-decoration-color', 
               'stop-color'
             ];
-
+ 
             propsToCheck.forEach(prop => {
               const val = window.getComputedStyle(el).getPropertyValue(prop);
-              if (val && val.includes('oklch')) {
-                const converted = replaceAllOklchInString(val);
+              if (val && (val.includes('oklch') || val.includes('oklab'))) {
+                const converted = replaceAllModernColorsInString(val);
                 if (converted !== val) {
                   const propCamelCase = prop.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
                   // @ts-ignore
@@ -541,10 +608,10 @@ function MainApp() {
                 }
               }
             });
-
+ 
             const bgImg = window.getComputedStyle(el).getPropertyValue('background-image');
-            if (bgImg && bgImg.includes('oklch')) {
-              const convertedBg = replaceAllOklchInString(bgImg);
+            if (bgImg && (bgImg.includes('oklch') || bgImg.includes('oklab'))) {
+              const convertedBg = replaceAllModernColorsInString(bgImg);
               if (convertedBg !== bgImg) {
                 // @ts-ignore
                 try { el.style.backgroundImage = convertedBg; } catch(e) {}
@@ -552,9 +619,20 @@ function MainApp() {
             }
           }
           
-          // Force results to be visible in the clone
-          const paywall = clonedDoc.querySelector('.z-20');
-          if (paywall) (paywall as HTMLElement).style.display = 'none';
+          // Force results to be visible in the clone by removing paywalls and unblurring
+          if (clonedElement) {
+            const paywall = clonedElement.querySelector('.z-20');
+            if (paywall) (paywall as HTMLElement).style.display = 'none';
+
+            // Also search and remove relative selectors for paywall blocking
+            const blurreds = clonedElement.querySelectorAll('.blur-md');
+            blurreds.forEach(b => {
+              (b as HTMLElement).classList.remove('blur-md');
+              (b as HTMLElement).style.filter = 'none';
+              (b as HTMLElement).style.pointerEvents = 'auto';
+              (b as HTMLElement).style.userSelect = 'auto';
+            });
+          }
         }
       });
       

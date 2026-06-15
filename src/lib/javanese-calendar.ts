@@ -1,4 +1,5 @@
 import { addDays, differenceInDays, format, isLeapYear, startOfDay } from 'date-fns';
+import { getJavaDate, getJavaneseYearDetails } from './calendar-utils';
 
 export interface JavaneseDetails {
   masehiDate: Date;
@@ -258,12 +259,10 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
 
   // 5. Tahun Saka, Windu, Lambang
   const year = targetDate.getFullYear();
-  // 2026 is Dal (index 4), Sancaya (index 3), Kuwalu (index 1)
-  const yearDiff = year - 2026;
+  const jYearDetails = getJavaneseYearDetails(year);
   
-  const tahunSakaIndex = ((yearDiff % 8) + 8 + 4) % 8;
-  const tahunSaka = TAHUN_SAKA[tahunSakaIndex];
-  const tahunSakaKey = tahunSaka.charAt(0) + tahunSaka.slice(1).toLowerCase();
+  const tahunSaka = jYearDetails.name.toUpperCase();
+  const tahunSakaKey = jYearDetails.name;
   const tahunSakaSifat = `javanese_calendar.tahun_saka_sifat.${tahunSakaKey}`;
 
   const winduIndex = ((Math.floor((year - 2021) / 8) % 4) + 4 + 3) % 4;
@@ -277,54 +276,12 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   // 6. Tahun Jawi
   // (Calculation moved to section 7 for better accuracy)
 
-  // 7. Jawi Date & Month
-  // Anchor: 26 Jan 2026 = 7 Ruwah 1959
-  // 2026 is Tahun Dal (index 4 in Alip, Ehe, Jimawal, Je, Dal, Be, Wawu, Jimakir)
-  // Dal is a leap year (355 days, Besar has 30 days)
-  const jawiAnchor = new Date(2026, 0, 26);
-  const jawiDaysDiff = differenceInDays(targetDate, jawiAnchor);
+  // 7. Jawi Date & Month (Utilizing getJavaDate for perfect alignment with the calendar)
+  const jDateObject = getJavaDate(targetDate);
+  const jawiDate = jDateObject.day;
+  const jawiMonthName = jDateObject.month;
   
-  // Total days in 8-year cycle (Windu) = 2835
-  // Cycle: Alip(354), Ehe(355), Jimawal(354), Je(354), Dal(355), Be(354), Wawu(354), Jimakir(355)
-  const yearLengths = [354, 355, 354, 354, 355, 354, 354, 355];
-  
-  // 26 Jan 2026 is 7 Ruwah 1959. 
-  // Ruwah is month 8. Months before: 30, 29, 30, 29, 30, 29, 30 = 207 days.
-  // So 7 Ruwah is day 207 + 7 = 214 of the year.
-  // Year 1959 is Dal (idx 4).
-  // Days from start of Windu to 26 Jan 2026:
-  // Alip(354) + Ehe(355) + Jimawal(354) + Je(354) + 214 = 1631 days.
-  
-  let totalJawiDays = 1631 + jawiDaysDiff;
-  const winduCycles = Math.floor(totalJawiDays / 2835);
-  totalJawiDays = ((totalJawiDays % 2835) + 2835) % 2835;
-  
-  let currentYearIdx = 0;
-  while (totalJawiDays > yearLengths[currentYearIdx]) {
-    totalJawiDays -= yearLengths[currentYearIdx];
-    currentYearIdx++;
-  }
-  if (totalJawiDays === 0) {
-    // Edge case for modulo
-    totalJawiDays = yearLengths[currentYearIdx];
-  }
-
-  const isLeapJawi = yearLengths[currentYearIdx] === 355;
-  const months = [...BULAN_JAWI];
-  if (isLeapJawi) months[11] = { name: 'Besar', days: 30 };
-
-  let currentMonthIdx = 0;
-  while (totalJawiDays > months[currentMonthIdx].days) {
-    totalJawiDays -= months[currentMonthIdx].days;
-    currentMonthIdx++;
-  }
-  
-  const jawiDate = totalJawiDays;
-  const jawiMonthName = months[currentMonthIdx].name;
-  
-  // Tahun Jawi calculation (approximate but consistent with anchor)
-  // 2026 is 1959 Jawi. 
-  const tahunJawi = 1959 + (winduCycles * 8) + (currentYearIdx - 4);
+  const tahunJawi = jYearDetails.year;
   const lastDigit = tahunJawi % 10;
   const tahunJawiSifat = `javanese_calendar.tahun_jawi_sifat.${lastDigit}`;
 
