@@ -133,6 +133,10 @@ export const AdminDashboard: React.FC<{
     const tempId = "report-container-pdf";
     element.setAttribute('id', tempId);
 
+    const linkTags = Array.from(document.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[];
+    const originalLinkStates: { link: HTMLLinkElement; disabled: boolean }[] = [];
+    const tempStyles: HTMLStyleElement[] = [];
+
     try {
       // Color translation helpers inside download code block to prevent pollution
       const parseOklchLocal = (str: string) => {
@@ -204,8 +208,16 @@ export const AdminDashboard: React.FC<{
           const matches = res.match(/oklch\s*\([^)]+\)/gi);
           if (matches) {
             for (const match of matches) {
-              const p = parseOklchLocal(match);
-              if (p) res = res.replace(match, `rgba(${p.r}, ${p.g}, ${p.b}, ${p.a})`);
+              try {
+                const p = parseOklchLocal(match);
+                if (p) {
+                  res = res.replace(match, `rgba(${p.r}, ${p.g}, ${p.b}, ${p.a})`);
+                } else {
+                  res = res.replace(match, 'rgba(41, 37, 36, 1)');
+                }
+              } catch (e) {
+                res = res.replace(match, 'rgba(41, 37, 36, 1)');
+              }
             }
           }
         }
@@ -213,13 +225,54 @@ export const AdminDashboard: React.FC<{
           const matches = res.match(/oklab\s*\([^)]+\)/gi);
           if (matches) {
             for (const match of matches) {
-              const p = parseOklabLocal(match);
-              if (p) res = res.replace(match, `rgba(${p.r}, ${p.g}, ${p.b}, ${p.a})`);
+              try {
+                const p = parseOklabLocal(match);
+                if (p) {
+                  res = res.replace(match, `rgba(${p.r}, ${p.g}, ${p.b}, ${p.a})`);
+                } else {
+                  res = res.replace(match, 'rgba(41, 37, 36, 1)');
+                }
+              } catch (e) {
+                res = res.replace(match, 'rgba(41, 37, 36, 1)');
+              }
             }
           }
         }
+
+        // Guarantee fallback: remove any residual oklch/oklab from CSS rule strings to prevent html2canvas crashes
+        if (res.includes('oklch') || res.includes('oklab')) {
+          res = res.replace(/oklch\s*\([^)]*\([^)]*\)[^)]*\)/gi, 'rgba(41, 37, 36, 1)');
+          res = res.replace(/oklch\s*\([^)]+\)/gi, 'rgba(41, 37, 36, 1)');
+          res = res.replace(/oklab\s*\([^)]*\([^)]*\)[^)]*\)/gi, 'rgba(41, 37, 36, 1)');
+          res = res.replace(/oklab\s*\([^)]+\)/gi, 'rgba(41, 37, 36, 1)');
+        }
+
         return res;
       };
+
+      // 1. Pre-inline and sanitize styles on the live page so html2canvas's internal downloader parses sanitized CSS
+      for (const link of linkTags) {
+        try {
+          if (link.href && (link.href.startsWith(window.location.origin) || link.href.startsWith('/') || !link.href.startsWith('http'))) {
+            originalLinkStates.push({ link, disabled: link.disabled });
+            
+            const response = await fetch(link.href);
+            const cssText = await response.text();
+            const sanitizedCss = cleanModernColorsStr(cssText);
+            
+            const style = document.createElement('style');
+            style.className = 'temp-pdf-sanitized-style';
+            style.innerHTML = sanitizedCss;
+            document.head.appendChild(style);
+            tempStyles.push(style);
+            
+            // Disable original stylesheet link so html2canvas ignores it and uses the sanitized style element instead
+            link.disabled = true;
+          }
+        } catch (fetchErr) {
+          console.error("Error sanitizing stylesheet dynamically in AdminDashboard:", link.href, fetchErr);
+        }
+      }
 
       // html2canvas capture logic with enhanced clarity and precise sizing settings
       const canvas = await html2canvas(element, {
@@ -236,16 +289,16 @@ export const AdminDashboard: React.FC<{
             return;
           }
 
-          // 1. Sanitize all style sheets in clone to eradicate any oklch parser errors
+          // 1. Sanitize all style tags inside the cloned document as well
           try {
             const styleTags = clonedDoc.querySelectorAll('style');
             styleTags.forEach(style => {
               try {
-                if (style.innerHTML.includes('oklch')) {
-                  style.innerHTML = style.innerHTML.replace(/oklch\([^)]+\)/g, '#292524');
-                }
-                if (style.innerHTML.includes('oklab')) {
-                  style.innerHTML = style.innerHTML.replace(/oklab\([^)]+\)/g, '#292524');
+                if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab'))) {
+                  const cleaned = cleanModernColorsStr(style.innerHTML);
+                  if (cleaned !== style.innerHTML) {
+                    style.innerHTML = cleaned;
+                  }
                 }
               } catch (err) {}
             });
@@ -434,6 +487,13 @@ export const AdminDashboard: React.FC<{
       console.error("PDF generation failed:", error);
       alert(`Gagal mengunduh PDF: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
+      // Restore CSS link states and remove temp stylesheet styles
+      for (const state of originalLinkStates) {
+        state.link.disabled = state.disabled;
+      }
+      for (const style of tempStyles) {
+        style.remove();
+      }
       if (element) {
         if (originalId) {
           element.setAttribute('id', originalId);

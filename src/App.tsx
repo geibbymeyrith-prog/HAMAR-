@@ -593,10 +593,16 @@ function MainApp() {
       const oklchMatches = result.match(/oklch\s*\([^)]+\)/gi);
       if (oklchMatches) {
         for (const match of oklchMatches) {
-          const parsed = parseOklch(match);
-          if (parsed) {
-            const rgbStr = `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, ${parsed.a})`;
-            result = result.replace(match, rgbStr);
+          try {
+            const parsed = parseOklch(match);
+            if (parsed) {
+              const rgbStr = `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, ${parsed.a})`;
+              result = result.replace(match, rgbStr);
+            } else {
+              result = result.replace(match, 'rgba(41, 37, 36, 1)');
+            }
+          } catch (e) {
+            result = result.replace(match, 'rgba(41, 37, 36, 1)');
           }
         }
       }
@@ -606,13 +612,27 @@ function MainApp() {
       const oklabMatches = result.match(/oklab\s*\([^)]+\)/gi);
       if (oklabMatches) {
         for (const match of oklabMatches) {
-          const parsed = parseOklab(match);
-          if (parsed) {
-            const rgbStr = `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, ${parsed.a})`;
-            result = result.replace(match, rgbStr);
+          try {
+            const parsed = parseOklab(match);
+            if (parsed) {
+              const rgbStr = `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, ${parsed.a})`;
+              result = result.replace(match, rgbStr);
+            } else {
+              result = result.replace(match, 'rgba(41, 37, 36, 1)');
+            }
+          } catch (e) {
+            result = result.replace(match, 'rgba(41, 37, 36, 1)');
           }
         }
       }
+    }
+
+    // GUARANTEE fallback: remove any residual oklch/oklab from CSS rule strings to prevent html2canvas crashes
+    if (result.includes('oklch') || result.includes('oklab')) {
+      result = result.replace(/oklch\s*\([^)]*\([^)]*\)[^)]*\)/gi, 'rgba(41, 37, 36, 1)');
+      result = result.replace(/oklch\s*\([^)]+\)/gi, 'rgba(41, 37, 36, 1)');
+      result = result.replace(/oklab\s*\([^)]*\([^)]*\)[^)]*\)/gi, 'rgba(41, 37, 36, 1)');
+      result = result.replace(/oklab\s*\([^)]+\)/gi, 'rgba(41, 37, 36, 1)');
     }
     
     return result;
@@ -626,8 +646,37 @@ function MainApp() {
     const originalId = target.getAttribute('id');
     const tempId = "pdf-target-element";
     target.setAttribute('id', tempId);
+
+    const linkTags = Array.from(document.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[];
+    const originalLinkStates: { link: HTMLLinkElement; disabled: boolean }[] = [];
+    const tempStyles: HTMLStyleElement[] = [];
     
     try {
+      // 1. In CSS processing, inline and sanitize Tailwind/same-origin stylesheets dynamically
+      // to completely prevent html2canvas from downloading and parsing un-sanitized stylesheets.
+      for (const link of linkTags) {
+        try {
+          if (link.href && (link.href.startsWith(window.location.origin) || link.href.startsWith('/') || !link.href.startsWith('http'))) {
+            originalLinkStates.push({ link, disabled: link.disabled });
+            
+            const response = await fetch(link.href);
+            const cssText = await response.text();
+            const sanitizedCss = replaceAllModernColorsInString(cssText);
+            
+            const style = document.createElement('style');
+            style.className = 'temp-pdf-sanitized-style';
+            style.innerHTML = sanitizedCss;
+            document.head.appendChild(style);
+            tempStyles.push(style);
+            
+            // Disable original stylesheet link so html2canvas ignores it and uses the sanitized style element instead
+            link.disabled = true;
+          }
+        } catch (fetchErr) {
+          console.error("Error sanitizing stylesheet dynamically:", link.href, fetchErr);
+        }
+      }
+
       const canvas = await html2canvas(target, {
         scale: 1.5,
         useCORS: true,
@@ -664,11 +713,11 @@ function MainApp() {
             const styleTags = clonedDoc.querySelectorAll('style');
             styleTags.forEach(style => {
               try {
-                if (style.innerHTML.includes('oklch')) {
-                  style.innerHTML = style.innerHTML.replace(/oklch\([^)]+\)/g, '#292524');
-                }
-                if (style.innerHTML.includes('oklab')) {
-                  style.innerHTML = style.innerHTML.replace(/oklab\([^)]+\)/g, '#292524');
+                if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab'))) {
+                  const cleaned = replaceAllModernColorsInString(style.innerHTML);
+                  if (cleaned !== style.innerHTML) {
+                    style.innerHTML = cleaned;
+                  }
                 }
               } catch (styleErr) {
                 console.error("Error sanitizing style tag:", styleErr);
@@ -777,6 +826,13 @@ function MainApp() {
       console.error("PDF Export Error:", error);
       alert("Gagal mengunduh PDF: " + (error as Error).message);
     } finally {
+      // 2. Restore links back to their original state and cleanup the temporary style elements
+      for (const state of originalLinkStates) {
+        state.link.disabled = state.disabled;
+      }
+      for (const style of tempStyles) {
+        style.remove();
+      }
       if (target) {
         if (originalId) {
           target.setAttribute('id', originalId);
