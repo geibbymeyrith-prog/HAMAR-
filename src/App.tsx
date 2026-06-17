@@ -618,7 +618,7 @@ function MainApp() {
     return result;
   };
 
-  const handleDownloadPDF = async () => {
+   const handleDownloadPDF = async () => {
     if (!resultRef.current) return;
     setIsLoading(true);
     
@@ -630,35 +630,47 @@ function MainApp() {
         logging: false,
         onclone: (clonedDoc, clonedElement) => {
           // Add Branding / Header for PDF
-          const header = clonedDoc.createElement('div');
-          header.style.textAlign = 'center';
-          header.style.marginBottom = '30px';
-          header.style.padding = '20px';
-          header.style.borderBottom = '2px solid #2E7D32';
-          header.innerHTML = `
-            <h1 style="font-family: serif; font-size: 28px; margin: 0; color: #1A1A1A;">HAMARE</h1>
-            <p style="font-size: 14px; color: #2E7D32; font-weight: bold; margin: 5px 0 0 0;">Primbon Javanese & Pranata Mangsa Expert</p>
-            <p style="font-size: 10px; color: #78716c; margin: 5px 0 0 0;">Generated on ${format(new Date(), 'EEEE, d MMMM yyyy HH:mm')}</p>
-          `;
-          
-          if (clonedElement) {
-            clonedElement.insertBefore(header, clonedElement.firstChild);
+          try {
+            const header = clonedDoc.createElement('div');
+            header.style.textAlign = 'center';
+            header.style.marginBottom = '30px';
+            header.style.padding = '20px';
+            header.style.borderBottom = '2px solid #2E7D32';
+            header.innerHTML = `
+              <h1 style="font-family: serif; font-size: 28px; margin: 0; color: #1A1A1A;">HAMARE</h1>
+              <p style="font-size: 14px; color: #2E7D32; font-weight: bold; margin: 5px 0 0 0;">Primbon Javanese & Pranata Mangsa Expert</p>
+              <p style="font-size: 10px; color: #78716c; margin: 5px 0 0 0;">Generated on ${format(new Date(), 'EEEE, d MMMM yyyy HH:mm')}</p>
+            `;
+            
+            if (clonedElement) {
+              clonedElement.insertBefore(header, clonedElement.firstChild);
+            }
+          } catch (e) {
+            console.error("Error inserting PDF header:", e);
           }
 
           // CRITICAL: Sanitize all style tags inside the cloned document as well
-          const styleTags = clonedDoc.querySelectorAll('style');
-          styleTags.forEach(style => {
-            if (style.innerHTML.includes('oklch')) {
-              style.innerHTML = style.innerHTML.replace(/oklch\([^)]+\)/g, '#292524');
-            }
-            if (style.innerHTML.includes('oklab')) {
-              style.innerHTML = style.innerHTML.replace(/oklab\([^)]+\)/g, '#292524');
-            }
-          });
+          try {
+            const styleTags = clonedDoc.querySelectorAll('style');
+            styleTags.forEach(style => {
+              try {
+                if (style.innerHTML.includes('oklch')) {
+                  style.innerHTML = style.innerHTML.replace(/oklch\([^)]+\)/g, '#292524');
+                }
+                if (style.innerHTML.includes('oklab')) {
+                  style.innerHTML = style.innerHTML.replace(/oklab\([^)]+\)/g, '#292524');
+                }
+              } catch (styleErr) {
+                console.error("Error sanitizing style tag:", styleErr);
+              }
+            });
+          } catch (e) {
+            console.error("Error sanitizing style tags:", e);
+          }
           
-          const allElements = clonedDoc.getElementsByTagName("*");
-          for (let i = 0; i < allElements.length; i++) {
-            const el = allElements[i] as HTMLElement;
+          try {
+            const allElements = clonedDoc.getElementsByTagName("*");
+            const win = clonedDoc.defaultView || window;
             
             const propsToCheck = [
               'color', 
@@ -673,42 +685,62 @@ function MainApp() {
               'text-decoration-color', 
               'stop-color'
             ];
- 
-            propsToCheck.forEach(prop => {
-              const val = window.getComputedStyle(el).getPropertyValue(prop);
-              if (val && (val.includes('oklch') || val.includes('oklab'))) {
-                const converted = replaceAllModernColorsInString(val);
-                if (converted !== val) {
-                  const propCamelCase = prop.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-                  // @ts-ignore
-                  try { el.style[propCamelCase] = converted; } catch(e) {}
+
+            for (let i = 0; i < allElements.length; i++) {
+              const el = allElements[i] as HTMLElement;
+              
+              // Process each element property style with individual try/catch
+              propsToCheck.forEach(prop => {
+                try {
+                  const val = win.getComputedStyle(el).getPropertyValue(prop);
+                  if (val && (val.includes('oklch') || val.includes('oklab'))) {
+                    const converted = replaceAllModernColorsInString(val);
+                    if (converted !== val) {
+                      const propCamelCase = prop.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+                      // @ts-ignore
+                      el.style[propCamelCase] = converted;
+                    }
+                  }
+                } catch (propErr) {
+                  // Suppressed
                 }
-              }
-            });
- 
-            const bgImg = window.getComputedStyle(el).getPropertyValue('background-image');
-            if (bgImg && (bgImg.includes('oklch') || bgImg.includes('oklab'))) {
-              const convertedBg = replaceAllModernColorsInString(bgImg);
-              if (convertedBg !== bgImg) {
-                // @ts-ignore
-                try { el.style.backgroundImage = convertedBg; } catch(e) {}
+              });
+
+              try {
+                const bgImg = win.getComputedStyle(el).getPropertyValue('background-image');
+                if (bgImg && (bgImg.includes('oklch') || bgImg.includes('oklab'))) {
+                  const convertedBg = replaceAllModernColorsInString(bgImg);
+                  if (convertedBg !== bgImg) {
+                    // @ts-ignore
+                    el.style.backgroundImage = convertedBg;
+                  }
+                }
+              } catch (bgErr) {
+                // Suppressed
               }
             }
+          } catch (e) {
+            console.error("Error in onclone styling traversal:", e);
           }
           
           // Force results to be visible in the clone by removing paywalls and unblurring
-          if (clonedElement) {
-            const paywall = clonedElement.querySelector('.z-20');
-            if (paywall) (paywall as HTMLElement).style.display = 'none';
+          try {
+            if (clonedElement) {
+              const paywall = clonedElement.querySelector('.z-20');
+              if (paywall) (paywall as HTMLElement).style.display = 'none';
 
-            // Also search and remove relative selectors for paywall blocking
-            const blurreds = clonedElement.querySelectorAll('.blur-md');
-            blurreds.forEach(b => {
-              (b as HTMLElement).classList.remove('blur-md');
-              (b as HTMLElement).style.filter = 'none';
-              (b as HTMLElement).style.pointerEvents = 'auto';
-              (b as HTMLElement).style.userSelect = 'auto';
-            });
+              const blurreds = clonedElement.querySelectorAll('.blur-md');
+              blurreds.forEach(b => {
+                try {
+                  (b as HTMLElement).classList.remove('blur-md');
+                  (b as HTMLElement).style.filter = 'none';
+                  (b as HTMLElement).style.pointerEvents = 'auto';
+                  (b as HTMLElement).style.userSelect = 'auto';
+                } catch (err) {}
+              });
+            }
+          } catch (e) {
+            console.error("Error cleaning paywall / blur in clone:", e);
           }
         }
       });
@@ -1048,7 +1080,6 @@ function MainApp() {
                 {/* Visible Section (100%) */}
                 <div className="p-6 space-y-6">
                   <DetailItem label="Tanggal Jawa" value={`${javaSelected.day} ${javaSelected.month} ${jYearSelected.year} ${jYearSelected.name}`} subValue={`Pasaran: ${pasaranSelected}`} icon={<Moon className="w-4 h-4" />} />
-                  <DetailItem label={t('weton.labels.jawiDate')} value={`${wetonDetails.jawiDate} ${t(`calendar.months.${wetonDetails.jawiMonthName}`)}`} icon={<Moon className="w-4 h-4" />} />
                   <DetailItem label={t('weton.labels.dayLambang')} value={`${wetonDetails.jawiDayName} (${wetonDetails.dayLambang})`} icon={<Sun className="w-4 h-4" />} />
                   <DetailItem label={t('weton.labels.pasaranDewa')} value={`${wetonDetails.pasaranName} (${wetonDetails.pasaranDewa})`} icon={<Zap className="w-4 h-4" />} />
                 </div>
@@ -2016,7 +2047,6 @@ function MainApp() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 divide-y md:divide-y-0 md:divide-x divide-stone-100">
                   <div className="space-y-5">
                     <DetailItem label="Tanggal Jawa" value={`${javaSelected.day} ${javaSelected.month} ${jYearSelected.year} ${jYearSelected.name}`} subValue={`Pasaran: ${pasaranSelected}`} icon={<Moon className="w-4 h-4 text-[#2E7D32]" />} />
-                    <DetailItem label={t('weton.labels.jawiDate')} value={`${wetonDetails.jawiDate} ${t(`calendar.months.${wetonDetails.jawiMonthName}`)}`} icon={<Moon className="w-4 h-4 text-[#2E7D32]" />} />
                     <DetailItem label={t('weton.labels.dayLambang')} value={`${wetonDetails.jawiDayName} (${wetonDetails.dayLambang})`} icon={<Sun className="w-4 h-4 text-amber-500" />} />
                     <DetailItem label={t('weton.labels.pasaranDewa')} value={`${wetonDetails.pasaranName} (${wetonDetails.pasaranDewa})`} icon={<Zap className="w-4 h-4 text-amber-500" />} />
                   </div>
