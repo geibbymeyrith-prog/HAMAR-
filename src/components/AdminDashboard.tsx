@@ -220,41 +220,44 @@ export const AdminDashboard: React.FC<{
 
       // html2canvas capture logic with enhanced clarity and precise sizing settings
       const canvas = await html2canvas(element, {
-        scale: 2.5, // 2.5x scale for razor-sharp printed details
+        scale: 1.8, // Elegant, extremely stable high-resolution scale
         useCORS: true,
         allowTaint: true,
-        logging: false,
+        logging: true,
         backgroundColor: '#ffffff',
         windowWidth: 2600, // Generous capture canvas viewport preventing unwanted wrap
         onclone: (clonedDoc, clonedElement) => {
           // 1. Sanitize all style sheets in clone to eradicate any oklch parser errors
-          const styleTags = clonedDoc.querySelectorAll('style');
-          styleTags.forEach(style => {
-            if (style.innerHTML.includes('oklch')) {
-              style.innerHTML = style.innerHTML.replace(/oklch\([^)]+\)/g, '#292524');
-            }
-            if (style.innerHTML.includes('oklab')) {
-              style.innerHTML = style.innerHTML.replace(/oklab\([^)]+\)/g, '#292524');
-            }
-          });
-
-          // Translate all computed colors from oklch elements of the clone
-          const allWebElements = clonedElement.getElementsByTagName("*");
-          for (let i = 0; i < allWebElements.length; i++) {
-            const el = allWebElements[i] as HTMLElement;
-            const styleProps = ['color', 'background-color', 'border-color', 'fill', 'stroke'];
-            styleProps.forEach(prop => {
-              const val = window.getComputedStyle(el).getPropertyValue(prop);
-              if (val && (val.includes('oklch') || val.includes('oklab'))) {
-                const clean = cleanModernColorsStr(val);
-                const camel = prop.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-                try {
-                  // @ts-ignore
-                  el.style[camel] = clean;
-                } catch (e) {}
-              }
+          try {
+            const styleTags = clonedDoc.querySelectorAll('style');
+            styleTags.forEach(style => {
+              try {
+                if (style.innerHTML.includes('oklch')) {
+                  style.innerHTML = style.innerHTML.replace(/oklch\([^)]+\)/g, '#292524');
+                }
+                if (style.innerHTML.includes('oklab')) {
+                  style.innerHTML = style.innerHTML.replace(/oklab\([^)]+\)/g, '#292524');
+                }
+              } catch (err) {}
             });
-          }
+          } catch (e) {}
+
+          // Translate all custom inline colors safely from oklch elements of the clone
+          try {
+            const allWebElements = clonedElement.getElementsByTagName("*");
+            for (let i = 0; i < allWebElements.length; i++) {
+              const el = allWebElements[i] as HTMLElement;
+              try {
+                const styleAttr = el.getAttribute('style');
+                if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
+                  const clean = cleanModernColorsStr(styleAttr);
+                  if (clean !== styleAttr) {
+                    el.style.cssText = clean;
+                  }
+                }
+              } catch (elErr) {}
+            }
+          } catch (e) {}
 
           // 2. Format the print-only header elements correctly
           const printHeader = clonedElement.querySelector('.print-header-content');
@@ -375,9 +378,9 @@ export const AdminDashboard: React.FC<{
       const availableWidth = pdfWidth - (margin * 2);
       const availableHeight = pdfHeight - (margin * 2);
       
-      // scale parameter was 2.5
-      const sourceWidth = imgWidth / 2.5;
-      const sourceHeight = imgHeight / 2.5;
+      // scale parameter is 1.8
+      const sourceWidth = imgWidth / 1.8;
+      const sourceHeight = imgHeight / 1.8;
       
       const ratio = Math.min(availableWidth / sourceWidth, availableHeight / sourceHeight);
       const finalWidth = sourceWidth * ratio;

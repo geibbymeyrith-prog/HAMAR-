@@ -624,10 +624,11 @@ function MainApp() {
     
     try {
       const canvas = await html2canvas(resultRef.current, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#F5F5F0',
-        logging: false,
+        logging: true,
         onclone: (clonedDoc, clonedElement) => {
           // Add Branding / Header for PDF
           try {
@@ -669,53 +670,19 @@ function MainApp() {
           }
           
           try {
-            const allElements = clonedDoc.getElementsByTagName("*");
-            const win = clonedDoc.defaultView || window;
-            
-            const propsToCheck = [
-              'color', 
-              'background-color', 
-              'border-top-color', 
-              'border-right-color', 
-              'border-bottom-color', 
-              'border-left-color', 
-              'fill', 
-              'stroke',
-              'outline-color', 
-              'text-decoration-color', 
-              'stop-color'
-            ];
-
+            const allElements = clonedElement.getElementsByTagName("*");
             for (let i = 0; i < allElements.length; i++) {
               const el = allElements[i] as HTMLElement;
               
-              // Process each element property style with individual try/catch
-              propsToCheck.forEach(prop => {
-                try {
-                  const val = win.getComputedStyle(el).getPropertyValue(prop);
-                  if (val && (val.includes('oklch') || val.includes('oklab'))) {
-                    const converted = replaceAllModernColorsInString(val);
-                    if (converted !== val) {
-                      const propCamelCase = prop.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-                      // @ts-ignore
-                      el.style[propCamelCase] = converted;
-                    }
-                  }
-                } catch (propErr) {
-                  // Suppressed
-                }
-              });
-
               try {
-                const bgImg = win.getComputedStyle(el).getPropertyValue('background-image');
-                if (bgImg && (bgImg.includes('oklch') || bgImg.includes('oklab'))) {
-                  const convertedBg = replaceAllModernColorsInString(bgImg);
-                  if (convertedBg !== bgImg) {
-                    // @ts-ignore
-                    el.style.backgroundImage = convertedBg;
+                const styleAttr = el.getAttribute('style');
+                if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
+                  const cleaned = replaceAllModernColorsInString(styleAttr);
+                  if (cleaned !== styleAttr) {
+                    el.style.cssText = cleaned;
                   }
                 }
-              } catch (bgErr) {
+              } catch (elErr) {
                 // Suppressed
               }
             }
