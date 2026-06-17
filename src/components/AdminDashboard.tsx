@@ -122,15 +122,18 @@ export const AdminDashboard: React.FC<{
   const calendarRef = useRef<HTMLDivElement>(null);
 
   const handleDownloadPDF = async () => {
-    if (!calendarRef.current) {
+    const element = calendarRef.current;
+    if (!element) {
       alert("Elemen kalender tidak ditemukan.");
       return;
     }
     
     setLoading(true);
+    const originalId = element.getAttribute('id');
+    const tempId = "report-container-pdf";
+    element.setAttribute('id', tempId);
+
     try {
-      const element = calendarRef.current;
-      
       // Color translation helpers inside download code block to prevent pollution
       const parseOklchLocal = (str: string) => {
         const regex = /oklch\s*\(\s*([\d.]+\%?)\s+([\d.]+)\s+([\d.]+(?:deg|rad)?)\s*(?:\/\s*([\d.]+\%?))?\s*\)/i;
@@ -222,11 +225,17 @@ export const AdminDashboard: React.FC<{
       const canvas = await html2canvas(element, {
         scale: 1.8, // Elegant, extremely stable high-resolution scale
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         logging: true,
         backgroundColor: '#ffffff',
         windowWidth: 2600, // Generous capture canvas viewport preventing unwanted wrap
-        onclone: (clonedDoc, clonedElement) => {
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById(tempId);
+          if (!clonedElement) {
+            console.error("Cloned report container not found in onclone!");
+            return;
+          }
+
           // 1. Sanitize all style sheets in clone to eradicate any oklch parser errors
           try {
             const styleTags = clonedDoc.querySelectorAll('style');
@@ -241,6 +250,34 @@ export const AdminDashboard: React.FC<{
               } catch (err) {}
             });
           } catch (e) {}
+
+          // Sanitize oklch colors from styleSheets rules inside the cloned document
+          try {
+            const styleSheets = clonedDoc.styleSheets;
+            for (let i = 0; i < styleSheets.length; i++) {
+              try {
+                const sheet = styleSheets[i];
+                const rules = sheet.cssRules || sheet.rules;
+                if (rules) {
+                  for (let j = 0; j < rules.length; j++) {
+                    const rule = rules[j] as CSSStyleRule;
+                    if (rule.style && rule.style.cssText) {
+                      if (rule.style.cssText.includes('oklch') || rule.style.cssText.includes('oklab')) {
+                        const cleaned = cleanModernColorsStr(rule.style.cssText);
+                        if (cleaned !== rule.style.cssText) {
+                          rule.style.cssText = cleaned;
+                        }
+                      }
+                    }
+                  }
+                }
+              } catch (sheetErr) {
+                // Suppress cross-origin stylesheet errors
+              }
+            }
+          } catch (e) {
+            console.error("Error in stylesheet sanitization:", e);
+          }
 
           // Translate all custom inline colors safely from oklch elements of the clone
           try {
@@ -397,6 +434,13 @@ export const AdminDashboard: React.FC<{
       console.error("PDF generation failed:", error);
       alert(`Gagal mengunduh PDF: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
+      if (element) {
+        if (originalId) {
+          element.setAttribute('id', originalId);
+        } else {
+          element.removeAttribute('id');
+        }
+      }
       setLoading(false);
     }
   };

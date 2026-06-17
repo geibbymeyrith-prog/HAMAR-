@@ -619,17 +619,28 @@ function MainApp() {
   };
 
    const handleDownloadPDF = async () => {
-    if (!resultRef.current) return;
+    const target = resultRef.current;
+    if (!target) return;
     setIsLoading(true);
     
+    const originalId = target.getAttribute('id');
+    const tempId = "pdf-target-element";
+    target.setAttribute('id', tempId);
+    
     try {
-      const canvas = await html2canvas(resultRef.current, {
+      const canvas = await html2canvas(target, {
         scale: 1.5,
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         backgroundColor: '#F5F5F0',
         logging: true,
-        onclone: (clonedDoc, clonedElement) => {
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById(tempId);
+          if (!clonedElement) {
+            console.error("Cloned target element not found in onclone!");
+            return;
+          }
+
           // Add Branding / Header for PDF
           try {
             const header = clonedDoc.createElement('div');
@@ -643,9 +654,7 @@ function MainApp() {
               <p style="font-size: 10px; color: #78716c; margin: 5px 0 0 0;">Generated on ${format(new Date(), 'EEEE, d MMMM yyyy HH:mm')}</p>
             `;
             
-            if (clonedElement) {
-              clonedElement.insertBefore(header, clonedElement.firstChild);
-            }
+            clonedElement.insertBefore(header, clonedElement.firstChild);
           } catch (e) {
             console.error("Error inserting PDF header:", e);
           }
@@ -667,6 +676,34 @@ function MainApp() {
             });
           } catch (e) {
             console.error("Error sanitizing style tags:", e);
+          }
+
+          // CRITICAL: Sanitize all style sheets rules inside the cloned document as well
+          try {
+            const styleSheets = clonedDoc.styleSheets;
+            for (let i = 0; i < styleSheets.length; i++) {
+              try {
+                const sheet = styleSheets[i];
+                const rules = sheet.cssRules || sheet.rules;
+                if (rules) {
+                  for (let j = 0; j < rules.length; j++) {
+                    const rule = rules[j] as CSSStyleRule;
+                    if (rule.style && rule.style.cssText) {
+                      if (rule.style.cssText.includes('oklch') || rule.style.cssText.includes('oklab')) {
+                        const cleaned = replaceAllModernColorsInString(rule.style.cssText);
+                        if (cleaned !== rule.style.cssText) {
+                          rule.style.cssText = cleaned;
+                        }
+                      }
+                    }
+                  }
+                }
+              } catch (sheetErr) {
+                // Suppress cross-origin stylesheet errors
+              }
+            }
+          } catch (e) {
+            console.error("Error in stylesheet sanitization:", e);
           }
           
           try {
@@ -692,20 +729,18 @@ function MainApp() {
           
           // Force results to be visible in the clone by removing paywalls and unblurring
           try {
-            if (clonedElement) {
-              const paywall = clonedElement.querySelector('.z-20');
-              if (paywall) (paywall as HTMLElement).style.display = 'none';
+            const paywall = clonedElement.querySelector('.z-20');
+            if (paywall) (paywall as HTMLElement).style.display = 'none';
 
-              const blurreds = clonedElement.querySelectorAll('.blur-md');
-              blurreds.forEach(b => {
-                try {
-                  (b as HTMLElement).classList.remove('blur-md');
-                  (b as HTMLElement).style.filter = 'none';
-                  (b as HTMLElement).style.pointerEvents = 'auto';
-                  (b as HTMLElement).style.userSelect = 'auto';
-                } catch (err) {}
-              });
-            }
+            const blurreds = clonedElement.querySelectorAll('.blur-md');
+            blurreds.forEach(b => {
+              try {
+                (b as HTMLElement).classList.remove('blur-md');
+                (b as HTMLElement).style.filter = 'none';
+                (b as HTMLElement).style.pointerEvents = 'auto';
+                (b as HTMLElement).style.userSelect = 'auto';
+              } catch (err) {}
+            });
           } catch (e) {
             console.error("Error cleaning paywall / blur in clone:", e);
           }
@@ -740,8 +775,15 @@ function MainApp() {
       pdf.save(`Hamare-${activeTab}-${format(new Date(), 'ddMMyy-HHmm')}.pdf`);
     } catch (error) {
       console.error("PDF Export Error:", error);
-      alert("Gagal mengunduh PDF. Silakan coba lagi.");
+      alert("Gagal mengunduh PDF: " + (error as Error).message);
     } finally {
+      if (target) {
+        if (originalId) {
+          target.setAttribute('id', originalId);
+        } else {
+          target.removeAttribute('id');
+        }
+      }
       setIsLoading(false);
     }
   };
