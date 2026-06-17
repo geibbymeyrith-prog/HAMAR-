@@ -104,6 +104,38 @@ const getOrCreateVisitorId = (): string => {
   return visitorId;
 };
 
+const PENGHIDUPAN_LABELS: Record<number, string> = {
+  0: "Kesakitan (Penderitaan dan perjalanan hidup)",
+  1: "Penghasilan atau pemasukan sedikit",
+  2: "Penghasilan sedang atau cukup",
+  3: "Penghasilan baik",
+  4: "Penghasilan besar",
+  5: "Penghasilan baik dan hidup senang",
+  7: "Hidup serba mewah dan sangat sempurna",
+  8: "Kehidupan serba mewah karena keberhasilannya, dan diteruskan oleh keturunannya"
+};
+
+const PENGHIDUPAN_DATA = [
+  { minAge: 0, maxAge: 6, neptuMap: { 7: 4, 8: 4, 9: 2, 10: 1, 11: 2, 12: 0, 13: 3, 14: 1, 15: 2, 16: 0, 17: 1, 18: 2 } },
+  { minAge: 7, maxAge: 12, neptuMap: { 7: 1, 8: 1, 9: 5, 10: 0, 11: 4, 12: 5, 13: 1, 14: 0, 15: 0, 16: 3, 17: 1, 18: 5 } },
+  { minAge: 13, maxAge: 18, neptuMap: { 7: 4, 8: 0, 9: 1, 10: 4, 11: 1, 12: 1, 13: 0, 14: 1, 15: 1, 16: 1, 17: 0, 18: 1 } },
+  { minAge: 19, maxAge: 24, neptuMap: { 7: 1, 8: 1, 9: 0, 10: 1, 11: 1, 12: 0, 13: 5, 14: 4, 15: 1, 16: 2, 17: 5, 18: 0 } },
+  { minAge: 25, maxAge: 30, neptuMap: { 7: 0, 8: 0, 9: 4, 10: 1, 11: 8, 12: 4, 13: 0, 14: 0, 15: 5, 16: 0, 17: 0, 18: 4 } },
+  { minAge: 31, maxAge: 36, neptuMap: { 7: 2, 8: 3, 9: 1, 10: 3, 11: 1, 12: 0, 13: 1, 14: 0, 15: 2, 16: 1, 17: 1, 18: 1 } },
+  { minAge: 37, maxAge: 42, neptuMap: { 7: 2, 8: 0, 9: 4, 10: 0, 11: 0, 12: 1, 13: 1, 14: 4, 15: 0, 16: 8, 17: 1, 18: 4 } },
+  { minAge: 43, maxAge: 48, neptuMap: { 8: 1, 9: 0, 10: 0, 11: 1, 12: 0, 13: 5, 14: 4, 15: 1, 16: 1, 17: 5, 18: 0 } },
+  { minAge: 49, maxAge: 54, neptuMap: { 9: 1, 10: 4, 11: 2, 12: 1, 13: 2, 14: 1, 15: 2, 16: 2, 17: 2, 18: 1 } },
+  { minAge: 55, maxAge: 60, neptuMap: { 10: 4, 11: 0, 12: 4, 13: 0, 14: 4, 15: 5, 16: 7, 17: 0, 18: 4 } },
+  { minAge: 61, maxAge: 66, neptuMap: { 11: 2, 12: 4, 13: 1, 14: 0, 15: 5, 16: 2, 17: 1, 18: 4 } },
+  { minAge: 67, maxAge: 72, neptuMap: { 12: 0, 13: 2, 14: 1, 15: 1, 16: 0, 17: 2, 18: 0 } },
+  { minAge: 73, maxAge: 78, neptuMap: { 13: 5, 14: 4, 15: 0, 16: 7, 17: 5, 18: 0 } },
+  { minAge: 79, maxAge: 84, neptuMap: { 14: 4, 15: 4, 16: 1, 17: 5, 18: 4 } },
+  { minAge: 85, maxAge: 90, neptuMap: { 15: 1, 16: 0, 17: 1, 18: 1 } },
+  { minAge: 91, maxAge: 96, neptuMap: { 16: 2, 17: 0, 18: 4 } },
+  { minAge: 97, maxAge: 102, neptuMap: { 17: 4, 18: 1 } },
+  { minAge: 103, maxAge: 108, neptuMap: { 18: 1 } }
+];
+
 export default function App() {
   return <MainApp />;
 }
@@ -264,6 +296,51 @@ function MainApp() {
   const [eventDateHariBaik, setEventDateHariBaik] = useState<Date | null>(null);
   
   const wetonKelahiranDetails = useMemo(() => birthDateWeton ? getJavaneseDetails(birthDateWeton) : null, [birthDateWeton]);
+
+  const wetonKelahiranAgeStats = useMemo(() => {
+    if (!birthDateWeton) return null;
+    const today = new Date();
+    const diffTime = Math.max(0, today.getTime() - birthDateWeton.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const ageYears = Math.floor(diffDays / 365);
+    return { diffDays, ageYears };
+  }, [birthDateWeton]);
+
+  const wetonKelahiranPenghidupan = useMemo(() => {
+    if (!wetonKelahiranDetails || !wetonKelahiranAgeStats) return null;
+    const neptu = wetonKelahiranDetails.neptuValue;
+    const age = wetonKelahiranAgeStats.ageYears;
+    
+    let currentAge = age;
+    let val: number | undefined = undefined;
+    let matchedRangeRange: string = "";
+    
+    while (currentAge >= 0) {
+      const range = PENGHIDUPAN_DATA.find(r => currentAge >= r.minAge && currentAge <= r.maxAge);
+      if (range) {
+        if (range.neptuMap[neptu as keyof typeof range.neptuMap] !== undefined) {
+          val = range.neptuMap[neptu as keyof typeof range.neptuMap];
+          matchedRangeRange = `${range.minAge} - ${range.maxAge} tahun`;
+          break;
+        }
+      } else if (currentAge > 108) {
+        currentAge -= 6;
+        continue;
+      }
+      currentAge -= 6;
+    }
+    
+    if (val === undefined) {
+      val = 1; // fallback
+      matchedRangeRange = "0 - 6 tahun";
+    }
+    
+    const label = PENGHIDUPAN_LABELS[val] || "Penghasilan sedang atau cukup";
+    const saran = "Untuk menyiasati urip atau penghidupan atau rejeki yang kecil, sebaiknya Anda harus mempunyai pasangan kerja atau partner yang nilai keberuntungannya tinggi. Jika sudah terlanjur memiliki pasangan yang memiliki nilai keberuntungan kecil maka Anda bisa menyiasati dengan melakukan Seratan Winadi di weton kelahiran Anda, weton kelahiran pasangan Anda, dan weton hari pernikahan.";
+    
+    return { value: val, label, rangeText: matchedRangeRange, saran };
+  }, [wetonKelahiranDetails, wetonKelahiranAgeStats]);
+
   const hariBaikDetails = useMemo(() => eventDateHariBaik ? getJavaneseDetails(eventDateHariBaik) : null, [eventDateHariBaik]);
 
   const dateLocale = i18nInstance.language === 'id' || i18nInstance.language === 'jv' ? id : enUS;
@@ -1102,6 +1179,50 @@ function MainApp() {
                             <DetailItem label={t('weton.labels.pasaranSifat')} value={t(wetonKelahiranDetails.pasaranSifat)} isLongText />
                             <DetailItem label={t('weton.labels.wuku')} value={wetonKelahiranDetails.wuku} subValue={t(wetonKelahiranDetails.wukuSifat)} isLongText />
                             <DetailItem label={t('weton.labels.pranataMangsa')} value={wetonKelahiranDetails.pranataMangsa} subValue={t(wetonKelahiranDetails.pranataMangsaSifat)} isLongText />
+                            
+                            {wetonKelahiranAgeStats && wetonKelahiranPenghidupan && (
+                              <div className="col-span-1 md:col-span-2 mt-4 p-6 bg-amber-50/55 rounded-xl border border-amber-100/70 space-y-4 shadow-sm text-left">
+                                <div className="flex items-center gap-2 border-b border-amber-200/50 pb-2">
+                                  <Clock className="w-5 h-5 text-amber-700" />
+                                  <h4 className="font-serif font-bold text-lg text-stone-850">Analisis Usia &amp; Jatah Penghidupan</h4>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+                                  <div>
+                                    <p className="text-xs text-stone-500 uppercase font-bold tracking-wider">Perhitungan Usia (365 Hari/Tahun)</p>
+                                    <p className="text-lg font-serif font-bold text-stone-900 mt-1">
+                                      {wetonKelahiranAgeStats.ageYears} Tahun <span className="text-xs text-stone-500 font-sans">({wetonKelahiranAgeStats.diffDays.toLocaleString()} hari)</span>
+                                    </p>
+                                    <p className="text-xs text-stone-400 mt-0.5">Sesuai rentang siklus: {wetonKelahiranPenghidupan.rangeText}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-amber-800 uppercase font-bold tracking-wider">Nilai Jatah Penghidupan Usia Ini</p>
+                                    <div className="flex items-baseline gap-2 mt-1">
+                                      <span className="text-2xl font-serif font-bold text-[#2E7D32]">
+                                        {wetonKelahiranPenghidupan.value}
+                                      </span>
+                                      <span className="text-xs text-stone-400 font-sans">/ 8</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="bg-white p-4 rounded-lg border border-stone-100 space-y-2 shadow-sm text-left">
+                                  <p className="text-xs text-stone-500 uppercase font-bold tracking-wider">Keterangan Penghidupan</p>
+                                  <p className="text-sm font-medium text-stone-805 leading-relaxed font-serif">
+                                    &ldquo;{wetonKelahiranPenghidupan.label}&rdquo;
+                                  </p>
+                                </div>
+                                
+                                <div className="bg-amber-100/30 p-4 rounded-lg border border-amber-200/50 space-y-1 text-left">
+                                  <p className="text-xs text-amber-800 uppercase font-bold tracking-widest flex items-center gap-1.5 font-sans">
+                                    <Info className="w-3.5 h-3.5" /> Saran Penyiasatan Rejeki
+                                  </p>
+                                  <p className="text-xs text-amber-950 leading-relaxed italic">
+                                    {wetonKelahiranPenghidupan.saran}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
                           </div>
                           
                           {!canDownload ? (
