@@ -137,6 +137,9 @@ export const AdminDashboard: React.FC<{
     const originalLinkStates: { link: HTMLLinkElement; disabled: boolean }[] = [];
     const tempStyles: HTMLStyleElement[] = [];
 
+    const liveStyleTags = Array.from(document.querySelectorAll('style:not(.temp-pdf-sanitized-style)')) as HTMLStyleElement[];
+    const originalStylesContents = new Map<HTMLStyleElement, string>();
+
     try {
       // Color translation helpers inside download code block to prevent pollution
       const parseOklchLocal = (str: string) => {
@@ -249,6 +252,14 @@ export const AdminDashboard: React.FC<{
 
         return res;
       };
+
+      // Sanitize all live style tags in the head/body of the actual page temporarily to prevent html2canvas crashes
+      for (const style of liveStyleTags) {
+        if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab'))) {
+          originalStylesContents.set(style, style.innerHTML);
+          style.innerHTML = cleanModernColorsStr(style.innerHTML);
+        }
+      }
 
       // 1. Pre-inline and sanitize styles on the live page so html2canvas's internal downloader parses sanitized CSS
       for (const link of linkTags) {
@@ -487,6 +498,15 @@ export const AdminDashboard: React.FC<{
       console.error("PDF generation failed:", error);
       alert(`Gagal mengunduh PDF: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
+      // Restore live style original contents
+      for (const [style, originalContent] of originalStylesContents.entries()) {
+        try {
+          style.innerHTML = originalContent;
+        } catch (restoreErr) {
+          console.error("Error restoring live style in AdminDashboard:", restoreErr);
+        }
+      }
+
       // Restore CSS link states and remove temp stylesheet styles
       for (const state of originalLinkStates) {
         state.link.disabled = state.disabled;

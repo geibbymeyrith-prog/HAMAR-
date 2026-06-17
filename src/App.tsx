@@ -651,6 +651,17 @@ function MainApp() {
     const originalLinkStates: { link: HTMLLinkElement; disabled: boolean }[] = [];
     const tempStyles: HTMLStyleElement[] = [];
     
+    const liveStyleTags = Array.from(document.querySelectorAll('style:not(.temp-pdf-sanitized-style)')) as HTMLStyleElement[];
+    const originalStylesContents = new Map<HTMLStyleElement, string>();
+
+    // Sanitize all live style tags in the head/body of the actual page temporarily to prevent html2canvas crashes
+    for (const style of liveStyleTags) {
+      if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab'))) {
+        originalStylesContents.set(style, style.innerHTML);
+        style.innerHTML = replaceAllModernColorsInString(style.innerHTML);
+      }
+    }
+    
     try {
       // 1. In CSS processing, inline and sanitize Tailwind/same-origin stylesheets dynamically
       // to completely prevent html2canvas from downloading and parsing un-sanitized stylesheets.
@@ -826,6 +837,15 @@ function MainApp() {
       console.error("PDF Export Error:", error);
       alert("Gagal mengunduh PDF: " + (error as Error).message);
     } finally {
+      // 1. Restore live style original contents
+      for (const [style, originalContent] of originalStylesContents.entries()) {
+        try {
+          style.innerHTML = originalContent;
+        } catch (restoreErr) {
+          console.error("Error restoring live style:", restoreErr);
+        }
+      }
+
       // 2. Restore links back to their original state and cleanup the temporary style elements
       for (const state of originalLinkStates) {
         state.link.disabled = state.disabled;
