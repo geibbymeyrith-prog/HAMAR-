@@ -207,49 +207,87 @@ export const AdminDashboard: React.FC<{
       const cleanModernColorsStr = (str: string): string => {
         if (!str) return str;
         let res = str;
-        if (res.includes('oklch')) {
-          const matches = res.match(/oklch\s*\([^)]+\)/gi);
-          if (matches) {
-            for (const match of matches) {
+        
+        // List of targets to process
+        const targets = ['oklch(', 'oklab(', 'OKLCH(', 'OKLAB('];
+        
+        for (const target of targets) {
+          let idx = res.indexOf(target);
+          while (idx !== -1) {
+            // Find matching closing parenthesis by tracking bracket depth
+            let depth = 1;
+            let i = idx + target.length;
+            while (i < res.length && depth > 0) {
+              if (res[i] === '(') {
+                depth++;
+              } else if (res[i] === ')') {
+                depth--;
+              }
+              i++;
+            }
+            
+            if (depth === 0) {
+              const fullMatch = res.substring(idx, i);
+              let replacement = 'rgba(41, 37, 36, 1)'; // general dark stone-950 fallback
+              
+              let parsedColor = null;
               try {
-                const p = parseOklchLocal(match);
-                if (p) {
-                  res = res.replace(match, `rgba(${p.r}, ${p.g}, ${p.b}, ${p.a})`);
-                } else {
-                  res = res.replace(match, 'rgba(41, 37, 36, 1)');
+                // Only parse if it does not contain nested function blocks like var() or calc()
+                if (!fullMatch.includes('var(') && !fullMatch.includes('calc(')) {
+                  if (target.toLowerCase().startsWith('oklch')) {
+                    parsedColor = parseOklchLocal(fullMatch);
+                  } else {
+                    parsedColor = parseOklabLocal(fullMatch);
+                  }
                 }
               } catch (e) {
-                res = res.replace(match, 'rgba(41, 37, 36, 1)');
+                // Ignore parse exception, rely on smart fallback
               }
+              
+              if (parsedColor) {
+                replacement = `rgba(${parsedColor.r}, ${parsedColor.g}, ${parsedColor.b}, ${parsedColor.a})`;
+              } else {
+                // High-fidelity smart color mappings for beautiful layouts
+                const numRegex = /[\d.]+/g;
+                const numbers = fullMatch.match(numRegex);
+                if (numbers && numbers.length >= 1) {
+                  const L = parseFloat(numbers[0]);
+                  const C = numbers[1] ? parseFloat(numbers[1]) : 0;
+                  const H = numbers[2] ? parseFloat(numbers[2]) : 0;
+                  
+                  if (L >= 0.90) {
+                    replacement = 'rgba(245, 245, 240, 1)'; // beautiful light cream
+                  } else if (L <= 0.25) {
+                    replacement = 'rgba(28, 25, 23, 1)'; // dark stone
+                  } else if (H >= 110 && H <= 165) {
+                    // Javanese Primbon green shades
+                    replacement = L > 0.6 ? 'rgba(74, 163, 80, 1)' : 'rgba(46, 125, 50, 1)';
+                  } else if (H >= 340 || H <= 45) {
+                    // Majestic warning / gold or warm accent tones
+                    replacement = L > 0.65 ? 'rgba(251, 192, 45, 1)' : 'rgba(180, 83, 9, 1)';
+                  } else {
+                    // Grayscaled neutrals
+                    if (L > 0.7) {
+                      replacement = 'rgba(244, 244, 245, 1)';
+                    } else if (L > 0.4) {
+                      replacement = 'rgba(120, 113, 108, 1)';
+                    } else {
+                      replacement = 'rgba(41, 37, 36, 1)';
+                    }
+                  }
+                }
+              }
+              
+              res = res.substring(0, idx) + replacement + res.substring(i);
+              idx = res.indexOf(target, idx + replacement.length);
+            } else {
+              // If unmatched parentheses, do replacement of word to guarantee no infinite loops
+              res = res.substring(0, idx) + 'rgba(41, 37, 36, 1)' + res.substring(idx + target.length);
+              idx = res.indexOf(target, idx);
             }
           }
         }
-        if (res.includes('oklab')) {
-          const matches = res.match(/oklab\s*\([^)]+\)/gi);
-          if (matches) {
-            for (const match of matches) {
-              try {
-                const p = parseOklabLocal(match);
-                if (p) {
-                  res = res.replace(match, `rgba(${p.r}, ${p.g}, ${p.b}, ${p.a})`);
-                } else {
-                  res = res.replace(match, 'rgba(41, 37, 36, 1)');
-                }
-              } catch (e) {
-                res = res.replace(match, 'rgba(41, 37, 36, 1)');
-              }
-            }
-          }
-        }
-
-        // Guarantee fallback: remove any residual oklch/oklab from CSS rule strings to prevent html2canvas crashes
-        if (res.includes('oklch') || res.includes('oklab')) {
-          res = res.replace(/oklch\s*\([^)]*\([^)]*\)[^)]*\)/gi, 'rgba(41, 37, 36, 1)');
-          res = res.replace(/oklch\s*\([^)]+\)/gi, 'rgba(41, 37, 36, 1)');
-          res = res.replace(/oklab\s*\([^)]*\([^)]*\)[^)]*\)/gi, 'rgba(41, 37, 36, 1)');
-          res = res.replace(/oklab\s*\([^)]+\)/gi, 'rgba(41, 37, 36, 1)');
-        }
-
+        
         return res;
       };
 
