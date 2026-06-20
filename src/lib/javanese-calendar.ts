@@ -216,12 +216,18 @@ export const PADANGON = [
 
 // --- Utility Functions ---
 
+export const getDaysDiffUtc = (date1: Date, date2: Date) => {
+  const utc1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate());
+  const utc2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate());
+  return Math.floor((utc1 - utc2) / (1000 * 60 * 60 * 24));
+};
+
 export function getJavaneseDetails(date: Date): JavaneseDetails {
   const targetDate = startOfDay(date);
   
   // Anchor: 23 May 1982 = Sunday (Radite), Pasaran Wage-Cemeng
   const anchorDate = new Date(1982, 4, 23); // May is 4 (0-indexed)
-  const daysDiff = differenceInDays(targetDate, anchorDate);
+  const daysDiff = getDaysDiffUtc(targetDate, anchorDate);
 
   // 1. Day Masehi & Jawi
   const dayOfWeek = (targetDate.getDay()); // 0 = Sunday
@@ -246,7 +252,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   // 4. Wuku
   // Anchor: 25 Jan 2026 was Sunday, start of Wuku Maktal (index 20)
   const wukuAnchor = new Date(2026, 0, 25);
-  const wukuDaysDiff = differenceInDays(targetDate, wukuAnchor);
+  const wukuDaysDiff = getDaysDiffUtc(targetDate, wukuAnchor);
   const weeksDiff = Math.floor(wukuDaysDiff / 7);
   const wukuIndex = ((weeksDiff % 30) + 30 + 20) % 30;
   const wukuNames = [
@@ -321,7 +327,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
         }
       }
       const startDate = new Date(startYear, pm.start.m - 1, pm.start.d);
-      pranataMangsaDay = differenceInDays(targetDate, startDate) + 1;
+      pranataMangsaDay = getDaysDiffUtc(targetDate, startDate) + 1;
       break;
     }
   }
@@ -342,7 +348,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   // 10. Naas Harian
   // Anchor: 27 Jan 2026 = Wurukung (index 2)
   const naasAnchor = new Date(2026, 0, 27);
-  const naasDaysDiff = differenceInDays(targetDate, naasAnchor);
+  const naasDaysDiff = getDaysDiffUtc(targetDate, naasAnchor);
   
   let naas = 'hariBaik.normal';
   let naasSifat = 'hariBaik.normalSifat';
@@ -360,7 +366,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   // 11. Gisir
   // Anchor: 27 Jan 2026 = Malihan (index 3)
   const gisirAnchor = new Date(2026, 0, 27);
-  const gisirDaysDiff = differenceInDays(targetDate, gisirAnchor);
+  const gisirDaysDiff = getDaysDiffUtc(targetDate, gisirAnchor);
   const gisirIdx = ((gisirDaysDiff % 6) + 6 + 3) % 6;
   const gisir = GISIR[gisirIdx].name;
   const gisirSifat = `javanese_calendar.gisir_sifat.${gisir}`;
@@ -371,7 +377,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   // 26 Jan 2026 is Monday Pon (Wuku Maktal).
   // Wuku Sinta starts on 2025-09-07 (Sunday Pahing).
   const padewanAnchor = new Date(2025, 8, 7);
-  const padewanDaysDiff = differenceInDays(targetDate, padewanAnchor);
+  const padewanDaysDiff = getDaysDiffUtc(targetDate, padewanAnchor);
   const padewanWeeksDiff = Math.floor(padewanDaysDiff / 7);
   let padewanIdx = (padewanWeeksDiff % 8 + 8) % 8;
   
@@ -398,7 +404,7 @@ export function getJavaneseDetails(date: Date): JavaneseDetails {
   // 13. Padangon
   // Starts at Wuku Sinta, Sunday Pahing.
   const padangonAnchor = new Date(2025, 8, 7);
-  const padangonDaysDiff = differenceInDays(targetDate, padangonAnchor);
+  const padangonDaysDiff = getDaysDiffUtc(targetDate, padangonAnchor);
   const padangonWeeksDiff = Math.floor(padangonDaysDiff / 7);
   let padangonIdx = (padangonWeeksDiff % 9 + 9) % 9;
   
