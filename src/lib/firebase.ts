@@ -4,7 +4,14 @@ import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 // @ts-ignore
 import firebaseConfig from '../../firebase-applet-config.json';
 
-const app = initializeApp(firebaseConfig);
+// Smart branded custom authDomain fallback for production vs development preview
+const isProdCustomDomain = typeof window !== 'undefined' && window.location.hostname === 'hamare.halokabhagya.com';
+const resolvedFirebaseConfig = {
+  ...firebaseConfig,
+  authDomain: isProdCustomDomain ? 'hamare.halokabhagya.com' : firebaseConfig.authDomain
+};
+
+const app = initializeApp(resolvedFirebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 

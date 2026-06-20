@@ -681,47 +681,120 @@ function MainApp() {
     const tempId = "pdf-target-element";
     target.setAttribute('id', tempId);
 
+    const originalGetComputedStyle = window.getComputedStyle;
+    const patchWindowStyle = (w: any) => {
+      try {
+        const orig = w.getComputedStyle;
+        if (!orig) return;
+        w.getComputedStyle = function(el: any, pseudo: any) {
+          const style = orig.call(w, el, pseudo);
+          return new Proxy(style, {
+            get(targetStyle, prop, receiver) {
+              const val = Reflect.get(targetStyle, prop, receiver);
+              if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab') || val.includes('OKLCH') || val.includes('OKLAB'))) {
+                return replaceAllModernColorsInString(val);
+              }
+              if (typeof val === 'function') {
+                if (prop === 'getPropertyValue') {
+                  return function(propertyName: string) {
+                    const originalVal = targetStyle.getPropertyValue(propertyName);
+                    if (typeof originalVal === 'string' && (originalVal.includes('oklch') || originalVal.includes('oklab') || originalVal.includes('OKLCH') || originalVal.includes('OKLAB'))) {
+                      return replaceAllModernColorsInString(originalVal);
+                    }
+                    return originalVal;
+                  };
+                }
+                return val.bind(targetStyle);
+              }
+              return val;
+            }
+          });
+        };
+      } catch (patchErr) {
+        console.error("Error patching window style", patchErr);
+      }
+    };
+
+    patchWindowStyle(window);
+
     const linkTags = Array.from(document.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[];
     const originalLinkStates: { link: HTMLLinkElement; disabled: boolean }[] = [];
     const tempStyles: HTMLStyleElement[] = [];
-    
+
     const liveStyleTags = Array.from(document.querySelectorAll('style:not(.temp-pdf-sanitized-style)')) as HTMLStyleElement[];
     const originalStylesContents = new Map<HTMLStyleElement, string>();
 
     // Sanitize all live style tags in the head/body of the actual page temporarily to prevent html2canvas crashes
     for (const style of liveStyleTags) {
-      if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab'))) {
+      if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab') || style.innerHTML.includes('OKLCH') || style.innerHTML.includes('OKLAB'))) {
         originalStylesContents.set(style, style.innerHTML);
         style.innerHTML = replaceAllModernColorsInString(style.innerHTML);
       }
     }
+
+    // Capture and clean all in-memory CSS rules from the original stylesheets
+    let aggregatedCSS = '';
+    const originalSheets = Array.from(document.styleSheets);
+    for (const sheet of originalSheets) {
+      try {
+        if (!sheet.disabled) {
+          const rules = sheet.cssRules || sheet.rules;
+          if (rules) {
+            for (let i = 0; i < rules.length; i++) {
+              aggregatedCSS += rules[i].cssText + '\n';
+            }
+          }
+        }
+      } catch (e) {
+        // Cross-origin stylesheets throw details error which we ignore
+      }
+    }
+
+    // Create a major sanitized style element
+    const sanitizedAggregatedCss = replaceAllModernColorsInString(aggregatedCSS);
+    const mainSanitizedStyle = document.createElement('style');
+    mainSanitizedStyle.className = 'temp-pdf-sanitized-style';
+    mainSanitizedStyle.innerHTML = sanitizedAggregatedCss;
+    document.head.appendChild(mainSanitizedStyle);
+    tempStyles.push(mainSanitizedStyle);
+
+    // Build the custom fake StyleSheetList
+    const fakeSheetsList: CSSStyleSheet[] = [];
+    if (mainSanitizedStyle.sheet) {
+      fakeSheetsList.push(mainSanitizedStyle.sheet);
+    }
+    
+    const fakeStyleSheetsList = Object.create(StyleSheetList.prototype);
+    fakeSheetsList.forEach((sheet, idx) => {
+      fakeStyleSheetsList[idx] = sheet;
+    });
+    Object.defineProperty(fakeStyleSheetsList, 'length', {
+      get: () => fakeSheetsList.length,
+      configurable: true
+    });
+    fakeStyleSheetsList.item = (index: number) => fakeSheetsList[index] || null;
+
+    // Redefine document.styleSheets temporarily
+    const originalStyleSheetsDescriptor = Object.getOwnPropertyDescriptor(Document.prototype, 'styleSheets');
+    try {
+      Object.defineProperty(document, 'styleSheets', {
+        get: () => fakeStyleSheetsList,
+        configurable: true
+      });
+    } catch (err) {
+      console.error("Error setting custom document.styleSheets getter", err);
+    }
     
     try {
-      // 1. In CSS processing, inline and sanitize Tailwind/same-origin stylesheets dynamically
-      // to completely prevent html2canvas from downloading and parsing un-sanitized stylesheets.
+      // Disable original stylesheet links to ensure fallback
       for (const link of linkTags) {
         try {
           if (link.href) {
             originalLinkStates.push({ link, disabled: link.disabled });
-            
-            // Only try to fetch if we can reasonably read it (same origin, relative, or not explicitly secure third party)
-            if (link.href.startsWith(window.location.origin) || link.href.startsWith('/') || !link.href.startsWith('http')) {
-              const response = await fetch(link.href);
-              const cssText = await response.text();
-              const sanitizedCss = replaceAllModernColorsInString(cssText);
-              
-              const style = document.createElement('style');
-              style.className = 'temp-pdf-sanitized-style';
-              style.innerHTML = sanitizedCss;
-              document.head.appendChild(style);
-              tempStyles.push(style);
-            }
-            
-            // Disable original stylesheet link so html2canvas ignores it and uses the sanitized style element instead
             link.disabled = true;
           }
         } catch (fetchErr) {
-          console.error("Error sanitizing stylesheet dynamically:", link.href, fetchErr);
+          console.error("Error disabling link tag:", link.href, fetchErr);
         }
       }
 
@@ -736,6 +809,20 @@ function MainApp() {
           if (!clonedElement) {
             console.error("Cloned target element not found in onclone!");
             return;
+          }
+
+          if (clonedDoc.defaultView) {
+            patchWindowStyle(clonedDoc.defaultView);
+          }
+
+          // Redefine clonedDoc.styleSheets getter
+          try {
+            Object.defineProperty(clonedDoc, 'styleSheets', {
+              get: () => fakeStyleSheetsList,
+              configurable: true
+            });
+          } catch (e) {
+            console.error("Error setting custom clonedDoc.styleSheets getter", e);
           }
 
           // Add Branding / Header for PDF
@@ -771,7 +858,7 @@ function MainApp() {
             const styleTags = clonedDoc.querySelectorAll('style');
             styleTags.forEach(style => {
               try {
-                if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab'))) {
+                if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab') || style.innerHTML.includes('OKLCH') || style.innerHTML.includes('OKLAB'))) {
                   const cleaned = replaceAllModernColorsInString(style.innerHTML);
                   if (cleaned !== style.innerHTML) {
                     style.innerHTML = cleaned;
@@ -796,7 +883,7 @@ function MainApp() {
                   for (let j = 0; j < rules.length; j++) {
                     const rule = rules[j] as CSSStyleRule;
                     if (rule.style && rule.style.cssText) {
-                      if (rule.style.cssText.includes('oklch') || rule.style.cssText.includes('oklab')) {
+                      if (rule.style.cssText.includes('oklch') || rule.style.cssText.includes('oklab') || rule.style.cssText.includes('OKLCH') || rule.style.cssText.includes('OKLAB')) {
                         const cleaned = replaceAllModernColorsInString(rule.style.cssText);
                         if (cleaned !== rule.style.cssText) {
                           rule.style.cssText = cleaned;
@@ -820,7 +907,7 @@ function MainApp() {
               
               try {
                 const styleAttr = el.getAttribute('style');
-                if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
+                if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab') || styleAttr.includes('OKLCH') || styleAttr.includes('OKLAB'))) {
                   const cleaned = replaceAllModernColorsInString(styleAttr);
                   if (cleaned !== styleAttr) {
                     el.style.cssText = cleaned;
@@ -866,16 +953,38 @@ function MainApp() {
       const pageHeight = pdf.internal.pageSize.getHeight();
       const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
       
+      const drawWatermark = (pObj: typeof pdf, w: number, h: number) => {
+        try {
+          // Elegant soft grey-green tone matching the Javanese green layout
+          pObj.setTextColor(220, 225, 218); 
+          pObj.setFont("Helvetica", "bold");
+          pObj.setFontSize(55);
+          pObj.text("HAMARÉ", w / 2, h / 2, {
+            align: "center",
+            angle: 45
+          });
+          // Professional subtle branded margins/corners
+          pObj.setFontSize(10);
+          pObj.setTextColor(180, 185, 178);
+          pObj.text("HAMARÉ BRANDING - AUTHENTIC PRIMBON REPORT", 15, pageHeight - 10);
+          pObj.text(`Halaman ${pObj.getNumberOfPages()}`, w - 25, pageHeight - 10);
+        } catch (err) {
+          console.error("Watermark drawing error:", err);
+        }
+      };
+
       let heightLeft = imgHeight;
       let position = 0;
       
       pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      drawWatermark(pdf, pdfWidth, pageHeight);
       heightLeft -= pageHeight;
       
       while (heightLeft > 0) {
         pdf.addPage();
         position = - (imgHeight - heightLeft);
         pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        drawWatermark(pdf, pdfWidth, pageHeight);
         heightLeft -= pageHeight;
       }
       
@@ -884,6 +993,26 @@ function MainApp() {
       console.error("PDF Export Error:", error);
       alert("Gagal mengunduh PDF: " + (error as Error).message);
     } finally {
+      // Restore window.getComputedStyle
+      if (originalGetComputedStyle) {
+        window.getComputedStyle = originalGetComputedStyle;
+      }
+
+      // Restore document.styleSheets
+      if (originalStyleSheetsDescriptor) {
+        try {
+          Object.defineProperty(document, 'styleSheets', originalStyleSheetsDescriptor);
+        } catch (restoreErr) {
+          console.error("Error restoring document.styleSheets descriptor", restoreErr);
+        }
+      } else {
+        try {
+          delete (document as any).styleSheets;
+        } catch (restoreErr) {
+          console.error("Error deleting custom document.styleSheets", restoreErr);
+        }
+      }
+
       // 1. Restore live style original contents
       for (const [style, originalContent] of originalStylesContents.entries()) {
         try {

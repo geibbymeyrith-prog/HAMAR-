@@ -133,12 +133,17 @@ export const AdminDashboard: React.FC<{
     const tempId = "report-container-pdf";
     element.setAttribute('id', tempId);
 
+    const originalGetComputedStyle = window.getComputedStyle;
+
     const linkTags = Array.from(document.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[];
     const originalLinkStates: { link: HTMLLinkElement; disabled: boolean }[] = [];
     const tempStyles: HTMLStyleElement[] = [];
 
     const liveStyleTags = Array.from(document.querySelectorAll('style:not(.temp-pdf-sanitized-style)')) as HTMLStyleElement[];
     const originalStylesContents = new Map<HTMLStyleElement, string>();
+
+    // Redefine document.styleSheets temporarily
+    const originalStyleSheetsDescriptor = Object.getOwnPropertyDescriptor(Document.prototype, 'styleSheets');
 
     try {
       // Color translation helpers inside download code block to prevent pollution
@@ -291,35 +296,110 @@ export const AdminDashboard: React.FC<{
         return res;
       };
 
+      const patchWindowStyle = (w: any) => {
+        try {
+          const orig = w.getComputedStyle;
+          if (!orig) return;
+          w.getComputedStyle = function(el: any, pseudo: any) {
+            const style = orig.call(w, el, pseudo);
+            return new Proxy(style, {
+              get(targetStyle, prop, receiver) {
+                const val = Reflect.get(targetStyle, prop, receiver);
+                if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab') || val.includes('OKLCH') || val.includes('OKLAB'))) {
+                  return cleanModernColorsStr(val);
+                }
+                if (typeof val === 'function') {
+                  if (prop === 'getPropertyValue') {
+                    return function(propertyName: string) {
+                      const originalVal = targetStyle.getPropertyValue(propertyName);
+                      if (typeof originalVal === 'string' && (originalVal.includes('oklch') || originalVal.includes('oklab') || originalVal.includes('OKLCH') || originalVal.includes('OKLAB'))) {
+                        return cleanModernColorsStr(originalVal);
+                      }
+                      return originalVal;
+                    };
+                  }
+                  return val.bind(targetStyle);
+                }
+                return val;
+              }
+            });
+          };
+        } catch (patchErr) {
+          console.error("Error patching window style", patchErr);
+        }
+      };
+
+      patchWindowStyle(window);
+
       // Sanitize all live style tags in the head/body of the actual page temporarily to prevent html2canvas crashes
       for (const style of liveStyleTags) {
-        if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab'))) {
+        if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab') || style.innerHTML.includes('OKLCH') || style.innerHTML.includes('OKLAB'))) {
           originalStylesContents.set(style, style.innerHTML);
           style.innerHTML = cleanModernColorsStr(style.innerHTML);
         }
       }
 
-      // 1. Pre-inline and sanitize styles on the live page so html2canvas's internal downloader parses sanitized CSS
+      // Capture and clean all in-memory CSS rules from the original stylesheets
+      let aggregatedCSS = '';
+      const originalSheets = Array.from(document.styleSheets);
+      for (const sheet of originalSheets) {
+        try {
+          if (!sheet.disabled) {
+            const rules = sheet.cssRules || sheet.rules;
+            if (rules) {
+              for (let i = 0; i < rules.length; i++) {
+                aggregatedCSS += rules[i].cssText + '\n';
+              }
+            }
+          }
+        } catch (e) {
+          // Cross-origin sheets error ignored
+        }
+      }
+
+      // Create a major sanitized style element
+      const sanitizedAggregatedCss = cleanModernColorsStr(aggregatedCSS);
+      const mainSanitizedStyle = document.createElement('style');
+      mainSanitizedStyle.className = 'temp-pdf-sanitized-style';
+      mainSanitizedStyle.innerHTML = sanitizedAggregatedCss;
+      document.head.appendChild(mainSanitizedStyle);
+      tempStyles.push(mainSanitizedStyle);
+
+      // Build the custom fake StyleSheetList
+      const fakeSheetsList: CSSStyleSheet[] = [];
+      if (mainSanitizedStyle.sheet) {
+        fakeSheetsList.push(mainSanitizedStyle.sheet);
+      }
+      
+      const fakeStyleSheetsList = Object.create(StyleSheetList.prototype);
+      fakeSheetsList.forEach((sheet, idx) => {
+        fakeStyleSheetsList[idx] = sheet;
+      });
+      Object.defineProperty(fakeStyleSheetsList, 'length', {
+        get: () => fakeSheetsList.length,
+        configurable: true
+      });
+      fakeStyleSheetsList.item = (index: number) => fakeSheetsList[index] || null;
+
+      // Redefine document.styleSheets temporarily
+      try {
+        Object.defineProperty(document, 'styleSheets', {
+          get: () => fakeStyleSheetsList,
+          configurable: true
+        });
+      } catch (err) {
+        console.error("Error setting custom document.styleSheets getter", err);
+      }
+
+      // Disable original stylesheet links to ensure fallback
       for (const link of linkTags) {
         try {
-          if (link.href && (link.href.startsWith(window.location.origin) || link.href.startsWith('/') || !link.href.startsWith('http'))) {
+          if (link.href) {
             originalLinkStates.push({ link, disabled: link.disabled });
-            
-            const response = await fetch(link.href);
-            const cssText = await response.text();
-            const sanitizedCss = cleanModernColorsStr(cssText);
-            
-            const style = document.createElement('style');
-            style.className = 'temp-pdf-sanitized-style';
-            style.innerHTML = sanitizedCss;
-            document.head.appendChild(style);
-            tempStyles.push(style);
-            
-            // Disable original stylesheet link so html2canvas ignores it and uses the sanitized style element instead
             link.disabled = true;
           }
         } catch (fetchErr) {
-          console.error("Error sanitizing stylesheet dynamically in AdminDashboard:", link.href, fetchErr);
+          console.error("Error disabling link tag:", link.href, fetchErr);
         }
       }
 
@@ -336,6 +416,20 @@ export const AdminDashboard: React.FC<{
           if (!clonedElement) {
             console.error("Cloned report container not found in onclone!");
             return;
+          }
+
+          if (clonedDoc.defaultView) {
+            patchWindowStyle(clonedDoc.defaultView);
+          }
+
+          // Redefine clonedDoc.styleSheets getter
+          try {
+            Object.defineProperty(clonedDoc, 'styleSheets', {
+              get: () => fakeStyleSheetsList,
+              configurable: true
+            });
+          } catch (e) {
+            console.error("Error setting custom clonedDoc.styleSheets getter", e);
           }
 
           // 1. Sanitize all style tags inside the cloned document as well
@@ -530,12 +624,53 @@ export const AdminDashboard: React.FC<{
 
       pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
       
+      const drawWatermark = (pObj: typeof pdf, w: number, h: number) => {
+        try {
+          pObj.setTextColor(220, 225, 218); 
+          pObj.setFont("Helvetica", "bold");
+          pObj.setFontSize(110); // Elevated watermark size for A2 sheets
+          pObj.text("HAMARÉ", w / 2, h / 2, {
+            align: "center",
+            angle: 30
+          });
+          // Professional subtle branded margins/corners
+          pObj.setFontSize(18);
+          pObj.setTextColor(180, 185, 178);
+          pObj.text("HAMARÉ BRANDING - DATABASE CALENDAR EXPORT", 25, h - 20);
+          pObj.text(`Halaman ${pObj.getNumberOfPages()}`, w - 40, h - 20);
+        } catch (err) {
+          console.error("Watermark drawing error:", err);
+        }
+      };
+      
+      drawWatermark(pdf, pdfWidth, pdfHeight);
+      
       const filename = `HAMARE-Database_Calendar-${getJavaneseMonthName(calendarMonth)}-${calendarYear}.pdf`;
       pdf.save(filename);
     } catch (error) {
       console.error("PDF generation failed:", error);
       alert(`Gagal mengunduh PDF: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
+      // Restore window.getComputedStyle
+      if (originalGetComputedStyle) {
+        window.getComputedStyle = originalGetComputedStyle;
+      }
+
+      // Restore document.styleSheets
+      if (originalStyleSheetsDescriptor) {
+        try {
+          Object.defineProperty(document, 'styleSheets', originalStyleSheetsDescriptor);
+        } catch (restoreErr) {
+          console.error("Error restoring document.styleSheets descriptor in AdminDashboard:", restoreErr);
+        }
+      } else {
+        try {
+          delete (document as any).styleSheets;
+        } catch (restoreErr) {
+          console.error("Error deleting custom document.styleSheets in AdminDashboard:", restoreErr);
+        }
+      }
+
       // Restore live style original contents
       for (const [style, originalContent] of originalStylesContents.entries()) {
         try {
