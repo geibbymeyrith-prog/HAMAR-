@@ -244,13 +244,45 @@ export const KbmsDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           module: 'Narasi Rejeki',
           title: 'Narasi Rejeki dan Watak Weton',
           slug: 'narasi-rejeki-default',
-          content: 'Setiap hasil weton memiliki nilai neptu yang dikonversikan menjadi deskripsi watak laksana sandang pangan.',
+          content: JSON.stringify({
+            PENGHIDUPAN_LABELS: {
+              0: "Kesakitan (Penderitaan dan perjalanan hidup)",
+              1: "Penghasilan atau pemasukan sedikit",
+              2: "Penghasilan sedang atau cukup",
+              3: "Penghasilan baik",
+              4: "Penghasilan besar",
+              5: "Penghasilan baik dan hidup senang",
+              7: "Hidup serba mewah dan sangat sempurna",
+              8: "Kehidupan serba mewah karena keberhasilannya, dan diteruskan oleh keturunannya"
+            },
+            PENGHIDUPAN_DATA: [
+              { minAge: 0, maxAge: 6, neptuMap: { 7: 4, 8: 4, 9: 2, 10: 1, 11: 2, 12: 0, 13: 3, 14: 1, 15: 2, 16: 0, 17: 1, 18: 2 } },
+              { minAge: 7, maxAge: 12, neptuMap: { 7: 1, 8: 1, 9: 5, 10: 0, 11: 4, 12: 5, 13: 1, 14: 0, 15: 0, 16: 3, 17: 1, 18: 5 } },
+              { minAge: 13, maxAge: 18, neptuMap: { 7: 4, 8: 0, 9: 1, 10: 4, 11: 1, 12: 1, 13: 0, 14: 1, 15: 1, 16: 1, 17: 0, 18: 1 } },
+              { minAge: 19, maxAge: 24, neptuMap: { 7: 1, 8: 1, 9: 0, 10: 1, 11: 1, 12: 0, 13: 5, 14: 4, 15: 1, 16: 2, 17: 5, 18: 0 } },
+              { minAge: 25, maxAge: 30, neptuMap: { 7: 0, 8: 0, 9: 4, 10: 1, 11: 8, 12: 4, 13: 0, 14: 0, 15: 5, 16: 0, 17: 0, 18: 4 } },
+              { minAge: 31, maxAge: 36, neptuMap: { 7: 2, 8: 3, 9: 1, 10: 3, 11: 1, 12: 0, 13: 1, 14: 0, 15: 2, 16: 1, 17: 1, 18: 1 } },
+              { minAge: 37, maxAge: 42, neptuMap: { 7: 2, 8: 0, 9: 4, 10: 0, 11: 0, 12: 1, 13: 1, 14: 4, 15: 0, 16: 8, 17: 1, 18: 4 } },
+              { minAge: 43, maxAge: 48, neptuMap: { 8: 1, 9: 0, 10: 0, 11: 1, 12: 0, 13: 5, 14: 4, 15: 1, 16: 1, 17: 5, 18: 0 } },
+              { minAge: 49, maxAge: 54, neptuMap: { 9: 1, 10: 4, 11: 2, 12: 1, 13: 2, 14: 1, 15: 2, 16: 2, 17: 2, 18: 1 } },
+              { minAge: 55, maxAge: 60, neptuMap: { 10: 4, 11: 0, 12: 4, 13: 0, 14: 4, 15: 5, 16: 7, 17: 0, 18: 4 } },
+              { minAge: 61, maxAge: 66, neptuMap: { 11: 2, 12: 4, 13: 1, 14: 0, 15: 5, 16: 2, 17: 1, 18: 4 } },
+              { minAge: 67, maxAge: 72, neptuMap: { 12: 0, 13: 2, 14: 1, 15: 1, 16: 0, 17: 2, 18: 0 } },
+              { minAge: 73, maxAge: 78, neptuMap: { 13: 5, 14: 4, 15: 0, 16: 7, 17: 5, 18: 0 } },
+              { minAge: 79, maxAge: 84, neptuMap: { 14: 4, 15: 4, 16: 1, 17: 5, 18: 4 } },
+              { minAge: 85, maxAge: 90, neptuMap: { 15: 1, 16: 0, 17: 1, 18: 1 } },
+              { minAge: 91, maxAge: 96, neptuMap: { 16: 2, 17: 0, 18: 4 } },
+              { minAge: 97, maxAge: 102, neptuMap: { 17: 4, 18: 1 } },
+              { minAge: 103, maxAge: 108, neptuMap: { 18: 1 } }
+            ],
+            saran: "Untuk menyiasati urip atau penghidupan atau rejeki yang kecil, sebaiknya Anda harus mempunyai pasangan kerja atau partner yang nilai keberuntungannya tinggi. Jika sudah terlanjur memiliki pasangan yang memiliki nilai keberuntungan kecil maka Anda bisa menyiasati dengan melakukan Seratan Winadi di weton kelahiran Anda, weton kelahiran pasangan Anda, dan weton hari pernikahan."
+          }, null, 2),
           version: 1,
           status: 'published',
           changeReason: 'Default template',
           createdBy: userEmail,
           updatedBy: userEmail,
-          impactAnalysis: { affectedModules: ['UI Branding', 'PDF Engine'], riskLevel: 'Low', dependencyChain: [] }
+          impactAnalysis: { affectedModules: ['Weton Kelahiran', 'UI Branding', 'PDF Engine'], riskLevel: 'Low', dependencyChain: [] }
         }
       ];
 

@@ -155,7 +155,8 @@ service cloud.firestore {
     }
 
     match /knowledge_documents/{docId} {
-      allow read, write: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     match /prompt_registry/{promptId} {

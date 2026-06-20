@@ -45,6 +45,7 @@ import {
   onSnapshot, 
   doc, 
   updateDoc,
+  setDoc,
   addDoc,
   serverTimestamp
 } from 'firebase/firestore';
@@ -103,7 +104,7 @@ const getOrCreateVisitorId = (): string => {
   return visitorId;
 };
 
-const PENGHIDUPAN_LABELS: Record<number, string> = {
+const ARCHIVED_PENGHIDUPAN_LABELS: Record<number, string> = {
   0: "Kesakitan (Penderitaan dan perjalanan hidup)",
   1: "Penghasilan atau pemasukan sedikit",
   2: "Penghasilan sedang atau cukup",
@@ -114,7 +115,7 @@ const PENGHIDUPAN_LABELS: Record<number, string> = {
   8: "Kehidupan serba mewah karena keberhasilannya, dan diteruskan oleh keturunannya"
 };
 
-const PENGHIDUPAN_DATA = [
+const ARCHIVED_PENGHIDUPAN_DATA = [
   { minAge: 0, maxAge: 6, neptuMap: { 7: 4, 8: 4, 9: 2, 10: 1, 11: 2, 12: 0, 13: 3, 14: 1, 15: 2, 16: 0, 17: 1, 18: 2 } },
   { minAge: 7, maxAge: 12, neptuMap: { 7: 1, 8: 1, 9: 5, 10: 0, 11: 4, 12: 5, 13: 1, 14: 0, 15: 0, 16: 3, 17: 1, 18: 5 } },
   { minAge: 13, maxAge: 18, neptuMap: { 7: 4, 8: 0, 9: 1, 10: 4, 11: 1, 12: 1, 13: 0, 14: 1, 15: 1, 16: 1, 17: 0, 18: 1 } },
@@ -151,6 +152,59 @@ function MainApp() {
   const [publicArticles, setPublicArticles] = useState<Article[]>([]);
   const [allVisits, setAllVisits] = useState<any[]>([]);
   const [segeraHadirData, setSegeraHadirData] = useState<{ type: 'donation' | 'business' | 'research' } | null>(null);
+  const [activeRejekiDoc, setActiveRejekiDoc] = useState<any | null>(null);
+
+  // Subscribe to live Published Narasi Rejeki document under GKMS
+  useEffect(() => {
+    const q = query(
+      collection(db, 'knowledge_documents'),
+      where('status', '==', 'published'),
+      where('module', '==', 'Narasi Rejeki')
+    );
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      if (!snapshot.empty) {
+        const sortedDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        sortedDocs.sort((a: any, b: any) => (b.version || 0) - (a.version || 0));
+        setActiveRejekiDoc(sortedDocs[0]);
+      } else {
+        setActiveRejekiDoc(null);
+        // Auto seed the first default Active Formula document to Firestore so it acts as Source of Truth
+        try {
+          const defaultRefData = {
+            PENGHIDUPAN_LABELS: ARCHIVED_PENGHIDUPAN_LABELS,
+            PENGHIDUPAN_DATA: ARCHIVED_PENGHIDUPAN_DATA,
+            saran: "Untuk menyiasati urip atau penghidupan atau rejeki yang kecil, sebaiknya Anda harus mempunyai pasangan kerja atau partner yang nilai keberuntungannya tinggi. Jika sudah terlanjur memiliki pasangan yang memiliki nilai keberuntungan kecil maka Anda bisa menyiasati dengan melakukan Seratan Winadi di weton kelahiran Anda, weton kelahiran pasangan Anda, dan weton hari pernikahan."
+          };
+          const newDocId = `doc_narrativerule_rejeki_init_${Date.now()}`;
+          const initialNarrativeDoc = {
+            id: newDocId,
+            category: 'Narrative Rule',
+            module: 'Narasi Rejeki',
+            title: 'Siklus Perjalanan Jatah Rejeki & Penghidupan',
+            slug: 'narasi-rejeki',
+            content: JSON.stringify(defaultRefData, null, 2),
+            version: 1,
+            status: 'published',
+            changeReason: 'Inisialisasi otomatis GKMS Source of Truth',
+            createdBy: 'system@hamare.id',
+            updatedBy: 'system@hamare.id',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            impactAnalysis: { affectedModules: ['Weton Kelahiran'], riskLevel: 'Medium', dependencyChain: [] },
+            history: []
+          };
+          await setDoc(doc(db, 'knowledge_documents', newDocId), initialNarrativeDoc);
+          console.log("Successfully auto-seeded active Narasi Rejeki document to GKMS!");
+        } catch (e) {
+          console.error("Auto seeding active Narasi Rejeki document failed:", e);
+        }
+      }
+    }, (error) => {
+      console.error("Error reading Narasi Rejeki from GKMS collection:", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleShowSegeraHadir = (type: 'donation' | 'business' | 'research') => {
     setSegeraHadirData({ type });
@@ -310,12 +364,31 @@ function MainApp() {
     const neptu = wetonKelahiranDetails.neptuValue;
     const age = wetonKelahiranAgeStats.ageYears;
     
+    let labels = ARCHIVED_PENGHIDUPAN_LABELS;
+    let data = ARCHIVED_PENGHIDUPAN_DATA;
+    let saran = "Untuk menyiasati urip atau penghidupan atau rejeki yang kecil, sebaiknya Anda harus mempunyai pasangan kerja atau partner yang nilai keberuntungannya tinggi. Jika sudah terlanjur memiliki pasangan yang memiliki nilai keberuntungan kecil maka Anda bisa menyiasati dengan melakukan Seratan Winadi di weton kelahiran Anda, weton kelahiran pasangan Anda, dan weton hari pernikahan.";
+    
+    if (activeRejekiDoc && activeRejekiDoc.content) {
+      try {
+        const parsed = JSON.parse(activeRejekiDoc.content);
+        if (parsed.PENGHIDUPAN_LABELS && parsed.PENGHIDUPAN_DATA) {
+          labels = parsed.PENGHIDUPAN_LABELS;
+          data = parsed.PENGHIDUPAN_DATA;
+          if (parsed.saran) {
+            saran = parsed.saran;
+          }
+        }
+      } catch (e) {
+        console.warn("Using archived fallback data because active GKMS document has invalid JSON format:", e);
+      }
+    }
+
     let currentAge = age;
     let val: number | undefined = undefined;
     let matchedRangeRange: string = "";
     
     while (currentAge >= 0) {
-      const range = PENGHIDUPAN_DATA.find(r => currentAge >= r.minAge && currentAge <= r.maxAge);
+      const range = data.find(r => currentAge >= r.minAge && currentAge <= r.maxAge);
       if (range) {
         if (range.neptuMap[neptu as keyof typeof range.neptuMap] !== undefined) {
           val = range.neptuMap[neptu as keyof typeof range.neptuMap];
@@ -334,11 +407,10 @@ function MainApp() {
       matchedRangeRange = "0 - 6 tahun";
     }
     
-    const label = PENGHIDUPAN_LABELS[val] || "Penghasilan sedang atau cukup";
-    const saran = "Untuk menyiasati urip atau penghidupan atau rejeki yang kecil, sebaiknya Anda harus mempunyai pasangan kerja atau partner yang nilai keberuntungannya tinggi. Jika sudah terlanjur memiliki pasangan yang memiliki nilai keberuntungan kecil maka Anda bisa menyiasati dengan melakukan Seratan Winadi di weton kelahiran Anda, weton kelahiran pasangan Anda, dan weton hari pernikahan.";
+    const label = labels[val] || "Penghasilan sedang atau cukup";
     
     return { value: val, label, rangeText: matchedRangeRange, saran };
-  }, [wetonKelahiranDetails, wetonKelahiranAgeStats]);
+  }, [wetonKelahiranDetails, wetonKelahiranAgeStats, activeRejekiDoc]);
 
   const hariBaikDetails = useMemo(() => eventDateHariBaik ? getJavaneseDetails(eventDateHariBaik) : null, [eventDateHariBaik]);
 
