@@ -74,6 +74,81 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["visitorId", "monthYear", "createdAt"]
+    },
+    "KnowledgeDocument": {
+      "title": "KnowledgeDocument",
+      "description": "HAMARÉ knowledge base documents",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string", "enum": ["Sacred Rule", "Calculation Rule", "Narrative Rule"] },
+        "module": { "type": "string" },
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "content": { "type": "string" },
+        "version": { "type": "number" },
+        "status": { "type": "string", "enum": ["draft", "expert_review", "admin_approval", "review", "approved", "published"] },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "updatedBy": { "type": "string" },
+        "changeReason": { "type": "string" }
+      },
+      "required": ["id", "category", "module", "title", "slug", "content", "version", "status", "created_at", "createdBy", "updatedBy", "changeReason"]
+    },
+    "PromptRegistry": {
+      "title": "PromptRegistry",
+      "description": "System and AI prompts history and records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "prompt_id": { "type": "string" },
+        "module": { "type": "string" },
+        "prompt_text": { "type": "string" },
+        "version": { "type": "number" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "prompt_id", "module", "prompt_text", "version", "created_at"]
+    },
+    "AiAuditReport": {
+      "title": "AiAuditReport",
+      "description": "AI analysis and consistency reports",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "report_type": { "type": "string" },
+        "module": { "type": "string" },
+        "content": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "report_type", "module", "content", "created_at"]
+    },
+    "ChangeLog": {
+      "title": "ChangeLog",
+      "description": "Track changes across knowledge base",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "module": { "type": "string" },
+        "old_version": { "type": "string" },
+        "new_version": { "type": "string" },
+        "summary": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "module", "old_version", "new_version", "summary", "created_at"]
+    },
+    "SystemAssumption": {
+      "title": "SystemAssumption",
+      "description": "Stored system rules and core logical assumptions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "module": { "type": "string" },
+        "assumption": { "type": "string" },
+        "status": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "module", "assumption", "status", "created_at"]
     }
   },
   "firestore": {
@@ -96,6 +171,26 @@
     "/visits/{visitId}": {
       "schema": "Visit",
       "description": "Logs of visits used to compute homepage visitor statistics"
+    },
+    "/knowledge_documents/{docId}": {
+      "schema": "KnowledgeDocument",
+      "description": "HAMARÉ knowledge documents"
+    },
+    "/prompt_registry/{promptId}": {
+      "schema": "PromptRegistry",
+      "description": "System prompts"
+    },
+    "/ai_audit_reports/{reportId}": {
+      "schema": "AiAuditReport",
+      "description": "Audit reports"
+    },
+    "/change_logs/{logId}": {
+      "schema": "ChangeLog",
+      "description": "Modification logs"
+    },
+    "/system_assumptions/{assumptionId}": {
+      "schema": "SystemAssumption",
+      "description": "Logical system assumptions"
     }
   }
 }

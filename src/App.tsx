@@ -70,7 +70,6 @@ import {
 import { 
   getJavaDate, 
   getPMDate, 
-  getSifatHari, 
   getSTValue,
   getJavaneseMonthName,
   getJavaneseYearDetails,
@@ -1276,7 +1275,6 @@ function MainApp() {
                     
                     const java = getJavaDate(day);
                     const pm = getPMDate(day);
-                    const sifat = getSifatHari(day);
                     const st = getSTValue(java.day);
                     const javaYearInfo = getJavaneseYearDetails(day.getFullYear());
                     const pasaran = getPasaran(day);
@@ -1323,7 +1321,7 @@ function MainApp() {
                           </p>
                           
                           <p className="text-[8px] text-stone-500 truncate italic">
-                            {sifat.split('.')[1].trim()}
+                            {details.gisir}
                           </p>
                           
                           <p className="text-[8px] text-stone-400 truncate opacity-0 group-hover:opacity-100 transition-opacity">

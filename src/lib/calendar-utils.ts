@@ -173,12 +173,12 @@ export const getSifatHari = (target: Date) => {
   const SIFAT_LIST = [
     "1. Ringkel", "2. Sonya", "3. Donya", "4. Malihan", "5. Sonya", "6. Nyawa"
   ];
-  const refDate = new Date(2025, 0, 1); // 1 Jan 2025
-  const diffTime = target.getTime() - refDate.getTime();
-  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-  let idx = (3 + diffDays) % 6; 
-  if (idx < 0) idx += 6;
-  return SIFAT_LIST[idx];
+  const gisirAnchor = new Date(2026, 0, 27); // 27 Jan 2026 is Malihan (index 3)
+  const utc1 = Date.UTC(target.getFullYear(), target.getMonth(), target.getDate());
+  const utc2 = Date.UTC(gisirAnchor.getFullYear(), gisirAnchor.getMonth(), gisirAnchor.getDate());
+  const gisirDaysDiff = Math.floor((utc1 - utc2) / (1000 * 60 * 60 * 24));
+  const gisirIdx = ((gisirDaysDiff % 6) + 6 + 3) % 6;
+  return SIFAT_LIST[gisirIdx];
 };
 
 export const getNeptu = (dayName: string, pasaran: string) => {

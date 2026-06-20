@@ -28,6 +28,7 @@ import { Separator } from './ui/separator';
 import { useAuth } from '../lib/AuthContext';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
+import { KbmsDashboard } from './KbmsDashboard';
 // Logo imports removed
 import { 
   Check, 
@@ -114,7 +115,7 @@ export const AdminDashboard: React.FC<{
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'pending' | 'all'>('pending');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeView, setActiveView] = useState<'payments' | 'blog' | 'calendar'>('payments');
+  const [activeView, setActiveView] = useState<'payments' | 'blog' | 'calendar' | 'kbms'>('payments');
   
   // Calendar state
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
@@ -858,6 +859,10 @@ export const AdminDashboard: React.FC<{
     );
   }
 
+  if (activeView === 'kbms') {
+    return <KbmsDashboard onBack={() => setActiveView('payments')} />;
+  }
+
   return (
     <div className={cn(
       "mx-auto p-4 md:p-8 space-y-8 transition-all duration-300",
@@ -875,10 +880,11 @@ export const AdminDashboard: React.FC<{
         </div>
         
         <Tabs value={activeView} onValueChange={(v) => setActiveView(v as any)} className="bg-stone-100 p-1 rounded-lg">
-          <TabsList className="bg-transparent">
-            <TabsTrigger value="payments" className="data-[state=active]:bg-white shadow-none">Pembayaran</TabsTrigger>
-            <TabsTrigger value="blog" className="data-[state=active]:bg-white shadow-none">Konten Blog</TabsTrigger>
-            <TabsTrigger value="calendar" className="data-[state=active]:bg-white shadow-none">Database Calendar</TabsTrigger>
+          <TabsList className="bg-transparent flex flex-wrap gap-1">
+            <TabsTrigger value="payments" className="data-[state=active]:bg-white shadow-none text-xs">Pembayaran</TabsTrigger>
+            <TabsTrigger value="blog" className="data-[state=active]:bg-white shadow-none text-xs">Konten Blog</TabsTrigger>
+            <TabsTrigger value="calendar" className="data-[state=active]:bg-white shadow-none text-xs">Database Calendar</TabsTrigger>
+            <TabsTrigger value="kbms" className="data-[state=active]:bg-stone-900 data-[state=active]:text-white shadow-none text-stone-700 font-bold text-xs">KNOWLEDGE BASE (KBMS)</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>

@@ -153,5 +153,25 @@ service cloud.firestore {
       allow create: if isValidVisit(request.resource.data);
       allow update, delete: if isAdmin();
     }
+
+    match /knowledge_documents/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /prompt_registry/{promptId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /ai_audit_reports/{reportId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /change_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /system_assumptions/{assumptionId} {
+      allow read, write: if isAdmin();
+    }
   }
 }

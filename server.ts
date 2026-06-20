@@ -3,6 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import fs from 'fs';
 
 // Load environment variables
 dotenv.config();
@@ -19,6 +20,36 @@ async function startServer() {
   // API Routes
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Server is running securely' });
+  });
+
+  // KBMS: Read raw HAMARE_PROJECT_KNOWLEDGE_BASE.md from disk
+  app.get('/api/kb/raw', (req, res) => {
+    try {
+      const kbPath = path.join(process.cwd(), 'HAMARE_PROJECT_KNOWLEDGE_BASE.md');
+      if (fs.existsSync(kbPath)) {
+        const content = fs.readFileSync(kbPath, 'utf-8');
+        res.json({ content, exists: true });
+      } else {
+        res.json({ content: '', exists: false, error: 'File not found on workspace disk' });
+      }
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Failed to read knowledge base file' });
+    }
+  });
+
+  // KBMS: Write updated HAMARE_PROJECT_KNOWLEDGE_BASE.md to disk
+  app.post('/api/kb/save', (req, res) => {
+    try {
+      const { content } = req.body;
+      if (typeof content !== 'string') {
+        return res.status(400).json({ error: 'Content must be a string' });
+      }
+      const kbPath = path.join(process.cwd(), 'HAMARE_PROJECT_KNOWLEDGE_BASE.md');
+      fs.writeFileSync(kbPath, content, 'utf-8');
+      res.json({ success: true, message: 'HAMARE_PROJECT_KNOWLEDGE_BASE.md updated successfully on disk' });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Failed to write knowledge base file' });
+    }
   });
 
   // Example secure endpoint for Gemini API (if needed in the future)
