@@ -651,14 +651,8 @@ export const AdminDashboard: React.FC<{
         
         const drawWatermark = (pObj: typeof pdf, w: number, h: number) => {
           try {
-            pObj.setTextColor(220, 225, 218); 
-            pObj.setFont("Helvetica", "bold");
-            pObj.setFontSize(110); // Elevated watermark size for A2 sheets
-            pObj.text("HAMARÉ", w / 2, h / 2, {
-              align: "center",
-              angle: 30
-            });
             // Professional subtle branded margins/corners
+            pObj.setFont("Helvetica", "normal");
             pObj.setFontSize(18);
             pObj.setTextColor(180, 185, 178);
             pObj.text("HAMARÉ BRANDING - DATABASE CALENDAR EXPORT", 25, h - 20);

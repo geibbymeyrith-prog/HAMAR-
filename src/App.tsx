@@ -968,49 +968,60 @@ function MainApp() {
       // Stage 3: create PDF
       let pdf;
       try {
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const pdfWidth = 210; // Standard A4 width in mm
+        
+        // Measure target scrollHeight to assist dynamic height calculations
+        const scrollHeight = target.scrollHeight;
+        console.log("PDF Document Scroll Height:", scrollHeight);
+
+        // Determine PDF target height dynamically from canvas aspect ratio + padding (25mm) for margins and footer
+        const projectedHeight = (canvasHeight * pdfWidth) / canvasWidth;
+        const pdfHeight = projectedHeight + 25;
+
+        // Perform the logging requested by the user
+        console.log("Canvas Width:", canvas.width);
+        console.log("Canvas Height:", canvas.height);
+        console.log("PDF Width:", pdfWidth);
+        console.log("PDF Height:", pdfHeight);
+
         pdf = new jsPDF({
           orientation: 'portrait',
           unit: 'mm',
-          format: 'a4'
+          format: [pdfWidth, pdfHeight]
         });
-        
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
         
         const drawWatermark = (pObj: typeof pdf, w: number, h: number) => {
           try {
-            pObj.setTextColor(220, 225, 218); 
-            pObj.setFont("Helvetica", "bold");
-            pObj.setFontSize(55);
-            pObj.text("HAMARÉ", w / 2, h / 2, {
-              align: "center",
-              angle: 45
-            });
+            // Footnote/footer branding
+            pObj.setFont("Helvetica", "normal");
             pObj.setFontSize(10);
             pObj.setTextColor(180, 185, 178);
-            pObj.text("HAMARÉ BRANDING - AUTHENTIC PRIMBON REPORT", 15, pageHeight - 10);
-            pObj.text(`Halaman ${pObj.getNumberOfPages()}`, w - 25, pageHeight - 10);
+            pObj.text("HAMARÉ BRANDING - AUTHENTIC PRIMBON REPORT", 15, h - 10);
+            pObj.text(`Halaman ${pObj.getNumberOfPages()}`, w - 25, h - 10);
           } catch (err) {
             console.error("Watermark drawing error:", err);
           }
         };
 
-        let heightLeft = imgHeight;
-        let position = 0;
-        
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-        drawWatermark(pdf, pdfWidth, pageHeight);
-        heightLeft -= pageHeight;
-        
-        while (heightLeft > 0) {
-          pdf.addPage();
-          position = - (imgHeight - heightLeft);
-          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-          drawWatermark(pdf, pdfWidth, pageHeight);
-          heightLeft -= pageHeight;
-        }
+        const margin = 10;
+        const availableWidth = pdfWidth - (margin * 2);
+        const availableHeight = pdfHeight - (margin * 2) - 15; // 15mm extra reserved for footnote branding
+
+        // Calculate optimal scaling factor to guarantee the content completely fits into 1 page
+        const scaleX = availableWidth / canvasWidth;
+        const scaleY = availableHeight / canvasHeight;
+        const scale = Math.min(scaleX, scaleY);
+
+        const finalWidth = canvasWidth * scale;
+        const finalHeight = canvasHeight * scale;
+
+        const x = (pdfWidth - finalWidth) / 2;
+        const y = margin;
+
+        pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+        drawWatermark(pdf, pdfWidth, pdfHeight);
       } catch (error: any) {
         console.error("PDF Stage Failed:", {
           stage: "create PDF",
