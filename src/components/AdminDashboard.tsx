@@ -303,8 +303,8 @@ export const AdminDashboard: React.FC<{
           w.getComputedStyle = function(el: any, pseudo: any) {
             const style = orig.call(w, el, pseudo);
             return new Proxy(style, {
-              get(targetStyle, prop, receiver) {
-                const val = Reflect.get(targetStyle, prop, receiver);
+              get(targetStyle, prop) {
+                const val = (targetStyle as any)[prop];
                 if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab') || val.includes('OKLCH') || val.includes('OKLAB'))) {
                   return cleanModernColorsStr(val);
                 }
@@ -404,249 +404,292 @@ export const AdminDashboard: React.FC<{
       }
 
       // html2canvas capture logic with enhanced clarity and precise sizing settings
-      const canvas = await html2canvas(element, {
-        scale: 1.8, // Elegant, extremely stable high-resolution scale
-        useCORS: true,
-        allowTaint: false,
-        logging: true,
-        backgroundColor: '#ffffff',
-        windowWidth: 2600, // Generous capture canvas viewport preventing unwanted wrap
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.getElementById(tempId);
-          if (!clonedElement) {
-            console.error("Cloned report container not found in onclone!");
-            return;
-          }
+      let canvas;
+      // Stage 1: html2canvas
+      try {
+        canvas = await html2canvas(element, {
+          scale: 1.8, // Elegant, extremely stable high-resolution scale
+          useCORS: true,
+          allowTaint: false,
+          logging: true,
+          backgroundColor: '#ffffff',
+          windowWidth: 2600, // Generous capture canvas viewport preventing unwanted wrap
+          onclone: (clonedDoc) => {
+            const clonedElement = clonedDoc.getElementById(tempId);
+            if (!clonedElement) {
+              console.error("Cloned report container not found in onclone!");
+              return;
+            }
 
-          if (clonedDoc.defaultView) {
-            patchWindowStyle(clonedDoc.defaultView);
-          }
+            if (clonedDoc.defaultView) {
+              patchWindowStyle(clonedDoc.defaultView);
+            }
 
-          // Redefine clonedDoc.styleSheets getter
-          try {
-            Object.defineProperty(clonedDoc, 'styleSheets', {
-              get: () => fakeStyleSheetsList,
-              configurable: true
-            });
-          } catch (e) {
-            console.error("Error setting custom clonedDoc.styleSheets getter", e);
-          }
+            // Redefine clonedDoc.styleSheets getter
+            try {
+              Object.defineProperty(clonedDoc, 'styleSheets', {
+                get: () => fakeStyleSheetsList,
+                configurable: true
+              });
+            } catch (e) {
+              console.error("Error setting custom clonedDoc.styleSheets getter", e);
+            }
 
-          // 1. Sanitize all style tags inside the cloned document as well
-          try {
-            const styleTags = clonedDoc.querySelectorAll('style');
-            styleTags.forEach(style => {
-              try {
-                if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab'))) {
-                  const cleaned = cleanModernColorsStr(style.innerHTML);
-                  if (cleaned !== style.innerHTML) {
-                    style.innerHTML = cleaned;
+            // 1. Sanitize all style tags inside the cloned document as well
+            try {
+              const styleTags = clonedDoc.querySelectorAll('style');
+              styleTags.forEach(style => {
+                try {
+                  if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab'))) {
+                    const cleaned = cleanModernColorsStr(style.innerHTML);
+                    if (cleaned !== style.innerHTML) {
+                      style.innerHTML = cleaned;
+                    }
                   }
-                }
-              } catch (err) {}
-            });
-          } catch (e) {}
+                } catch (err) {}
+              });
+            } catch (e) {}
 
-          // Sanitize oklch colors from styleSheets rules inside the cloned document
-          try {
-            const styleSheets = clonedDoc.styleSheets;
-            for (let i = 0; i < styleSheets.length; i++) {
-              try {
-                const sheet = styleSheets[i];
-                const rules = sheet.cssRules || sheet.rules;
-                if (rules) {
-                  for (let j = 0; j < rules.length; j++) {
-                    const rule = rules[j] as CSSStyleRule;
-                    if (rule.style && rule.style.cssText) {
-                      if (rule.style.cssText.includes('oklch') || rule.style.cssText.includes('oklab')) {
-                        const cleaned = cleanModernColorsStr(rule.style.cssText);
-                        if (cleaned !== rule.style.cssText) {
-                          rule.style.cssText = cleaned;
+            // Sanitize oklch colors from styleSheets rules inside the cloned document
+            try {
+              const styleSheets = clonedDoc.styleSheets;
+              for (let i = 0; i < styleSheets.length; i++) {
+                try {
+                  const sheet = styleSheets[i];
+                  const rules = sheet.cssRules || sheet.rules;
+                  if (rules) {
+                    for (let j = 0; j < rules.length; j++) {
+                      const rule = rules[j] as CSSStyleRule;
+                      if (rule.style && rule.style.cssText) {
+                        if (rule.style.cssText.includes('oklch') || rule.style.cssText.includes('oklab')) {
+                          const cleaned = cleanModernColorsStr(rule.style.cssText);
+                          if (cleaned !== rule.style.cssText) {
+                            rule.style.cssText = cleaned;
+                          }
                         }
                       }
                     }
                   }
+                } catch (sheetErr) {
+                  // Suppress cross-origin stylesheet errors
                 }
-              } catch (sheetErr) {
-                // Suppress cross-origin stylesheet errors
               }
+            } catch (e) {
+              console.error("Error in stylesheet sanitization:", e);
             }
-          } catch (e) {
-            console.error("Error in stylesheet sanitization:", e);
-          }
 
-          // Translate all custom inline colors safely from oklch elements of the clone
-          try {
-            const allWebElements = clonedElement.getElementsByTagName("*");
-            for (let i = 0; i < allWebElements.length; i++) {
-              const el = allWebElements[i] as HTMLElement;
-              try {
-                const styleAttr = el.getAttribute('style');
-                if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
-                  const clean = cleanModernColorsStr(styleAttr);
-                  if (clean !== styleAttr) {
-                    el.style.cssText = clean;
+            // Translate all custom inline colors safely from oklch elements of the clone
+            try {
+              const allWebElements = clonedElement.getElementsByTagName("*");
+              for (let i = 0; i < allWebElements.length; i++) {
+                const el = allWebElements[i] as HTMLElement;
+                try {
+                  const styleAttr = el.getAttribute('style');
+                  if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
+                    const clean = cleanModernColorsStr(styleAttr);
+                    if (clean !== styleAttr) {
+                      el.style.cssText = clean;
+                    }
                   }
-                }
-              } catch (elErr) {}
-            }
-          } catch (e) {}
-
-          // 2. Format the print-only header elements correctly
-          const printHeader = clonedElement.querySelector('.print-header-content');
-          if (printHeader) {
-            (printHeader as HTMLElement).style.display = 'block';
-            (printHeader as HTMLElement).style.visibility = 'visible';
-            (printHeader as HTMLElement).style.opacity = '1';
-            (printHeader as HTMLElement).style.textAlign = 'center';
-            (printHeader as HTMLElement).style.marginBottom = '40px';
-            (printHeader as HTMLElement).style.width = '100%';
-            (printHeader as HTMLElement).style.color = '#1c1917';
-            (printHeader as HTMLElement).style.borderBottom = '2px solid #1c1917';
-            (printHeader as HTMLElement).style.paddingBottom = '15px';
-          }
-
-          // 3. Remove/Hide bottom page selection buttons (pagination) entirely from PDF
-          const paginationBlock = clonedElement.querySelector('.mt-8');
-          if (paginationBlock) {
-            (paginationBlock as HTMLElement).style.display = 'none';
-          }
-
-          // 4. Force a magnificent large sheet layout inside the clone for 100% column visibility
-          clonedElement.style.width = '2400px'; 
-          clonedElement.style.padding = '60px';
-          clonedElement.style.height = 'auto';
-          clonedElement.style.background = '#ffffff';
-
-          const tableContainer = clonedElement.querySelector('.overflow-x-auto');
-          if (tableContainer) {
-            (tableContainer as HTMLElement).style.overflow = 'visible';
-            (tableContainer as HTMLElement).style.width = '100%';
-            (tableContainer as HTMLElement).style.maxWidth = 'none';
-            (tableContainer as HTMLElement).style.border = 'none';
-          }
-
-          const table = clonedElement.querySelector('table');
-          if (table) {
-            (table as HTMLElement).style.width = '100%';
-            (table as HTMLElement).style.tableLayout = 'auto'; // auto layout computes columns gracefully based on text sizes
-            (table as HTMLElement).style.borderCollapse = 'collapse';
-          }
-
-          // Ensure pristine cells headers and alternate days colors are applied explicitly
-          const tableRows = clonedElement.querySelectorAll('tr');
-          tableRows.forEach(row => {
-            const trElement = row as HTMLElement;
-            const hasHeaders = trElement.querySelector('th') !== null;
-            
-            if (hasHeaders) {
-              trElement.style.backgroundColor = '#1c1917';
-              trElement.style.color = '#ffffff';
-              const headers = trElement.querySelectorAll('th');
-              headers.forEach(h => {
-                const headerCell = h as HTMLElement;
-                headerCell.style.backgroundColor = '#1c1917';
-                headerCell.style.color = '#ffffff';
-                headerCell.style.fontSize = '13px';
-                headerCell.style.fontWeight = 'bold';
-                headerCell.style.padding = '12px 6px';
-                headerCell.style.border = '1px solid #1c1917';
-                headerCell.style.textAlign = 'center';
-              });
-            } else {
-              // Alternate row coloring (isThirdDay row) check
-              const isThirdDay = trElement.classList.contains('bg-[#928f8e]');
-              if (isThirdDay) {
-                trElement.style.backgroundColor = '#e4e4e7'; // Beautiful light zinc gray
-              } else {
-                trElement.style.backgroundColor = '#ffffff';
+                } catch (elErr) {}
               }
+            } catch (e) {}
 
-              const cells = trElement.querySelectorAll('td');
-              cells.forEach(c => {
-                const cell = c as HTMLElement;
-                cell.style.fontSize = '12px';
-                cell.style.padding = '10px 8px';
-                cell.style.border = '1px solid #e4e4e7';
-                cell.style.whiteSpace = 'nowrap';
-                
-                // Keep text-red-600 colored Sundays clearly red
-                if (cell.classList.contains('text-red-600')) {
-                  cell.style.color = '#dc2626';
-                  cell.style.fontWeight = 'bold';
-                } else {
-                  // Standard black table cells text color
-                  cell.style.color = '#0c0a09';
-                  cell.style.fontWeight = 'bold';
-                }
-
-                // Explicitly render Nagadina directions colored cells
-                if (cell.classList.contains('bg-black')) {
-                  cell.style.backgroundColor = '#000000';
-                  cell.style.color = '#ffffff';
-                } else if (cell.classList.contains('bg-yellow-300')) {
-                  cell.style.backgroundColor = '#fde047';
-                  cell.style.color = '#000000';
-                } else if (cell.classList.contains('bg-red-500')) {
-                  cell.style.backgroundColor = '#fca5a5'; // Softer red highlight for clean printing
-                  cell.style.color = '#7f1d1d';
-                }
-              });
+            // 2. Format the print-only header elements correctly
+            const printHeader = clonedElement.querySelector('.print-header-content');
+            if (printHeader) {
+              (printHeader as HTMLElement).style.display = 'block';
+              (printHeader as HTMLElement).style.visibility = 'visible';
+              (printHeader as HTMLElement).style.opacity = '1';
+              (printHeader as HTMLElement).style.textAlign = 'center';
+              (printHeader as HTMLElement).style.marginBottom = '40px';
+              (printHeader as HTMLElement).style.width = '100%';
+              (printHeader as HTMLElement).style.color = '#1c1917';
+              (printHeader as HTMLElement).style.borderBottom = '2px solid #1c1917';
+              (printHeader as HTMLElement).style.paddingBottom = '15px';
             }
-          });
-        }
-      });
 
-      const imgData = canvas.toDataURL('image/png', 1.0);
-      const pdf = new jsPDF('l', 'mm', 'a2'); // landscape A2 provides massive resolution for professional printing
+            // 3. Remove/Hide bottom page selection buttons (pagination) entirely from PDF
+            const paginationBlock = clonedElement.querySelector('.mt-8');
+            if (paginationBlock) {
+              (paginationBlock as HTMLElement).style.display = 'none';
+            }
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      
-      // Calculate scaling to fill the a2 page with elegant 15mm margins
-      const margin = 15; 
-      const availableWidth = pdfWidth - (margin * 2);
-      const availableHeight = pdfHeight - (margin * 2);
-      
-      // scale parameter is 1.8
-      const sourceWidth = imgWidth / 1.8;
-      const sourceHeight = imgHeight / 1.8;
-      
-      const ratio = Math.min(availableWidth / sourceWidth, availableHeight / sourceHeight);
-      const finalWidth = sourceWidth * ratio;
-      const finalHeight = sourceHeight * ratio;
-      
-      const x = (pdfWidth - finalWidth) / 2;
-      const y = (pdfHeight - finalHeight) / 2;
+            // 4. Force a magnificent large sheet layout inside the clone for 100% column visibility
+            clonedElement.style.width = '2400px'; 
+            clonedElement.style.padding = '60px';
+            clonedElement.style.height = 'auto';
+            clonedElement.style.background = '#ffffff';
 
-      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
-      
-      const drawWatermark = (pObj: typeof pdf, w: number, h: number) => {
-        try {
-          pObj.setTextColor(220, 225, 218); 
-          pObj.setFont("Helvetica", "bold");
-          pObj.setFontSize(110); // Elevated watermark size for A2 sheets
-          pObj.text("HAMARÉ", w / 2, h / 2, {
-            align: "center",
-            angle: 30
-          });
-          // Professional subtle branded margins/corners
-          pObj.setFontSize(18);
-          pObj.setTextColor(180, 185, 178);
-          pObj.text("HAMARÉ BRANDING - DATABASE CALENDAR EXPORT", 25, h - 20);
-          pObj.text(`Halaman ${pObj.getNumberOfPages()}`, w - 40, h - 20);
-        } catch (err) {
-          console.error("Watermark drawing error:", err);
-        }
-      };
-      
-      drawWatermark(pdf, pdfWidth, pdfHeight);
-      
-      const filename = `HAMARE-Database_Calendar-${getJavaneseMonthName(calendarMonth)}-${calendarYear}.pdf`;
-      pdf.save(filename);
+            const tableContainer = clonedElement.querySelector('.overflow-x-auto');
+            if (tableContainer) {
+              (tableContainer as HTMLElement).style.overflow = 'visible';
+              (tableContainer as HTMLElement).style.width = '100%';
+              (tableContainer as HTMLElement).style.maxWidth = 'none';
+              (tableContainer as HTMLElement).style.border = 'none';
+            }
+
+            const table = clonedElement.querySelector('table');
+            if (table) {
+              (table as HTMLElement).style.width = '100%';
+              (table as HTMLElement).style.tableLayout = 'auto'; // auto layout computes columns gracefully based on text sizes
+              (table as HTMLElement).style.borderCollapse = 'collapse';
+            }
+
+            // Ensure pristine cells headers and alternate days colors are applied explicitly
+            const tableRows = clonedElement.querySelectorAll('tr');
+            tableRows.forEach(row => {
+              const trElement = row as HTMLElement;
+              const hasHeaders = trElement.querySelector('th') !== null;
+              
+              if (hasHeaders) {
+                trElement.style.backgroundColor = '#1c1917';
+                trElement.style.color = '#ffffff';
+                const headers = trElement.querySelectorAll('th');
+                headers.forEach(h => {
+                  const headerCell = h as HTMLElement;
+                  headerCell.style.backgroundColor = '#1c1917';
+                  headerCell.style.color = '#ffffff';
+                  headerCell.style.fontSize = '13px';
+                  headerCell.style.fontWeight = 'bold';
+                  headerCell.style.padding = '12px 6px';
+                  headerCell.style.border = '1px solid #1c1917';
+                  headerCell.style.textAlign = 'center';
+                });
+              } else {
+                // Alternate row coloring (isThirdDay row) check
+                const isThirdDay = trElement.classList.contains('bg-[#928f8e]');
+                if (isThirdDay) {
+                  trElement.style.backgroundColor = '#e4e4e7'; // Beautiful light zinc gray
+                } else {
+                  trElement.style.backgroundColor = '#ffffff';
+                }
+
+                const cells = trElement.querySelectorAll('td');
+                cells.forEach(c => {
+                  const cell = c as HTMLElement;
+                  cell.style.fontSize = '12px';
+                  cell.style.padding = '10px 8px';
+                  cell.style.border = '1px solid #e4e4e7';
+                  cell.style.whiteSpace = 'nowrap';
+                  
+                  // Keep text-red-600 colored Sundays clearly red
+                  if (cell.classList.contains('text-red-600')) {
+                    cell.style.color = '#dc2626';
+                    cell.style.fontWeight = 'bold';
+                  } else {
+                    // Standard black table cells text color
+                    cell.style.color = '#0c0a09';
+                    cell.style.fontWeight = 'bold';
+                  }
+
+                  // Explicitly render Nagadina directions colored cells
+                  if (cell.classList.contains('bg-black')) {
+                    cell.style.backgroundColor = '#000000';
+                    cell.style.color = '#ffffff';
+                  } else if (cell.classList.contains('bg-yellow-300')) {
+                    cell.style.backgroundColor = '#fde047';
+                    cell.style.color = '#000000';
+                  } else if (cell.classList.contains('bg-red-500')) {
+                    cell.style.backgroundColor = '#fca5a5'; // Softer red highlight for clean printing
+                    cell.style.color = '#7f1d1d';
+                  }
+                });
+              }
+            });
+          }
+        });
+      } catch (error: any) {
+        console.error("PDF Stage Failed:", {
+          stage: "html2canvas",
+          error,
+          stack: error?.stack
+        });
+        throw error;
+      }
+
+      // Stage 2: generate HTML / image conversion
+      let imgData;
+      try {
+        imgData = canvas.toDataURL('image/png', 1.0);
+      } catch (error: any) {
+        console.error("PDF Stage Failed:", {
+          stage: "generate HTML",
+          error,
+          stack: error?.stack
+        });
+        throw error;
+      }
+
+      // Stage 3: create PDF
+      let pdf;
+      try {
+        pdf = new jsPDF('l', 'mm', 'a2'); // landscape A2 provides massive resolution for professional printing
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        
+        // Calculate scaling to fill the a2 page with elegant 15mm margins
+        const margin = 15; 
+        const availableWidth = pdfWidth - (margin * 2);
+        const availableHeight = pdfHeight - (margin * 2);
+        
+        // scale parameter is 1.8
+        const sourceWidth = imgWidth / 1.8;
+        const sourceHeight = imgHeight / 1.8;
+        
+        const ratio = Math.min(availableWidth / sourceWidth, availableHeight / sourceHeight);
+        const finalWidth = sourceWidth * ratio;
+        const finalHeight = sourceHeight * ratio;
+        
+        const x = (pdfWidth - finalWidth) / 2;
+        const y = (pdfHeight - finalHeight) / 2;
+
+        pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+        
+        const drawWatermark = (pObj: typeof pdf, w: number, h: number) => {
+          try {
+            pObj.setTextColor(220, 225, 218); 
+            pObj.setFont("Helvetica", "bold");
+            pObj.setFontSize(110); // Elevated watermark size for A2 sheets
+            pObj.text("HAMARÉ", w / 2, h / 2, {
+              align: "center",
+              angle: 30
+            });
+            // Professional subtle branded margins/corners
+            pObj.setFontSize(18);
+            pObj.setTextColor(180, 185, 178);
+            pObj.text("HAMARÉ BRANDING - DATABASE CALENDAR EXPORT", 25, h - 20);
+            pObj.text(`Halaman ${pObj.getNumberOfPages()}`, w - 40, h - 20);
+          } catch (err) {
+            console.error("Watermark drawing error:", err);
+          }
+        };
+        
+        drawWatermark(pdf, pdfWidth, pdfHeight);
+      } catch (error: any) {
+        console.error("PDF Stage Failed:", {
+          stage: "create PDF",
+          error,
+          stack: error?.stack
+        });
+        throw error;
+      }
+
+      // Stage 4: save PDF
+      try {
+        const filename = `HAMARE-Database_Calendar-${getJavaneseMonthName(calendarMonth)}-${calendarYear}.pdf`;
+        pdf.save(filename);
+      } catch (error: any) {
+        console.error("PDF Stage Failed:", {
+          stage: "save PDF",
+          error,
+          stack: error?.stack
+        });
+        throw error;
+      }
     } catch (error) {
       console.error("PDF generation failed:", error);
       alert(`Gagal mengunduh PDF: ${error instanceof Error ? error.message : "Unknown error"}`);

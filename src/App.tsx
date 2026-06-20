@@ -689,8 +689,8 @@ function MainApp() {
         w.getComputedStyle = function(el: any, pseudo: any) {
           const style = orig.call(w, el, pseudo);
           return new Proxy(style, {
-            get(targetStyle, prop, receiver) {
-              const val = Reflect.get(targetStyle, prop, receiver);
+            get(targetStyle, prop) {
+              const val = (targetStyle as any)[prop];
               if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab') || val.includes('OKLCH') || val.includes('OKLAB'))) {
                 return replaceAllModernColorsInString(val);
               }
@@ -798,197 +798,239 @@ function MainApp() {
         }
       }
 
-      const canvas = await html2canvas(target, {
-        scale: 1.5,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#F5F5F0',
-        logging: true,
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.getElementById(tempId);
-          if (!clonedElement) {
-            console.error("Cloned target element not found in onclone!");
-            return;
-          }
+      let canvas;
+      // Stage 1: html2canvas
+      try {
+        canvas = await html2canvas(target, {
+          scale: 1.5,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: '#F5F5F0',
+          logging: true,
+          onclone: (clonedDoc) => {
+            const clonedElement = clonedDoc.getElementById(tempId);
+            if (!clonedElement) {
+              console.error("Cloned target element not found in onclone!");
+              return;
+            }
 
-          if (clonedDoc.defaultView) {
-            patchWindowStyle(clonedDoc.defaultView);
-          }
+            if (clonedDoc.defaultView) {
+              patchWindowStyle(clonedDoc.defaultView);
+            }
 
-          // Redefine clonedDoc.styleSheets getter
-          try {
-            Object.defineProperty(clonedDoc, 'styleSheets', {
-              get: () => fakeStyleSheetsList,
-              configurable: true
-            });
-          } catch (e) {
-            console.error("Error setting custom clonedDoc.styleSheets getter", e);
-          }
+            // Redefine clonedDoc.styleSheets getter
+            try {
+              Object.defineProperty(clonedDoc, 'styleSheets', {
+                get: () => fakeStyleSheetsList,
+                configurable: true
+              });
+            } catch (e) {
+              console.error("Error setting custom clonedDoc.styleSheets getter", e);
+            }
 
-          // Add Branding / Header for PDF
-          try {
-            const header = clonedDoc.createElement('div');
-            header.style.textAlign = 'center';
-            header.style.marginBottom = '30px';
-            header.style.padding = '20px';
-            header.style.borderBottom = '2px solid #2E7D32';
-            header.innerHTML = `
-              <h1 style="font-family: serif; font-size: 28px; margin: 0; color: #1A1A1A;">HAMARE</h1>
-              <p style="font-size: 14px; color: #2E7D32; font-weight: bold; margin: 5px 0 0 0;">Primbon Javanese & Pranata Mangsa Expert</p>
-              <p style="font-size: 10px; color: #78716c; margin: 5px 0 0 0;">Generated on ${format(new Date(), 'EEEE, d MMMM yyyy HH:mm')}</p>
-            `;
-            
-            clonedElement.insertBefore(header, clonedElement.firstChild);
-          } catch (e) {
-            console.error("Error inserting PDF header:", e);
-          }
+            // Add Branding / Header for PDF
+            try {
+              const header = clonedDoc.createElement('div');
+              header.style.textAlign = 'center';
+              header.style.marginBottom = '30px';
+              header.style.padding = '20px';
+              header.style.borderBottom = '2px solid #2E7D32';
+              header.innerHTML = `
+                <h1 style="font-family: serif; font-size: 28px; margin: 0; color: #1A1A1A;">HAMARE</h1>
+                <p style="font-size: 14px; color: #2E7D32; font-weight: bold; margin: 5px 0 0 0;">Primbon Javanese & Pranata Mangsa Expert</p>
+                <p style="font-size: 10px; color: #78716c; margin: 5px 0 0 0;">Generated on ${format(new Date(), 'EEEE, d MMMM yyyy HH:mm')}</p>
+              `;
+              
+              clonedElement.insertBefore(header, clonedElement.firstChild);
+            } catch (e) {
+              console.error("Error inserting PDF header:", e);
+            }
 
-          // Hide action buttons to produce pristine outputs
-          try {
-            const buttons = clonedElement.querySelectorAll('button');
-            buttons.forEach(btn => {
-              (btn as HTMLElement).style.display = 'none';
-            });
-          } catch (btnErr) {
-            console.error("Error hiding buttons in clone", btnErr);
-          }
+            // Hide action buttons to produce pristine outputs
+            try {
+              const buttons = clonedElement.querySelectorAll('button');
+              buttons.forEach(btn => {
+                (btn as HTMLElement).style.display = 'none';
+              });
+            } catch (btnErr) {
+              console.error("Error hiding buttons in clone", btnErr);
+            }
 
-          // CRITICAL: Sanitize all style tags inside the cloned document as well
-          try {
-            const styleTags = clonedDoc.querySelectorAll('style');
-            styleTags.forEach(style => {
-              try {
-                if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab') || style.innerHTML.includes('OKLCH') || style.innerHTML.includes('OKLAB'))) {
-                  const cleaned = replaceAllModernColorsInString(style.innerHTML);
-                  if (cleaned !== style.innerHTML) {
-                    style.innerHTML = cleaned;
+            // CRITICAL: Sanitize all style tags inside the cloned document as well
+            try {
+              const styleTags = clonedDoc.querySelectorAll('style');
+              styleTags.forEach(style => {
+                try {
+                  if (style.innerHTML && (style.innerHTML.includes('oklch') || style.innerHTML.includes('oklab') || style.innerHTML.includes('OKLCH') || style.innerHTML.includes('OKLAB'))) {
+                    const cleaned = replaceAllModernColorsInString(style.innerHTML);
+                    if (cleaned !== style.innerHTML) {
+                      style.innerHTML = cleaned;
+                    }
                   }
+                } catch (styleErr) {
+                  console.error("Error sanitizing style tag:", styleErr);
                 }
-              } catch (styleErr) {
-                console.error("Error sanitizing style tag:", styleErr);
-              }
-            });
-          } catch (e) {
-            console.error("Error sanitizing style tags:", e);
-          }
+              });
+            } catch (e) {
+              console.error("Error sanitizing style tags:", e);
+            }
 
-          // CRITICAL: Sanitize all style sheets rules inside the cloned document as well
-          try {
-            const styleSheets = clonedDoc.styleSheets;
-            for (let i = 0; i < styleSheets.length; i++) {
-              try {
-                const sheet = styleSheets[i];
-                const rules = sheet.cssRules || sheet.rules;
-                if (rules) {
-                  for (let j = 0; j < rules.length; j++) {
-                    const rule = rules[j] as CSSStyleRule;
-                    if (rule.style && rule.style.cssText) {
-                      if (rule.style.cssText.includes('oklch') || rule.style.cssText.includes('oklab') || rule.style.cssText.includes('OKLCH') || rule.style.cssText.includes('OKLAB')) {
-                        const cleaned = replaceAllModernColorsInString(rule.style.cssText);
-                        if (cleaned !== rule.style.cssText) {
-                          rule.style.cssText = cleaned;
+            // CRITICAL: Sanitize all style sheets rules inside the cloned document as well
+            try {
+              const styleSheets = clonedDoc.styleSheets;
+              for (let i = 0; i < styleSheets.length; i++) {
+                try {
+                  const sheet = styleSheets[i];
+                  const rules = sheet.cssRules || sheet.rules;
+                  if (rules) {
+                    for (let j = 0; j < rules.length; j++) {
+                      const rule = rules[j] as CSSStyleRule;
+                      if (rule.style && rule.style.cssText) {
+                        if (rule.style.cssText.includes('oklch') || rule.style.cssText.includes('oklab') || rule.style.cssText.includes('OKLCH') || rule.style.cssText.includes('OKLAB')) {
+                          const cleaned = replaceAllModernColorsInString(rule.style.cssText);
+                          if (cleaned !== rule.style.cssText) {
+                            rule.style.cssText = cleaned;
+                          }
                         }
                       }
                     }
                   }
+                } catch (sheetErr) {
+                  // Suppress cross-origin stylesheet errors
                 }
-              } catch (sheetErr) {
-                // Suppress cross-origin stylesheet errors
               }
+            } catch (e) {
+              console.error("Error in stylesheet sanitization:", e);
             }
-          } catch (e) {
-            console.error("Error in stylesheet sanitization:", e);
-          }
-          
-          try {
-            const allElements = clonedElement.getElementsByTagName("*");
-            for (let i = 0; i < allElements.length; i++) {
-              const el = allElements[i] as HTMLElement;
-              
-              try {
-                const styleAttr = el.getAttribute('style');
-                if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab') || styleAttr.includes('OKLCH') || styleAttr.includes('OKLAB'))) {
-                  const cleaned = replaceAllModernColorsInString(styleAttr);
-                  if (cleaned !== styleAttr) {
-                    el.style.cssText = cleaned;
+            
+            try {
+              const allElements = clonedElement.getElementsByTagName("*");
+              for (let i = 0; i < allElements.length; i++) {
+                const el = allElements[i] as HTMLElement;
+                
+                try {
+                  const styleAttr = el.getAttribute('style');
+                  if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab') || styleAttr.includes('OKLCH') || styleAttr.includes('OKLAB'))) {
+                    const cleaned = replaceAllModernColorsInString(styleAttr);
+                    if (cleaned !== styleAttr) {
+                      el.style.cssText = cleaned;
+                    }
                   }
+                } catch (elErr) {
+                  // Suppressed
                 }
-              } catch (elErr) {
-                // Suppressed
               }
+            } catch (e) {
+              console.error("Error in onclone styling traversal:", e);
             }
-          } catch (e) {
-            console.error("Error in onclone styling traversal:", e);
+            
+            // Force results to be visible in the clone by removing paywalls and unblurring
+            try {
+              const paywall = clonedElement.querySelector('.z-20');
+              if (paywall) (paywall as HTMLElement).style.display = 'none';
+
+              const blurreds = clonedElement.querySelectorAll('.blur-md');
+              blurreds.forEach(b => {
+                try {
+                  (b as HTMLElement).classList.remove('blur-md');
+                  (b as HTMLElement).style.filter = 'none';
+                  (b as HTMLElement).style.pointerEvents = 'auto';
+                  (b as HTMLElement).style.userSelect = 'auto';
+                } catch (err) {}
+              });
+            } catch (e) {
+              console.error("Error cleaning paywall / blur in clone:", e);
+            }
           }
-          
-          // Force results to be visible in the clone by removing paywalls and unblurring
+        });
+      } catch (error: any) {
+        console.error("PDF Stage Failed:", {
+          stage: "html2canvas",
+          error,
+          stack: error?.stack
+        });
+        throw error;
+      }
+      
+      // Stage 2: generate HTML / image conversion
+      let imgData;
+      try {
+        imgData = canvas.toDataURL('image/png');
+      } catch (error: any) {
+        console.error("PDF Stage Failed:", {
+          stage: "generate HTML",
+          error,
+          stack: error?.stack
+        });
+        throw error;
+      }
+      
+      // Stage 3: create PDF
+      let pdf;
+      try {
+        pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+        
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        
+        const drawWatermark = (pObj: typeof pdf, w: number, h: number) => {
           try {
-            const paywall = clonedElement.querySelector('.z-20');
-            if (paywall) (paywall as HTMLElement).style.display = 'none';
-
-            const blurreds = clonedElement.querySelectorAll('.blur-md');
-            blurreds.forEach(b => {
-              try {
-                (b as HTMLElement).classList.remove('blur-md');
-                (b as HTMLElement).style.filter = 'none';
-                (b as HTMLElement).style.pointerEvents = 'auto';
-                (b as HTMLElement).style.userSelect = 'auto';
-              } catch (err) {}
+            pObj.setTextColor(220, 225, 218); 
+            pObj.setFont("Helvetica", "bold");
+            pObj.setFontSize(55);
+            pObj.text("HAMARÉ", w / 2, h / 2, {
+              align: "center",
+              angle: 45
             });
-          } catch (e) {
-            console.error("Error cleaning paywall / blur in clone:", e);
+            pObj.setFontSize(10);
+            pObj.setTextColor(180, 185, 178);
+            pObj.text("HAMARÉ BRANDING - AUTHENTIC PRIMBON REPORT", 15, pageHeight - 10);
+            pObj.text(`Halaman ${pObj.getNumberOfPages()}`, w - 25, pageHeight - 10);
+          } catch (err) {
+            console.error("Watermark drawing error:", err);
           }
-        }
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      const drawWatermark = (pObj: typeof pdf, w: number, h: number) => {
-        try {
-          // Elegant soft grey-green tone matching the Javanese green layout
-          pObj.setTextColor(220, 225, 218); 
-          pObj.setFont("Helvetica", "bold");
-          pObj.setFontSize(55);
-          pObj.text("HAMARÉ", w / 2, h / 2, {
-            align: "center",
-            angle: 45
-          });
-          // Professional subtle branded margins/corners
-          pObj.setFontSize(10);
-          pObj.setTextColor(180, 185, 178);
-          pObj.text("HAMARÉ BRANDING - AUTHENTIC PRIMBON REPORT", 15, pageHeight - 10);
-          pObj.text(`Halaman ${pObj.getNumberOfPages()}`, w - 25, pageHeight - 10);
-        } catch (err) {
-          console.error("Watermark drawing error:", err);
-        }
-      };
+        };
 
-      let heightLeft = imgHeight;
-      let position = 0;
-      
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-      drawWatermark(pdf, pdfWidth, pageHeight);
-      heightLeft -= pageHeight;
-      
-      while (heightLeft > 0) {
-        pdf.addPage();
-        position = - (imgHeight - heightLeft);
+        let heightLeft = imgHeight;
+        let position = 0;
+        
         pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
         drawWatermark(pdf, pdfWidth, pageHeight);
         heightLeft -= pageHeight;
+        
+        while (heightLeft > 0) {
+          pdf.addPage();
+          position = - (imgHeight - heightLeft);
+          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+          drawWatermark(pdf, pdfWidth, pageHeight);
+          heightLeft -= pageHeight;
+        }
+      } catch (error: any) {
+        console.error("PDF Stage Failed:", {
+          stage: "create PDF",
+          error,
+          stack: error?.stack
+        });
+        throw error;
       }
       
-      pdf.save(`Hamare-${activeTab}-${format(new Date(), 'ddMMyy-HHmm')}.pdf`);
+      // Stage 4: save PDF
+      try {
+        pdf.save(`Hamare-${activeTab}-${format(new Date(), 'ddMMyy-HHmm')}.pdf`);
+      } catch (error: any) {
+        console.error("PDF Stage Failed:", {
+          stage: "save PDF",
+          error,
+          stack: error?.stack
+        });
+        throw error;
+      }
     } catch (error) {
       console.error("PDF Export Error:", error);
       alert("Gagal mengunduh PDF: " + (error as Error).message);
