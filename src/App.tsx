@@ -1205,7 +1205,12 @@ function MainApp() {
 
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full border-b border-stone-200/60 pb-4 mb-6" id="header-top-bar">
               <div className="flex items-center gap-2" id="brand-logo">
-                <span className="font-serif font-bold text-lg text-[#2E7D32] tracking-wider">HAMARÉ</span>
+                <img 
+                  src="https://lh3.googleusercontent.com/d/1ZNl2BNK-RNm4zJhDLT2CJyhXv168pTNz" 
+                  alt="HAMARÉ Logo" 
+                  className="h-10 w-auto object-contain transition-all hover:opacity-90"
+                  referrerPolicy="no-referrer"
+                />
                 <span className="text-[9px] bg-[#E8F5E9] text-[#2E7D32] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">Weton & Wisdom</span>
               </div>
 
@@ -2499,7 +2504,7 @@ function MainApp() {
 
       <footer className="max-w-6xl mx-auto mt-20 pt-10 border-t border-stone-200 pb-12 px-4 w-full">
         <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 text-center md:text-left">
-          {/* Left: HNJ Indonesia Name only */}
+          {/* Left: HNJ Indonesia */}
           <div className="flex justify-center md:justify-start">
             <a 
               href="https://hnj-indonesia.com/" 
@@ -2508,32 +2513,35 @@ function MainApp() {
               className="flex items-center gap-2 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-4 rounded-full shadow-sm transition-all group"
               id="hnj-footer-link"
             >
-              <div className="text-left select-none">
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none mb-0.5">Supported By</p>
-                <p className="text-xs font-bold text-stone-700 leading-none">HNJ Indonesia</p>
+              <div className="flex items-center gap-2.5 select-none text-left">
+                <div>
+                  <p className="text-[9px] font-bold text-stone-400 uppercase tracking-widest leading-none mb-0.5">Supported By</p>
+                  <p className="text-xs font-bold text-stone-700 leading-none">HNJ Indonesia</p>
+                </div>
+                <img 
+                  src="https://lh3.googleusercontent.com/d/1FDzru_3SH5J76jjwVr6A35Ym5IDZW3mi" 
+                  alt="HNJ Indonesia Logo" 
+                  className="h-6 w-auto object-contain transition-all group-hover:opacity-90"
+                  referrerPolicy="no-referrer"
+                />
               </div>
             </a>
           </div>
 
-          {/* Center: HAMARÉ */}
-          <div className="flex flex-col items-center gap-1 text-center">
-            <p className="text-[#2E7D32] font-serif font-bold text-base tracking-wider mt-0.5">HAMARÉ</p>
+          {/* Center: HAMARÉ with Logo */}
+          <div className="flex flex-col items-center gap-1.5 text-center">
+            <img 
+              src="https://lh3.googleusercontent.com/d/1ZNl2BNK-RNm4zJhDLT2CJyhXv168pTNz" 
+              alt="HAMARÉ Logo" 
+              className="h-8 w-auto object-contain transition-all hover:opacity-90"
+              referrerPolicy="no-referrer"
+            />
+            <p className="text-[#2E7D32] font-serif font-bold text-base tracking-wider">HAMARÉ</p>
             <p className="text-xs text-stone-400">© 2026 {t('title')} - Hak Cipta Dilindungi</p>
           </div>
 
-          {/* Right: Haloka Bhagya Name & Optional Admin Button */}
-          <div className="flex flex-col md:flex-row justify-center md:justify-end items-center gap-4">
-            {isAdmin && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setIsAdminMode(true)}
-                className="text-[10px] font-bold text-stone-400 hover:text-stone-900 border border-transparent hover:border-stone-200"
-                id="admin-dashboard-btn"
-              >
-                <Shield className="w-3.5 h-3.5 mr-1" /> ADMIN DASHBOARD
-              </Button>
-            )}
+          {/* Right: Haloka Bhagya Name & Link */}
+          <div className="flex justify-center md:justify-end items-center">
             <a 
               href="https://halokabhagya.com/" 
               target="_blank" 
@@ -2541,9 +2549,17 @@ function MainApp() {
               className="flex items-center gap-2 bg-stone-50 hover:bg-stone-100/80 border border-stone-100 py-1.5 px-4 rounded-full shadow-sm transition-all group"
               id="haloka-footer-link"
             >
-              <div className="text-left select-none">
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest leading-none mb-0.5">Supported By</p>
-                <p className="text-xs font-bold text-stone-700 leading-none">Haloka Bhagya</p>
+              <div className="flex items-center gap-2.5 select-none text-left">
+                <div>
+                  <p className="text-[9px] font-bold text-stone-400 uppercase tracking-widest leading-none mb-0.5">Supported By</p>
+                  <p className="text-xs font-bold text-stone-700 leading-none">Haloka Bhagya</p>
+                </div>
+                <img 
+                  src="https://lh3.googleusercontent.com/d/1M3fA2wQf5qD7_E3a2xFrJM0W23rfYY8b" 
+                  alt="Haloka Bhagya Logo" 
+                  className="h-6 w-auto object-contain transition-all group-hover:opacity-90"
+                  referrerPolicy="no-referrer"
+                />
               </div>
             </a>
           </div>
