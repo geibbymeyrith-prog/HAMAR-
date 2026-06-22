@@ -149,6 +149,17 @@
         "created_at": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "module", "assumption", "status", "created_at"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Payment webhook payload records",
+      "type": "object",
+      "properties": {
+        "payload": { "type": "object" },
+        "receivedAt": { "type": "string", "format": "date-time" },
+        "verified": { "type": "boolean" }
+      },
+      "required": ["payload", "receivedAt", "verified"]
     }
   },
   "firestore": {
@@ -191,6 +202,10 @@
     "/system_assumptions/{assumptionId}": {
       "schema": "SystemAssumption",
       "description": "Logical system assumptions"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Mayar webhook transaction traces"
     }
   }
 }

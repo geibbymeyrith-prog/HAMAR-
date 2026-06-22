@@ -12,9 +12,14 @@ import { cn } from '../lib/utils';
 
 interface PaywallProps {
   onUnlock?: () => void;
+  targetUnlock?: {
+    type: 'weton' | 'jodoh' | 'hariBaik';
+    key: string;
+    label: string;
+  };
 }
 
-export const Paywall: React.FC<PaywallProps> = ({ onUnlock }) => {
+export const Paywall: React.FC<PaywallProps> = ({ onUnlock, targetUnlock }) => {
   const { user, login, loginWithEmail, registerWithEmail, authError: authErr } = useAuth();
   const { t } = useTranslation();
   const [step, setStep] = useState<'options' | 'form' | 'instructions' | 'pending'>('options');
@@ -118,6 +123,7 @@ export const Paywall: React.FC<PaywallProps> = ({ onUnlock }) => {
           uniqueAmount: uniqueAmount,
           status: 'pending',
           createdAt: serverTimestamp(),
+          ...(selectedPackage.id === '15000' && targetUnlock ? { targetUnlock } : {})
         });
 
         setPaymentDetails({ uniqueAmount, package: selectedPackage.name });

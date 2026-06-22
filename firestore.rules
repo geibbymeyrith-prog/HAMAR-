@@ -104,7 +104,7 @@ service cloud.firestore {
              data.name is string && data.name.size() < 100 &&
              data.email is string && data.email.size() < 100 &&
              data.whatsapp is string && data.whatsapp.size() < 30 &&
-             data.package in ['11000', '111000', '1111000'] &&
+             data.package in ['11000', '111000', '1111000', '15000', '150000', '1150000'] &&
              data.uniqueAmount is number &&
              data.status == 'pending' &&
              data.createdAt is timestamp;
@@ -131,6 +131,10 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() && isValidPayment(request.resource.data);
       allow update, delete: if isAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      allow read, write: if isAdmin();
     }
 
     match /test/connection {

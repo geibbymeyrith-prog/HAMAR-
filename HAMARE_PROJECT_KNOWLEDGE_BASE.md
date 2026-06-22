@@ -687,4 +687,27 @@ Arsitektur aplikasi HAMARÉ bergantung pada asumsi operasional berikut demi menj
 
 ---
 
+## Payment Gateway Migration Decision
+
+Menindaklanjuti audit sistem integrasi sistem pembayaran Mayar dan Firebase Admin SDK pada Juni 2026, HAMARÉ menetapkan keputusan arsitektur migrasi database dan otentikasi sebagai berikut:
+
+### 1. Temuan Masalah & Hambatan Teknis
+* **Sandbox AI Studio**: Firestore bawaan aplikasi saat ini menggunakan sandbox AI Studio (`projectId: gen-lang-client-0748393729`, `databaseId: ai-studio-2cccb106-3906-44ad-8017-93b22833bd76`).
+* **Kegagalan Admin SDK (`PERMISSION_DENIED`)**: Sisi frontend dapat membaca/menulis karena otentikasi client SDK langsung melalui rules di perambah pengguna. Namun, backend `server.ts` ditolak oleh sistem sandbox karena berjalan di lingkungan kontainer Cloud Run terpisah milik AI Studio tanpa adanya kredensial otentikasi Google bawaan (Application Default Credentials) maupun Service Account JSON.
+
+### 2. Keputusan Arsitektur Strategis
+* **Migrasi Database Mandiri**: Sepakat untuk **tidak menggunakan database sandbox AI Studio** untuk tujuan produksi. Seluruh infrastruktur data, autentikasi, log transaksi, kuota data, dan pembayaran akan dimigrasi ke proyek Firebase mandiri milik HAMARÉ sendiri.
+* **Otentikasi Kunci Layanan**: Mengamankan otorisasi Firebase Admin SDK di server dengan memuat berkas Service Account JSON dari proyek mandiri tersebut ke dalam variabel rahasia `FIREBASE_SERVICE_ACCOUNT_JSON` di panel Secrets AI Studio. Sisi server akan membaca kredensial ini lewat `cert()` untuk menjamin akses penuh menulis ke koleksi `payments` dan `transactions` secara aman dari callback webhook Mayar.
+
+### 3. Peta Langkah Kerja (Roadmap)
+1. Inisiasi Proyek Firebase mandiri HAMARÉ (Aktifkan Auth Email/Password & Cloud Firestore).
+2. Download Service Account JSON dari tab Project Settings -> Service Accounts.
+3. Ganti konfigurasi client di `firebase-applet-config.json` dengan kredensial proyek baru.
+4. Salin isi Service Account JSON ke rahasia `FIREBASE_SERVICE_ACCOUNT_JSON` di AI Studio.
+5. Jalankan verifikasi lewat `/api/payment-test` untuk memastikan `firebaseAdmin.connected: true`.
+6. Tautkan visualisasi antarmuka `Paywall.tsx` dengan API backend `/api/create-payment` dan integrasikan webhook Mayar secara penuh.
+
+---
+
 *Dokumen ini merupakan panduan pengetahuan teknis dan teologis mutlak aplikasi HAMARÉ. Perubahan pada struktur logika perhitungan penanggalan wajib memperbarui pustaka matematis di dokumen ini terlebih dahulu.*
+

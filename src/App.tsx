@@ -463,8 +463,65 @@ function MainApp() {
   } | null>(null);
 
   const currentCount = profile ? profile.generateCount : guestGenerateCount;
-  const showPaywall = !isPremium && currentCount >= 3;
-  const canDownload = isPremium || currentCount < 3;
+  
+  // Track one-time single result unlocks
+  const isResultUnlocked = (type: 'weton' | 'jodoh' | 'hariBaik', key: string) => {
+    if (!profile) return false;
+    if (profile.unlockedResults && Array.isArray(profile.unlockedResults)) {
+      return profile.unlockedResults.some((item: any) => item.type === type && item.key === key);
+    }
+    return false;
+  };
+
+  const isGeneralPremium = isPremium; // true if admin, standard subscriptionActive, or temporaryUnlock is approved
+
+  const activeWetonKey = birthDateWeton ? `weton_${format(birthDateWeton, 'yyyy-MM-dd')}` : '';
+  const isWetonUnlocked = isGeneralPremium || !!(activeWetonKey && isResultUnlocked('weton', activeWetonKey));
+  const showWetonPaywall = !isWetonUnlocked && currentCount >= 3;
+
+  const activeJodohKey = (birthDateSelf && birthDatePartner) 
+    ? `jodoh_${format(birthDateSelf, 'yyyy-MM-dd')}_${format(birthDatePartner, 'yyyy-MM-dd')}` 
+    : '';
+  const isJodohUnlocked = isGeneralPremium || !!(activeJodohKey && isResultUnlocked('jodoh', activeJodohKey));
+  const showJodohPaywall = !isJodohUnlocked && currentCount >= 3;
+
+  const activeHariBaikKey = eventDateHariBaik ? `hariBaik_${format(eventDateHariBaik, 'yyyy-MM-dd')}` : '';
+  const isHariBaikUnlocked = isGeneralPremium || !!(activeHariBaikKey && isResultUnlocked('hariBaik', activeHariBaikKey));
+  const showHariBaikPaywall = !isHariBaikUnlocked && currentCount >= 3;
+
+  const showPaywall = (() => {
+    if (activeTab === 'weton') return showWetonPaywall;
+    if (activeTab === 'jodoh') return showJodohPaywall;
+    if (activeTab === 'hari-baik') return showHariBaikPaywall;
+    return !isGeneralPremium && currentCount >= 3;
+  })();
+
+  const isCurrentTabUnlocked = (() => {
+    if (activeTab === 'weton') return isWetonUnlocked;
+    if (activeTab === 'jodoh') return isJodohUnlocked;
+    if (activeTab === 'hari-baik') return isHariBaikUnlocked;
+    return isGeneralPremium;
+  })();
+
+  const canDownload = isCurrentTabUnlocked || currentCount < 3;
+
+  const wetonUnlockPayload = wetonKelahiranDetails ? {
+    type: 'weton' as const,
+    key: `weton_${format(birthDateWeton || new Date(), 'yyyy-MM-dd')}`,
+    label: `Analisis Weton Kelahiran: ${wetonKelahiranDetails.masehiDayName} ${wetonKelahiranDetails.pasaranName}`
+  } : undefined;
+
+  const jodohUnlockPayload = (birthDateSelf && birthDatePartner) ? {
+    type: 'jodoh' as const,
+    key: `jodoh_${format(birthDateSelf, 'yyyy-MM-dd')}_${format(birthDatePartner, 'yyyy-MM-dd')}`,
+    label: `Ramalan Jodoh: ${nameSelf || 'Anda'} & ${namePartner || 'Pasangan'}`
+  } : undefined;
+
+  const hariBaikUnlockPayload = eventDateHariBaik ? {
+    type: 'hariBaik' as const,
+    key: `hariBaik_${format(eventDateHariBaik, 'yyyy-MM-dd')}`,
+    label: `Saran Hari Baik: ${format(eventDateHariBaik, 'yyyy-MM-dd')}`
+  } : undefined;
 
   const handleCalculateWeton = (date: Date | null) => {
     if (!date) return;
@@ -1575,7 +1632,7 @@ function MainApp() {
                         className="mt-8 space-y-6 relative"
                         ref={activeTab === 'weton' ? resultRef : null}
                       >
-                        {showPaywall && <Paywall />}
+                        {showPaywall && <Paywall targetUnlock={wetonUnlockPayload} />}
                         
                         <div className="space-y-6">
                           {/* Calculation Details for PDF */}
@@ -1765,7 +1822,7 @@ function MainApp() {
                         id="jodoh-result"
                         ref={activeTab === 'jodoh' ? resultRef : null}
                       >
-                        {showPaywall && <Paywall />}
+                        {showPaywall && <Paywall targetUnlock={jodohUnlockPayload} />}
                         
                         <div className="space-y-6">
                           {/* PDF Only Section - Hidden in UI but visible to html2canvas if we need more info */}
@@ -1933,7 +1990,7 @@ function MainApp() {
                         className="mt-8 relative"
                         ref={activeTab === 'hari-baik' ? resultRef : null}
                       >
-                        {showPaywall && <Paywall />}
+                        {showPaywall && <Paywall targetUnlock={hariBaikUnlockPayload} />}
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                           <div className="md:col-span-2 space-y-4 relative">
