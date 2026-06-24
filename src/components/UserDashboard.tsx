@@ -123,6 +123,8 @@ export const UserDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     );
     const unsubscribeHistory = onSnapshot(hq, (snapshot) => {
       setHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as HistoryItem[]);
+    }, (error) => {
+      console.warn("Gracefully handled missing history index or permissions:", error);
     });
 
     // Load Member Articles
@@ -134,6 +136,9 @@ export const UserDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     );
     const unsubscribeArticles = onSnapshot(aq, (snapshot) => {
       setArticles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Article[]);
+      setLoading(false);
+    }, (error) => {
+      console.warn("Gracefully handled missing member articles index or permissions:", error);
       setLoading(false);
     });
 

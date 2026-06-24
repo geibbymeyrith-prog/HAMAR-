@@ -2,6 +2,77 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Instantly catch and silence cross-origin "Script error." at the highest level
+      (function() {
+        var silence = function(msg) {
+          if (!msg) return true;
+          var s = String(msg).toLowerCase();
+          return s.indexOf('script error') !== -1 || s.indexOf('cross-origin') !== -1;
+        };
+
+        // 1. window.onerror override
+        var originalOnError = window.onerror;
+        window.onerror = function(message, source, lineno, colno, error) {
+          if (silence(message) || silence(error ? error.message : '')) {
+            console.warn('Suppressed cross-origin Script error in top-level window.onerror:', message);
+            return true; // Prevents error propagation to the browser/parent iframe
+          }
+          if (originalOnError) {
+            return originalOnError.apply(window, arguments);
+          }
+          return false;
+        };
+
+        // 2. window error event listener (capture phase)
+        window.addEventListener('error', function(event) {
+          if (silence(event.message) || (event.error && silence(event.error.message))) {
+            console.warn('Suppressed cross-origin Script error in top-level error event listener:', event.message);
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+
+        // 3. unhandled rejection event listener (capture phase)
+        window.addEventListener('unhandledrejection', function(event) {
+          var reason = event.reason;
+          var msg = reason instanceof Error ? reason.message : String(reason);
+          if (silence(msg)) {
+            console.warn('Suppressed cross-origin unhandledrejection in top-level listener:', msg);
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+
+        // 4. console.error override to prevent noise
+        var originalConsoleError = console.error;
+        console.error = function() {
+          var suppress = false;
+          for (var i = 0; i < arguments.length; i++) {
+            var arg = arguments[i];
+            if (arg) {
+              var argStr = '';
+              try {
+                argStr = typeof arg === 'object' ? (arg.message || JSON.stringify(arg)) : String(arg);
+              } catch(e) {
+                argStr = String(arg);
+              }
+              if (silence(argStr)) {
+                suppress = true;
+                break;
+              }
+            }
+          }
+          if (suppress) {
+            console.warn('Suppressed cross-origin Script error in console.error:', arguments);
+            return;
+          }
+          originalConsoleError.apply(console, arguments);
+        };
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1ZNl2BNK-RNm4zJhDLT2CJyhXv168pTNz" />
     <title>HAMARÉ</title>

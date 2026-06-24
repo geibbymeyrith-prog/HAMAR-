@@ -362,6 +362,8 @@ function MainApp() {
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setPublicArticles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Article[]);
+    }, (error) => {
+      console.warn("Gracefully handled missing articles index or permissions on home:", error);
     });
     return () => unsubscribe();
   }, []);

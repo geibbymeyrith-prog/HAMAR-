@@ -768,12 +768,18 @@ export const AdminDashboard: React.FC<{
       const unsubscribe = onSnapshot(q, (snapshot) => {
         setPayments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Payment[]);
         setLoading(false);
+      }, (error) => {
+        console.warn("AdminDashboard error on payments snapshot:", error);
+        setLoading(false);
       });
       return () => unsubscribe();
     } else {
       const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         setArticles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Article[]);
+        setLoading(false);
+      }, (error) => {
+        console.warn("AdminDashboard error on articles snapshot:", error);
         setLoading(false);
       });
       return () => unsubscribe();
@@ -789,24 +795,33 @@ export const AdminDashboard: React.FC<{
     const paymentsQ = query(collection(db, 'payments'), orderBy('createdAt', 'desc'));
     const unsubscribePayments = onSnapshot(paymentsQ, (snapshot) => {
       setMonitoringPayments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.warn("AdminDashboard monitoring error on payments snapshot:", error);
     });
 
     // Listens to transactions
     const transactionsQ = query(collection(db, 'transactions'), orderBy('receivedAt', 'desc'));
     const unsubscribeTransactions = onSnapshot(transactionsQ, (snapshot) => {
       setMonitoringTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.warn("AdminDashboard monitoring error on transactions snapshot:", error);
     });
 
     // Listens to users
     const usersQ = query(collection(db, 'users'), orderBy('email', 'asc'));
     const unsubscribeUsers = onSnapshot(usersQ, (snapshot) => {
       setMonitoringUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.warn("AdminDashboard monitoring error on users snapshot:", error);
     });
 
     // Listens to webhook_logs
     const webhookLogsQ = query(collection(db, 'webhook_logs'), orderBy('receivedAt', 'desc'));
     const unsubscribeWebhookLogs = onSnapshot(webhookLogsQ, (snapshot) => {
       setMonitoringWebhookLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setMonitoringLoading(false);
+    }, (error) => {
+      console.warn("AdminDashboard monitoring error on webhook logs snapshot:", error);
       setMonitoringLoading(false);
     });
 
