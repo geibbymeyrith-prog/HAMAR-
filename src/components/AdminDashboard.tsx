@@ -115,7 +115,20 @@ export const AdminDashboard: React.FC<{
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'pending' | 'all'>('pending');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeView, setActiveView] = useState<'payments' | 'blog' | 'calendar' | 'kbms'>('payments');
+  const [activeView, setActiveView] = useState<'payments' | 'blog' | 'calendar' | 'kbms' | 'payment_monitoring'>('payments');
+
+  // Payment Verification Monitoring States
+  const [monitoringPayments, setMonitoringPayments] = useState<any[]>([]);
+  const [monitoringTransactions, setMonitoringTransactions] = useState<any[]>([]);
+  const [monitoringUsers, setMonitoringUsers] = useState<any[]>([]);
+  const [monitoringWebhookLogs, setMonitoringWebhookLogs] = useState<any[]>([]);
+  const [monitoringLoading, setMonitoringLoading] = useState(true);
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [monitoringSearchTerm, setMonitoringSearchTerm] = useState('');
+  const [webhookLogSearchTerm, setWebhookLogSearchTerm] = useState('');
+  const [expandedWebhookLogId, setExpandedWebhookLogId] = useState<string | null>(null);
+  const [monitoringSubTab, setMonitoringSubTab] = useState<'overview' | 'payments' | 'users' | 'transactions' | 'webhook_logs'>('overview');
+  const [showUnmappedWebhooksOnly, setShowUnmappedWebhooksOnly] = useState<boolean>(false);
   
   // Calendar state
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
@@ -767,6 +780,44 @@ export const AdminDashboard: React.FC<{
     }
   }, [isAdmin, filter, activeView]);
 
+  useEffect(() => {
+    if (!isAdmin || activeView !== 'payment_monitoring') return;
+
+    setMonitoringLoading(true);
+
+    // Listens to payments
+    const paymentsQ = query(collection(db, 'payments'), orderBy('createdAt', 'desc'));
+    const unsubscribePayments = onSnapshot(paymentsQ, (snapshot) => {
+      setMonitoringPayments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    // Listens to transactions
+    const transactionsQ = query(collection(db, 'transactions'), orderBy('receivedAt', 'desc'));
+    const unsubscribeTransactions = onSnapshot(transactionsQ, (snapshot) => {
+      setMonitoringTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    // Listens to users
+    const usersQ = query(collection(db, 'users'), orderBy('email', 'asc'));
+    const unsubscribeUsers = onSnapshot(usersQ, (snapshot) => {
+      setMonitoringUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    // Listens to webhook_logs
+    const webhookLogsQ = query(collection(db, 'webhook_logs'), orderBy('receivedAt', 'desc'));
+    const unsubscribeWebhookLogs = onSnapshot(webhookLogsQ, (snapshot) => {
+      setMonitoringWebhookLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setMonitoringLoading(false);
+    });
+
+    return () => {
+      unsubscribePayments();
+      unsubscribeTransactions();
+      unsubscribeUsers();
+      unsubscribeWebhookLogs();
+    };
+  }, [isAdmin, activeView]);
+
   const handleApprove = async (payment: Payment) => {
     try {
       const paymentRef = doc(db, 'payments', payment.id);
@@ -866,7 +917,7 @@ export const AdminDashboard: React.FC<{
   return (
     <div className={cn(
       "mx-auto p-4 md:p-8 space-y-8 transition-all duration-300",
-      activeView === 'calendar' ? "max-w-[1400px]" : "max-w-6xl"
+      activeView === 'calendar' || activeView === 'payment_monitoring' ? "max-w-[1400px]" : "max-w-6xl"
     )}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -884,6 +935,7 @@ export const AdminDashboard: React.FC<{
             <TabsTrigger value="payments" className="data-[state=active]:bg-white shadow-none text-xs">Pembayaran</TabsTrigger>
             <TabsTrigger value="blog" className="data-[state=active]:bg-white shadow-none text-xs">Konten Blog</TabsTrigger>
             <TabsTrigger value="calendar" className="data-[state=active]:bg-white shadow-none text-xs">Database Calendar</TabsTrigger>
+            <TabsTrigger value="payment_monitoring" className="data-[state=active]:bg-stone-900 data-[state=active]:text-white shadow-none text-stone-700 font-bold text-xs">PAYMENT MONITORING</TabsTrigger>
             <TabsTrigger value="kbms" className="data-[state=active]:bg-stone-900 data-[state=active]:text-white shadow-none text-stone-700 font-bold text-xs">KNOWLEDGE BASE (KBMS)</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -912,7 +964,599 @@ export const AdminDashboard: React.FC<{
 
       <Separator />
 
-      {activeView === 'payments' ? (
+      {activeView === 'payment_monitoring' ? (
+        <div className="space-y-6 pb-20 font-sans">
+          {/* Header & Sub-Tabs */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 className="text-2xl font-serif font-bold text-stone-900">PAYMENT MONITORING</h2>
+              <p className="text-xs text-stone-500">Dasbor verifikasi pembayaran realtime, penelusuran transaksi, dan technical webhook logs.</p>
+            </div>
+            
+            <div className="flex bg-stone-100 p-1 rounded-lg flex-wrap gap-1">
+              <Button size="sm" variant={monitoringSubTab === 'overview' ? 'default' : 'ghost'} onClick={() => setMonitoringSubTab('overview')}>Ringkasan & Metrik</Button>
+              <Button size="sm" variant={monitoringSubTab === 'payments' ? 'default' : 'ghost'} onClick={() => setMonitoringSubTab('payments')}>Koleksi Payments</Button>
+              <Button size="sm" variant={monitoringSubTab === 'users' ? 'default' : 'ghost'} onClick={() => setMonitoringSubTab('users')}>Status Premium User</Button>
+              <Button size="sm" variant={monitoringSubTab === 'transactions' ? 'default' : 'ghost'} onClick={() => setMonitoringSubTab('transactions')}>Transactions Business</Button>
+              <Button size="sm" variant={monitoringSubTab === 'webhook_logs' ? 'default' : 'ghost'} onClick={() => setMonitoringSubTab('webhook_logs')}>Webhook Technical Logs</Button>
+            </div>
+          </div>
+
+          {monitoringLoading ? (
+            <Card className="p-20 text-center flex flex-col justify-center items-center gap-2">
+              <div className="w-8 h-8 rounded-full border-2 border-stone-900 border-t-transparent animate-spin" />
+              <p className="text-sm font-medium text-stone-500 font-sans">Menghubungkan ke database realtime...</p>
+            </Card>
+          ) : (
+            <>
+              {/* 1. METRICS OVERVIEW PAGE */}
+              {monitoringSubTab === 'overview' && (
+                <div className="space-y-6 text-sans">
+                  {/* Summary Metric Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4">
+                    {/* Card 1: Total Revenue */}
+                    {(() => {
+                      const totalRevenue = monitoringPayments
+                        .filter(p => p.status === 'completed' || p.status === 'approved')
+                        .reduce((sum, p) => sum + (Number(p.uniqueAmount) || 0), 0);
+                      return (
+                        <Card className="p-4 bg-white border border-stone-200/80 shadow-sm relative overflow-hidden">
+                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Total Pendapatan</p>
+                          <h4 className="text-lg font-mono font-bold text-green-600">Rp {totalRevenue.toLocaleString('id-ID')}</h4>
+                          <span className="absolute bottom-2 right-2 text-stone-100 font-serif text-3xl select-none pointer-events-none font-bold">Rp</span>
+                        </Card>
+                      );
+                    })()}
+
+                    {/* Card 2: Total Transactions */}
+                    <Card className="p-4 bg-white border border-stone-200/80 shadow-sm">
+                      <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1 font-sans">Total Transaksi</p>
+                      <h4 className="text-xl font-mono font-bold text-stone-800">{monitoringTransactions.length}</h4>
+                    </Card>
+
+                    {/* Card 3: Pending Payments */}
+                    {(() => {
+                      const countPending = monitoringPayments.filter(p => p.status === 'pending').length;
+                      return (
+                        <Card className="p-4 bg-white border border-stone-200/80 shadow-sm relative overflow-hidden">
+                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Pending Payments</p>
+                          <h4 className={cn("text-xl font-mono font-bold", countPending > 0 ? "text-amber-600" : "text-stone-500")}>
+                            {countPending}
+                          </h4>
+                        </Card>
+                      );
+                    })()}
+
+                    {/* Card 4: Active Monthly Subscribers */}
+                    {(() => {
+                      const countMonthly = monitoringUsers.filter(u => u.subscriptionStatus === 'monthly').length;
+                      return (
+                        <Card className="p-4 bg-white border border-stone-200/80 shadow-sm">
+                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Bulanan Aktif</p>
+                          <h4 className="text-xl font-mono font-bold text-indigo-600">{countMonthly}</h4>
+                        </Card>
+                      );
+                    })()}
+
+                    {/* Card 5: Active Yearly Subscribers */}
+                    {(() => {
+                      const countYearly = monitoringUsers.filter(u => u.subscriptionStatus === 'yearly').length;
+                      return (
+                        <Card className="p-4 bg-white border border-stone-200/80 shadow-sm">
+                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Tahunan Aktif</p>
+                          <h4 className="text-xl font-mono font-bold text-teal-600">{countYearly}</h4>
+                        </Card>
+                      );
+                    })()}
+
+                    {/* Card 6: Single Unlock Purchases */}
+                    {(() => {
+                      const countSingle = monitoringPayments.filter(p => p.package === '15000' && p.status === 'completed').length;
+                      return (
+                        <Card className="p-4 bg-white border border-stone-200/80 shadow-sm">
+                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Unlock Rp15K</p>
+                          <h4 className="text-xl font-mono font-bold text-purple-600">{countSingle}</h4>
+                        </Card>
+                      );
+                    })()}
+
+                    {/* Card 7: Unmapped Payments */}
+                    {(() => {
+                      const countUnmapped = monitoringWebhookLogs.filter(log => log.processingResult === 'UNMAPPED_PAYMENT').length;
+                      return (
+                        <Card 
+                          className={cn(
+                            "p-4 bg-white border shadow-sm relative overflow-hidden cursor-pointer hover:border-red-300 transition-all",
+                            countUnmapped > 0 ? "border-red-200 bg-red-50/10" : "border-stone-200"
+                          )}
+                          onClick={() => {
+                            setMonitoringSubTab('webhook_logs');
+                            setShowUnmappedWebhooksOnly(true);
+                          }}
+                        >
+                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Unmapped Payments</p>
+                          <h4 className={cn("text-xl font-mono font-bold", countUnmapped > 0 ? "text-red-600 animate-pulse" : "text-stone-500")}>
+                            {countUnmapped}
+                          </h4>
+                          {countUnmapped > 0 && (
+                            <span className="absolute top-1 right-2 flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                            </span>
+                          )}
+                        </Card>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Operational Status Panel */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 font-sans">
+                    {/* Quick Diagnostic Checker */}
+                    <Card className="p-6">
+                      <CardTitle className="text-sm font-bold uppercase tracking-wider text-stone-400 mb-4 flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-500" /> STATUS SINKRONISASI REALTIME
+                      </CardTitle>
+                      <div className="space-y-3 text-xs">
+                        <div className="flex justify-between p-2.5 bg-stone-50 rounded-lg border border-stone-100">
+                          <span className="font-semibold text-stone-700">Lisensi Terdaftar di Users:</span>
+                          <span className="font-mono">{monitoringUsers.length} profile</span>
+                        </div>
+                        <div className="flex justify-between p-2.5 bg-stone-50 rounded-lg border border-stone-100">
+                          <span className="font-semibold text-stone-700">Audit Trace di Webhook Logs (Technical):</span>
+                          <span className="font-mono">{monitoringWebhookLogs.length} events</span>
+                        </div>
+                        <div className="flex justify-between p-2.5 bg-stone-50 rounded-lg border border-stone-100">
+                          <span className="font-semibold text-stone-700">Manual & Auto payments:</span>
+                          <span className="font-mono">{monitoringPayments.length} traces</span>
+                        </div>
+                        <div className="flex justify-between p-2.5 bg-stone-50 rounded-lg border border-stone-100">
+                          <span className="font-semibold text-stone-700">Rasio Unlocked Results:</span>
+                          <span className="font-mono">
+                            {monitoringUsers.filter(u => u.unlockedResults && u.unlockedResults.length > 0).length} users ({
+                              monitoringUsers.reduce((sum, u) => sum + (u.unlockedResults ? u.unlockedResults.length : 0), 0)
+                            } total unlocks)
+                          </span>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Developer Sandbox Simulator */}
+                    <Card className="p-6 flex flex-col justify-between">
+                      <div>
+                        <CardTitle className="text-sm font-bold uppercase tracking-wider text-stone-400 mb-2">
+                          MOCK WEBHOOK TRANSACTION SIMULATOR
+                        </CardTitle>
+                        <p className="text-xs text-stone-500 mb-4 leading-relaxed">
+                          Kunjungi atau trigger endpoint dari terminal Anda untuk mensimulasikan callback sukses Mayar. Anda juga dapat menggunakan manual approval pada tab "Koleksi Payments" jika pembeli melakukan transfer via ATM manual.
+                        </p>
+                      </div>
+                      <div className="text-stone-600 text-xs bg-stone-50 p-4 rounded-xl border border-stone-200 font-mono space-y-1.5 overflow-auto">
+                        <p className="font-bold text-stone-700">Payload template simulasi:</p>
+                        <p className="text-[10px] text-stone-400">// POST ke /api/webhook/mayar</p>
+                        <p className="text-[10px] text-stone-500 leading-relaxed max-w-[500px]">
+                          &#123;<br />
+                          &nbsp;&nbsp;&quot;payment_id&quot;: &quot;mock_pm_123&quot;,<br />
+                          &nbsp;&nbsp;&quot;amount&quot;: 15000<br />
+                          &#125;
+                        </p>
+                      </div>
+                    </Card>
+                  </div>
+                </div>
+              )}
+
+              {/* 2. PAYMENTS COLLECTION PANEL */}
+              {monitoringSubTab === 'payments' && (
+                <div className="space-y-4 font-sans">
+                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    {/* Search & Filters */}
+                    <div className="relative flex-1 max-w-md w-full">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                      <Input 
+                        placeholder="Cari email, userId, ID..." 
+                        className="pl-10 bg-white"
+                        value={monitoringSearchTerm}
+                        onChange={(e) => setMonitoringSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center gap-4 flex-wrap">
+                      {/* Counter totals */}
+                      <span className="text-xs font-semibold text-stone-500">
+                        Total Pending: <b className="text-amber-600 font-bold font-mono">{monitoringPayments.filter(p => p.status === 'pending').length}</b> | 
+                        Completed: <b className="text-green-600 font-bold font-mono">{monitoringPayments.filter(p => p.status === 'completed' || p.status === 'approved').length}</b>
+                      </span>
+                      
+                      <div className="flex bg-stone-100 p-1 rounded-lg">
+                        <Button size="sm" className="h-8 text-xs px-3" variant={paymentFilter === 'all' ? 'default' : 'ghost'} onClick={() => setPaymentFilter('all')}>Semua</Button>
+                        <Button size="sm" className="h-8 text-xs px-3" variant={paymentFilter === 'pending' ? 'default' : 'ghost'} onClick={() => setPaymentFilter('pending')}>Pending</Button>
+                        <Button size="sm" className="h-8 text-xs px-3" variant={paymentFilter === 'completed' ? 'default' : 'ghost'} onClick={() => setPaymentFilter('completed')}>Completed</Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const filtered = monitoringPayments.filter(p => {
+                      const matchesSearch = 
+                        (p.email || '').toLowerCase().includes(monitoringSearchTerm.toLowerCase()) ||
+                        (p.name || '').toLowerCase().includes(monitoringSearchTerm.toLowerCase()) ||
+                        (p.id || '').toLowerCase().includes(monitoringSearchTerm.toLowerCase()) ||
+                        (p.userId || '').toLowerCase().includes(monitoringSearchTerm.toLowerCase());
+                      
+                      if (paymentFilter === 'all') return matchesSearch;
+                      if (paymentFilter === 'pending') return matchesSearch && p.status === 'pending';
+                      if (paymentFilter === 'completed') return matchesSearch && (p.status === 'completed' || p.status === 'approved');
+                      return matchesSearch;
+                    });
+
+                    return (
+                      <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-stone-50 border-b border-stone-200 text-xs text-stone-500 font-semibold uppercase tracking-wider">
+                              <th className="p-4">PaymentId / Doc ID</th>
+                              <th className="p-4">User ID & Email</th>
+                              <th className="p-4">Package</th>
+                              <th className="p-4 text-right">Amount</th>
+                              <th className="p-4">Status</th>
+                              <th className="p-4">Created At / Paid At</th>
+                              <th className="p-4 text-center">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-stone-100 text-sm">
+                            {filtered.length === 0 ? (
+                              <tr>
+                                <td colSpan={7} className="p-10 text-center text-stone-400">
+                                  Tidak ada data pembayaran yang sesuai kriteria.
+                                </td>
+                              </tr>
+                            ) : (
+                              filtered.map(p => (
+                                <tr key={p.id} className="hover:bg-stone-50">
+                                  <td className="p-4 font-mono text-xs font-bold text-stone-700 truncate max-w-[200px]" title={p.id}>
+                                    <div className="font-semibold text-stone-900">{p.mayarPaymentId || 'N/A'}</div>
+                                    <div className="text-[10px] text-stone-400">DocID: {p.id}</div>
+                                  </td>
+                                  <td className="p-4 text-xs">
+                                    <div className="font-bold text-stone-800">{p.name || 'N/A'}</div>
+                                    <div className="text-[11px] text-stone-500">{p.email || 'N/A'}</div>
+                                    <div className="text-[10px] text-stone-400 font-mono">UID: {p.userId}</div>
+                                  </td>
+                                  <td className="p-4 text-xs font-medium text-stone-600">
+                                    <Badge variant="outline" className="text-[11px] font-sans">
+                                      {p.package || 'N/A'}
+                                    </Badge>
+                                    <div className="text-[10px] text-stone-400 mt-0.5">{p.packageName || 'Premium Package'}</div>
+                                  </td>
+                                  <td className="p-4 text-right font-mono font-bold text-stone-900 text-xs">
+                                    Rp {(p.uniqueAmount || 0).toLocaleString('id-ID')}
+                                  </td>
+                                  <td className="p-4">
+                                    <Badge className={cn(
+                                      "text-[10px] font-bold font-sans",
+                                      p.status === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-200' : 
+                                      p.status === 'completed' || p.status === 'approved' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800'
+                                    )} variant="outline">
+                                      {p.status.toUpperCase()}
+                                    </Badge>
+                                  </td>
+                                  <td className="p-4 text-[11px] text-stone-500 whitespace-nowrap">
+                                    <div><b>Dibuat:</b> {p.createdAt ? p.createdAt.substring(0, 16).replace('T', ' ') : '-'}</div>
+                                    {p.paidAt && <div><b>Dibayar:</b> {p.paidAt.substring(0, 16).replace('T', ' ')}</div>}
+                                  </td>
+                                  <td className="p-4 text-center">
+                                    {p.status === 'pending' ? (
+                                      <div className="flex gap-1 justify-center">
+                                        <button 
+                                          className="bg-green-600 hover:bg-green-700 text-white font-bold h-7 text-[10px] px-2.5 rounded-lg transition-colors" 
+                                          onClick={() => handleApprove(p)}
+                                        >
+                                          Approve
+                                        </button>
+                                        <button 
+                                          className="text-red-600 hover:bg-red-50 font-bold border border-red-200 h-7 text-[10px] px-2 rounded-lg transition-colors bg-white hover:border-red-300" 
+                                          onClick={() => handleReject(p.id)}
+                                        >
+                                          Reject
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <span className="text-stone-300 pointer-events-none select-none text-[11px] font-sans">Sudah Diproses</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* 3. PREMIUM USER STATUS PANEL */}
+              {monitoringSubTab === 'users' && (
+                <div className="space-y-4 font-sans">
+                  <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-stone-50 border-b border-stone-200 text-xs text-stone-500 font-semibold uppercase tracking-wider">
+                          <th className="p-4">User</th>
+                          <th className="p-4">Email Address</th>
+                          <th className="p-4">Status Langganan</th>
+                          <th className="p-4">Expired At</th>
+                          <th className="p-4 text-right">Unlocked Single Results</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100 text-sm">
+                        {monitoringUsers.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="p-10 text-center text-stone-400">
+                              Tidak ada profile user terdaftar.
+                            </td>
+                          </tr>
+                        ) : (
+                          monitoringUsers.map(u => {
+                            const subStatus = u.subscriptionStatus || 'free';
+                            return (
+                              <tr key={u.id} className="hover:bg-stone-50">
+                                <td className="p-4">
+                                  <div className="font-bold text-stone-800">{u.displayName || u.fullName || 'Nama Kosong'}</div>
+                                  <div className="text-[10px] font-mono text-stone-400 font-bold">UID: {u.id || u.uid}</div>
+                                </td>
+                                <td className="p-4">
+                                  <div className="text-stone-700 text-xs font-bold">{u.email || '-'}</div>
+                                </td>
+                                <td className="p-4">
+                                  <Badge className={cn(
+                                    "font-bold text-[10px] uppercase",
+                                    subStatus === 'free' ? 'bg-stone-100 text-stone-600 border-stone-200' :
+                                    subStatus === 'monthly' ? 'bg-indigo-100 text-indigo-800 border-indigo-200' :
+                                    'bg-teal-100 text-teal-800 border-teal-200'
+                                  )} variant="outline">
+                                    {subStatus.toUpperCase()}
+                                  </Badge>
+                                </td>
+                                <td className="p-4 text-xs text-stone-600 font-mono">
+                                  {u.premiumExpiredAt ? (
+                                    <div className={cn(
+                                      "font-bold",
+                                      new Date(u.premiumExpiredAt) < new Date() ? "text-red-500 font-bold" : "text-green-600 font-semibold"
+                                    )}>
+                                      {u.premiumExpiredAt.replace('T', ' ').substring(0, 16)} 
+                                      {new Date(u.premiumExpiredAt) < new Date() ? ' (Expired)' : ''}
+                                    </div>
+                                  ) : (
+                                    <span className="text-stone-400">-</span>
+                                  )}
+                                </td>
+                                <td className="p-4 text-right font-mono text-xs">
+                                  {u.unlockedResults && u.unlockedResults.length > 0 ? (
+                                    <div className="flex flex-col items-end gap-1">
+                                      <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-[10px]" variant="outline">
+                                        {u.unlockedResults.length} Unlocked
+                                      </Badge>
+                                      <div className="text-[9px] text-stone-400 max-w-[200px] truncate">
+                                        {u.unlockedResults.map((it: any) => it.key).join(', ')}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span className="text-stone-400">0</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. BUSINESS TRANSACTIONS PANEL */}
+              {monitoringSubTab === 'transactions' && (
+                <div className="space-y-4 font-sans">
+                  <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-stone-50 border-b border-stone-200 text-xs text-stone-500 font-semibold uppercase tracking-wider">
+                          <th className="p-4">Transaction Doc ID</th>
+                          <th className="p-4">Received At</th>
+                          <th className="p-4">Verified Status</th>
+                          <th className="p-4">Mayar Payment Reference</th>
+                          <th className="p-4">Payload Summary</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100 text-xs font-mono">
+                        {monitoringTransactions.length === 0 ? (
+                          <tr className="font-sans">
+                            <td colSpan={5} className="p-10 text-center text-stone-400">
+                              Belum ada rincian transaksi bisnis webhook Mayar.
+                            </td>
+                          </tr>
+                        ) : (
+                          monitoringTransactions.map(tx => {
+                            const pl = tx.payload || {};
+                            const refId = pl.payment_id || pl.id || (pl.data && (pl.data.payment_id || pl.data.id || pl.data.paymentId)) || 'N/A';
+                            const detailPack = pl.description || (pl.data && pl.data.description) || `Pack Amount: Rp ${(pl.amount || pl.uniqueAmount || (pl.data && pl.data.amount) || 0).toLocaleString()}`;
+                            const emailTx = pl.email || (pl.data && pl.data.email) || 'N/A';
+                            return (
+                              <tr key={tx.id} className="hover:bg-stone-50 text-stone-700">
+                                <td className="p-4 text-xs font-bold text-stone-900 selection:bg-stone-200">{tx.id}</td>
+                                <td className="p-4 whitespace-nowrap">{tx.receivedAt ? tx.receivedAt.replace('T', ' ').substring(0, 19) : '-'}</td>
+                                <td className="p-4 font-sans">
+                                  <span className={cn(
+                                    "px-2 py-0.5 rounded text-[10px] font-bold tracking-wide",
+                                    tx.verified ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                  )}>
+                                    {tx.verified ? 'VERIFIED' : 'UNVERIFIED'}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-stone-900 font-bold">{refId}</td>
+                                <td className="p-4 font-sans text-xs">
+                                  <div><b>Penerima:</b> {emailTx}</div>
+                                  <div className="text-[11px] text-stone-400 mt-0.5">{detailPack}</div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 5. TECHNICAL WEBHOOK LOGS PANEL */}
+              {monitoringSubTab === 'webhook_logs' && (
+                <div className="space-y-4 font-sans">
+                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="flex flex-wrap items-center gap-3 flex-1 w-full">
+                      <div className="relative max-w-xs w-full">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                        <Input 
+                          placeholder="Filter pencarian based on paymentId..." 
+                          className="pl-10 bg-white"
+                          value={webhookLogSearchTerm}
+                          onChange={(e) => setWebhookLogSearchTerm(e.target.value)}
+                        />
+                      </div>
+                      
+                      <Button 
+                        size="sm"
+                        variant={showUnmappedWebhooksOnly ? 'default' : 'outline'}
+                        className={cn(
+                          "text-xs font-bold font-sans flex items-center gap-1.5 transition-all",
+                          showUnmappedWebhooksOnly ? "bg-red-600 hover:bg-red-700 text-white border-red-600 shadow-sm" : "text-stone-700 bg-white"
+                        )}
+                        onClick={() => setShowUnmappedWebhooksOnly(!showUnmappedWebhooksOnly)}
+                      >
+                        {showUnmappedWebhooksOnly ? 'Showing Unmapped Only' : 'Show Unmapped Webhooks'}
+                        <Badge className={cn(
+                          "px-1.5 py-0 text-[9px] font-mono",
+                          showUnmappedWebhooksOnly ? "bg-white text-red-600" : "bg-stone-100 text-stone-600"
+                        )}>
+                          {monitoringWebhookLogs.filter(log => log.processingResult === 'UNMAPPED_PAYMENT').length}
+                        </Badge>
+                      </Button>
+
+                      {showUnmappedWebhooksOnly && (
+                        <Button 
+                          size="xs" 
+                          variant="ghost" 
+                          className="text-stone-500 text-[10px] underline hover:text-stone-800"
+                          onClick={() => setShowUnmappedWebhooksOnly(false)}
+                        >
+                          Reset Filter
+                        </Button>
+                      )}
+                    </div>
+                    <span className="text-xs font-medium text-stone-400 leading-relaxed max-w-sm">
+                      Klik salah satu baris log untuk memeriksa payload header, metadata dan raw JSON yang dikirimkan oleh Mayar.
+                    </span>
+                  </div>
+
+                  {(() => {
+                    const filteredLogs = monitoringWebhookLogs.filter(log => {
+                      if (showUnmappedWebhooksOnly && log.processingResult !== 'UNMAPPED_PAYMENT') {
+                        return false;
+                      }
+                      if (!webhookLogSearchTerm) return true;
+                      const term = webhookLogSearchTerm.toLowerCase();
+                      return (
+                        (log.paymentId || '').toLowerCase().includes(term) ||
+                        (log.id || '').toLowerCase().includes(term) ||
+                        (log.processingResult || '').toLowerCase().includes(term)
+                      );
+                    });
+
+                    return (
+                      <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-stone-50 border-b border-stone-200 text-xs text-stone-500 font-semibold uppercase tracking-wider">
+                              <th className="p-4 w-10"></th>
+                              <th className="p-4">Log Doc ID</th>
+                              <th className="p-4">Received At</th>
+                              <th className="p-4">Verification</th>
+                              <th className="p-4">Payment Ref</th>
+                              <th className="p-4">Processing Result</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-stone-100 text-xs font-mono">
+                            {filteredLogs.length === 0 ? (
+                              <tr className="font-sans">
+                                <td colSpan={6} className="p-10 text-center text-stone-400">
+                                  Tidak ada rekaman technical webhook logs yang sesuai pencarian.
+                                </td>
+                              </tr>
+                            ) : (
+                              filteredLogs.map(log => {
+                                const isExpanded = expandedWebhookLogId === log.id;
+                                return (
+                                  <React.Fragment key={log.id}>
+                                    <tr 
+                                      className="hover:bg-stone-50/80 cursor-pointer transition-colors" 
+                                      onClick={() => setExpandedWebhookLogId(isExpanded ? null : log.id)}
+                                    >
+                                      <td className="p-4 text-center font-sans font-bold text-stone-400 text-sm">
+                                        {isExpanded ? '▼' : '▶'}
+                                      </td>
+                                      <td className="p-4 text-stone-500 font-semibold">{log.id}</td>
+                                      <td className="p-4 whitespace-nowrap">{log.receivedAt ? log.receivedAt.replace('T', ' ').substring(0, 19) : '-'}</td>
+                                      <td className="p-4 font-sans">
+                                        <Badge className={cn(
+                                          "text-[9px] font-bold font-sans",
+                                          log.verified ? "bg-green-100 text-green-800 border-green-200" : "bg-red-100 text-red-800 border-red-200"
+                                        )} variant="outline">
+                                          {log.verified ? 'Verified' : 'False'}
+                                        </Badge>
+                                      </td>
+                                      <td className="p-4 font-bold text-stone-900">{log.paymentId || 'N/A'}</td>
+                                      <td className="p-4 text-stone-800 font-sans font-medium line-clamp-1 max-w-[350px]">
+                                        {log.processingResult}
+                                      </td>
+                                    </tr>
+                                    {isExpanded && (
+                                      <tr>
+                                        <td colSpan={6} className="p-6 bg-stone-50/50 border-t border-b border-stone-100 text-xs font-mono">
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Headers Column */}
+                                            <div className="space-y-1 bg-white p-4 rounded-xl border border-stone-200/60 shadow-sm">
+                                              <p className="font-bold text-stone-500 text-[10px] uppercase tracking-wider mb-2 border-b pb-1 font-sans">HTTP Request Headers</p>
+                                              <pre className="text-[10px] text-stone-600 max-h-[250px] overflow-auto whitespace-pre-wrap leading-relaxed">
+                                                {JSON.stringify(log.headers, null, 2)}
+                                              </pre>
+                                            </div>
+
+                                            {/* Payload Column */}
+                                            <div className="space-y-1 bg-white p-4 rounded-xl border border-stone-200/60 shadow-sm">
+                                              <p className="font-bold text-stone-500 text-[10px] uppercase tracking-wider mb-2 border-b pb-1 font-sans">Request Payload Body</p>
+                                              <pre className="text-[10px] text-emerald-700 max-h-[250px] overflow-auto whitespace-pre-wrap leading-relaxed">
+                                                {JSON.stringify(log.payload, null, 2)}
+                                              </pre>
+                                            </div>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </React.Fragment>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      ) : activeView === 'payments' ? (
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row gap-4 items-center">
             <div className="relative flex-1">

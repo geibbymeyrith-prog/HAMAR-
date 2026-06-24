@@ -160,6 +160,20 @@
         "verified": { "type": "boolean" }
       },
       "required": ["payload", "receivedAt", "verified"]
+    },
+    "WebhookLog": {
+      "title": "WebhookLog",
+      "description": "Mayar webhook execution logging and tracing",
+      "type": "object",
+      "properties": {
+        "receivedAt": { "type": "string", "format": "date-time" },
+        "verified": { "type": "boolean" },
+        "processingResult": { "type": "string" },
+        "paymentId": { "type": "string" },
+        "headers": { "type": "object" },
+        "payload": { "type": "object" }
+      },
+      "required": ["receivedAt", "verified", "processingResult", "headers", "payload"]
     }
   },
   "firestore": {
@@ -206,6 +220,10 @@
     "/transactions/{transactionId}": {
       "schema": "Transaction",
       "description": "Mayar webhook transaction traces"
+    },
+    "/webhook_logs/{logId}": {
+      "schema": "WebhookLog",
+      "description": "Mayar webhook processing logs"
     }
   }
 }

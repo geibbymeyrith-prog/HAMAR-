@@ -1167,6 +1167,10 @@ i18n
     resources,
     lng: 'id',
     fallbackLng: 'id',
+    detection: {
+      order: ['querystring', 'navigator', 'htmlTag'],
+      caches: [] // Disable localStorage, sessionStorage, and cookie cache to prevent sandbox iframe errors
+    },
     interpolation: {
       escapeValue: false
     }

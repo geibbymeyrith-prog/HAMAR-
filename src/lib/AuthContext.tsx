@@ -89,6 +89,13 @@ interface UserProfile {
   premiumExpiredAt?: any;
   generateCount: number;
   temporaryUnlock?: boolean;
+  unlockedResults?: {
+    type: 'weton' | 'jodoh' | 'hariBaik';
+    key: string;
+    label: string;
+    unlockedAt: string;
+    paymentId: string;
+  }[];
   createdAt: any;
 }
 

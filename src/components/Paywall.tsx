@@ -113,24 +113,39 @@ export const Paywall: React.FC<PaywallProps> = ({ onUnlock, targetUnlock }) => {
       if (!uid) throw new Error("User ID not found after registration");
 
       try {
-        await addDoc(collection(db, 'payments'), {
-          userId: uid,
-          name: formData.name,
-          email: formData.email,
-          whatsapp: formData.whatsapp,
-          package: selectedPackage.id,
-          packageName: selectedPackage.name,
-          uniqueAmount: uniqueAmount,
-          status: 'pending',
-          createdAt: serverTimestamp(),
-          ...(selectedPackage.id === '15000' && targetUnlock ? { targetUnlock } : {})
+        const response = await fetch('/api/create-payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            userId: uid,
+            name: formData.name,
+            email: formData.email,
+            whatsapp: formData.whatsapp,
+            packageId: selectedPackage.id,
+            amount: uniqueAmount,
+            ...(selectedPackage.id === '15000' && targetUnlock ? { targetUnlock } : {})
+          })
         });
 
-        setPaymentDetails({ uniqueAmount, package: selectedPackage.name });
-        setStep('instructions');
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(errText || 'Terjadi kesalahan saat membuat pesanan pembayaran.');
+        }
+
+        const resData = await response.json();
+        if (resData.success && resData.paymentLink) {
+          setPaymentDetails({ uniqueAmount, package: selectedPackage.name });
+          
+          // Redirect the user directly to Mayar payment link
+          window.location.href = resData.paymentLink;
+        } else {
+          throw new Error('Gagal mendapatkan tautan pembayaran Mayar.');
+        }
       } catch (err) {
-        console.error("Firestore payment error:", err);
-        alert("Gagal membuat data pesanan: " + (err instanceof Error ? err.message : String(err)));
+        console.error("Payment API error:", err);
+        alert("Gagal memproses pembayaran: " + (err instanceof Error ? err.message : String(err)));
       }
     } catch (error) {
       console.error("Error in handleSubmitForm:", error);

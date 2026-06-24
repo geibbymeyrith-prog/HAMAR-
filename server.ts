@@ -243,7 +243,7 @@ async function startServer() {
       }
 
       // Save payment trace to Firestore using Firebase Admin SDK (Bypassing public security rules safely)
-      const paymentDoc = {
+      const paymentDoc: any = {
         userId,
         name,
         email,
@@ -255,6 +255,10 @@ async function startServer() {
         mayarPaymentId: paymentId,
         createdAt: new Date().toISOString(),
       };
+
+      if (req.body.targetUnlock) {
+        paymentDoc.targetUnlock = req.body.targetUnlock;
+      }
 
       await db.collection('payments').add(paymentDoc);
 
@@ -272,7 +276,24 @@ async function startServer() {
 
   // HAMARÉ & Mayar Integration: Webhook
   app.post('/api/webhook/mayar', async (req, res) => {
+    let initialLogId = '';
+    const receivedAt = new Date().toISOString();
+    const payload = req.body || {};
+    const headers = req.headers ? JSON.parse(JSON.stringify(req.headers)) : {};
+
     try {
+      // 1. Log BEFORE processing
+      const initialLogDoc = {
+        receivedAt,
+        verified: false,
+        processingResult: 'Webhook received. Verification and processing started.',
+        paymentId: payload.payment_id || payload.id || (payload.data && (payload.data.payment_id || payload.data.id || payload.data.paymentId)) || 'N/A',
+        headers,
+        payload
+      };
+      const initialLogRef = await db.collection('webhook_logs').add(initialLogDoc);
+      initialLogId = initialLogRef.id;
+
       const signatureRaw = req.headers['x-mayar-signature'] || req.headers['mayar-signature'];
       const signature = Array.isArray(signatureRaw) ? signatureRaw[0] : signatureRaw as string || '';
       const webhookToken = process.env.MAYAR_WEBHOOK_TOKEN;
@@ -283,6 +304,7 @@ async function startServer() {
       console.log('Raw Payload Available:', !!(req as any).rawBody);
 
       // Verify signature if webhookToken is present and not a default value
+      let signatureVerified = false;
       if (webhookToken && webhookToken !== 'MY_MAYAR_WEBHOOK_TOKEN' && webhookToken !== '') {
         const computed = crypto.createHmac('sha256', webhookToken).update(rawBody).digest('hex');
         
@@ -292,6 +314,12 @@ async function startServer() {
 
         if (computedBuffer.length !== signatureBuffer.length) {
           console.warn(`Webhook Signature Mismatch! Length discrepancy (Computed: ${computedBuffer.length}, Signature Header: ${signatureBuffer.length}).`);
+          if (initialLogId) {
+            await db.collection('webhook_logs').doc(initialLogId).update({
+              processingResult: 'Failed signature verification (length mismatch).',
+              verified: false
+            });
+          }
           return res.status(400).json({ error: 'Invalid webhook signature' });
         }
 
@@ -299,25 +327,32 @@ async function startServer() {
 
         if (!isValid) {
           console.warn(`Webhook Signature Mismatch! Header: ${signature}, Computed: ${computed}`);
+          if (initialLogId) {
+            await db.collection('webhook_logs').doc(initialLogId).update({
+              processingResult: 'Failed signature verification (HMAC mismatch).',
+              verified: false
+            });
+          }
           return res.status(400).json({ error: 'Invalid webhook signature' });
         }
         console.log('Webhook Signature Verified Successfully via timing-safe HMAC check!');
+        signatureVerified = true;
       } else {
         console.log('Webhook signature verification skipped (Webhook token not configured or set to placeholder).');
+        signatureVerified = true;
       }
 
       // Store webhook payload in transactions collection using Firebase Admin SDK
       const txDoc = {
         payload: req.body,
         receivedAt: new Date().toISOString(),
-        verified: true
+        verified: signatureVerified
       };
       
       const txRef = await db.collection('transactions').add(txDoc);
       console.log('Webhook payload log written to Firestore successfully.');
 
       // Extract payment keys
-      const payload = req.body;
       const mayarPaymentId = payload.payment_id || payload.id || (payload.data && (payload.data.payment_id || payload.data.id || payload.data.paymentId));
       let paymentDoc: any = null;
 
@@ -332,112 +367,142 @@ async function startServer() {
         }
       }
 
+      let procResult = '';
+      let matchedPaymentIdDoc = mayarPaymentId || 'N/A';
+
       if (!paymentDoc) {
-        // Fallback search: search by amount if present (crucial for manual or developer simulated payments)
-        const amount = payload.amount || (payload.data && payload.data.amount);
-        if (amount) {
-          console.log(`Webhook seeking pending payment with uniqueAmount matching: ${amount}`);
-          const snap = await db.collection('payments')
-            .where('status', '==', 'pending')
-            .where('uniqueAmount', '==', Number(amount))
-            .limit(1)
-            .get();
-          if (!snap.empty) {
-            paymentDoc = snap.docs[0];
-          }
+        console.warn('Webhook payload could not be paired with any existing payment trace in database via mayarPaymentId.');
+        procResult = 'UNMAPPED_PAYMENT';
+        if (initialLogId) {
+          await db.collection('webhook_logs').doc(initialLogId).update({
+            verified: signatureVerified,
+            processingResult: procResult,
+            paymentId: matchedPaymentIdDoc
+          });
         }
+        return res.status(200).json({ success: true, message: 'Webhook received but payment was unmapped.' });
       }
 
-      if (paymentDoc) {
-        const paymentData = paymentDoc.data();
-        const paymentId = paymentDoc.id;
-        const userId = paymentData.userId;
-        const packageId = paymentData.package; // String package ID, e.g. "15000"
+      const paymentData = paymentDoc.data();
+      const paymentId = paymentDoc.id;
+      matchedPaymentIdDoc = paymentId;
+      const userId = paymentData.userId;
+      const packageId = paymentData.package; // String package ID, e.g. "15000"
 
-        if (paymentData.status === 'completed') {
-          console.log(`Payment document ${paymentId} is already marked as completed. Skipping duplication.`);
-          return res.status(200).json({ success: true, message: 'Webhook processed (already completed)' });
+      if (paymentData.status === 'completed') {
+        console.log(`Payment document ${paymentId} is already marked as completed. Skipping duplication.`);
+        procResult = 'Payment already marked as completed. No state updates performed.';
+        if (initialLogId) {
+          await db.collection('webhook_logs').doc(initialLogId).update({
+            verified: signatureVerified,
+            processingResult: procResult,
+            paymentId: paymentId
+          });
         }
+        return res.status(200).json({ success: true, message: 'Webhook processed (already completed)' });
+      }
 
-        const now = new Date();
-        const nowString = now.toISOString();
+      const now = new Date();
+      const nowString = now.toISOString();
 
-        // 1. Update the payment document status to "completed" and append detailed audit logs
-        await db.collection('payments').doc(paymentId).update({
-          status: 'completed',
-          paidAt: nowString,
-          updatedAt: nowString,
-          webhookAuditTrail: {
-            receivedAt: nowString,
-            transactionDocId: txRef.id,
-            action: 'payment_completed',
-            packageId: packageId,
-            verified: true,
-            notes: `Successfully verified and activated via webhook payload.`
-          }
-        });
-        console.log(`Payment doc ${paymentId} marked as completed with detailed audit trails.`);
+      // 1. Update the payment document status to "completed" and append detailed audit logs
+      await db.collection('payments').doc(paymentId).update({
+        status: 'completed',
+        paidAt: nowString,
+        updatedAt: nowString,
+        webhookAuditTrail: {
+          receivedAt: nowString,
+          transactionDocId: txRef.id,
+          action: 'payment_completed',
+          packageId: packageId,
+          verified: signatureVerified,
+          notes: `Successfully verified and activated via webhook payload.`
+        }
+      });
+      console.log(`Payment doc ${paymentId} marked as completed with detailed audit trails.`);
 
-        // 2. Perform target subscriber or one-time unlock state updates on user profile
-        const userRef = db.collection('users').doc(userId);
-        const userDoc = await userRef.get();
+      // 2. Perform target subscriber or one-time unlock state updates on user profile
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await userRef.get();
 
-        if (userDoc.exists) {
-          if (packageId === '150000') {
-            // Package Rp150.000: Monthly Unlimited
-            const expiryDate = new Date();
-            expiryDate.setDate(expiryDate.getDate() + 30);
+      if (userDoc.exists) {
+        if (packageId === '150000') {
+          // Package Rp150.000: Monthly Unlimited
+          const expiryDate = new Date();
+          expiryDate.setDate(expiryDate.getDate() + 30);
+
+          await userRef.update({
+            subscriptionStatus: 'monthly',
+            premiumExpiredAt: expiryDate.toISOString(),
+            updatedAt: nowString
+          });
+          console.log(`User profile ${userId} upgraded to Monthly Subscription. Active until: ${expiryDate.toISOString()}`);
+          procResult = `Successfully verified. Upgraded users/${userId} to Monthly Unlimited.`;
+        } else if (packageId === '1150000') {
+          // Package Rp1.150.000: Yearly Unlimited
+          const expiryDate = new Date();
+          expiryDate.setDate(expiryDate.getDate() + 365);
+
+          await userRef.update({
+            subscriptionStatus: 'yearly',
+            premiumExpiredAt: expiryDate.toISOString(),
+            updatedAt: nowString
+          });
+          console.log(`User profile ${userId} upgraded to Yearly Subscription. Active until: ${expiryDate.toISOString()}`);
+          procResult = `Successfully verified. Upgraded users/${userId} to Yearly Unlimited.`;
+        } else if (packageId === '15000') {
+          // Package Rp15.000: One-time Result Unlock ONLY
+          // Read targetUnlock metadata from original payment trace
+          const targetUnlock = paymentData.targetUnlock;
+          if (targetUnlock) {
+            const newUnlockItem = {
+              type: targetUnlock.type,
+              key: targetUnlock.key,
+              label: targetUnlock.label || 'Hasil Premium Terbuka',
+              unlockedAt: nowString,
+              paymentId: paymentId
+            };
 
             await userRef.update({
-              subscriptionStatus: 'monthly',
-              premiumExpiredAt: expiryDate.toISOString(),
+              unlockedResults: FieldValue.arrayUnion(newUnlockItem),
               updatedAt: nowString
             });
-            console.log(`User profile ${userId} upgraded to Monthly Subscription. Active until: ${expiryDate.toISOString()}`);
-          } else if (packageId === '1150000') {
-            // Package Rp1.150.000: Yearly Unlimited
-            const expiryDate = new Date();
-            expiryDate.setDate(expiryDate.getDate() + 365);
-
-            await userRef.update({
-              subscriptionStatus: 'yearly',
-              premiumExpiredAt: expiryDate.toISOString(),
-              updatedAt: nowString
-            });
-            console.log(`User profile ${userId} upgraded to Yearly Subscription. Active until: ${expiryDate.toISOString()}`);
-          } else if (packageId === '15000') {
-            // Package Rp15.000: One-time Result Unlock ONLY
-            // Read targetUnlock metadata from original payment trace
-            const targetUnlock = paymentData.targetUnlock;
-            if (targetUnlock) {
-              const newUnlockItem = {
-                type: targetUnlock.type,
-                key: targetUnlock.key,
-                label: targetUnlock.label || 'Hasil Premium Terbuka',
-                unlockedAt: nowString,
-                paymentId: paymentId
-              };
-
-              await userRef.update({
-                unlockedResults: FieldValue.arrayUnion(newUnlockItem),
-                updatedAt: nowString
-              });
-              console.log(`User profile ${userId} single-result access appended for: ${JSON.stringify(newUnlockItem)}`);
-            } else {
-              console.warn(`Payment Rp15.000 completed but no targetUnlock details existed in original document.`);
-            }
+            console.log(`User profile ${userId} single-result access appended for: ${JSON.stringify(newUnlockItem)}`);
+            procResult = `Successfully verified. Unlocked single-result metadata for users/${userId}: ${targetUnlock.key}.`;
+          } else {
+            console.warn(`Payment Rp15.000 completed but no targetUnlock details existed in original document.`);
+            procResult = `Successfully verified. Completed payment but no single targetUnlock metadata found to append.`;
           }
         } else {
-          console.error(`User profile document users/${userId} was expected but could not be read.`);
+          procResult = `Successfully verified. Completed payment for package ID ${packageId} but no action bound for this package.`;
         }
       } else {
-        console.warn('Webhook payload could not be paired with any existing pending payment trace in database.');
+        console.error(`User profile document users/${userId} was expected but could not be read.`);
+        procResult = `Failed: Finished payment status update, but user profile users/${userId} was missing from database.`;
+      }
+
+      // Log AFTER processing completes
+      if (initialLogId) {
+        await db.collection('webhook_logs').doc(initialLogId).update({
+          verified: signatureVerified,
+          processingResult: procResult,
+          paymentId: matchedPaymentIdDoc
+        });
       }
 
       res.status(200).json({ success: true, message: 'Webhook received and processed' });
 
     } catch (err: any) {
       console.error('Error handling webhook:', err);
+      if (initialLogId) {
+        try {
+          await db.collection('webhook_logs').doc(initialLogId).update({
+            processingResult: `Error: ${err.message || 'Unknown processing error'}`
+          });
+        } catch (e) {
+          console.error('Failed to update error condition in webhook_logs:', e);
+        }
+      }
       res.status(500).json({ error: err.message || 'Internal webhook error' });
     }
   });

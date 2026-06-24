@@ -96,12 +96,36 @@ interface Article {
 
 // Helper to get or generate a persistent visitor ID for stats tracking
 const getOrCreateVisitorId = (): string => {
-  let visitorId = localStorage.getItem('hamare_visitor_id');
+  let visitorId: string | null = null;
+  try {
+    visitorId = localStorage.getItem('hamare_visitor_id');
+  } catch (e) {
+    console.warn('Storage is disabled or blocked in this iframe context.', e);
+  }
   if (!visitorId) {
     visitorId = 'v_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 11);
-    localStorage.setItem('hamare_visitor_id', visitorId);
+    try {
+      localStorage.setItem('hamare_visitor_id', visitorId);
+    } catch (e) {}
   }
   return visitorId;
+};
+
+// Safe sessionStorage helper to prevent Script error inside sandboxed iframes
+const safeSessionStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      return sessionStorage.getItem(key);
+    } catch (e) {
+      console.warn('sessionStorage is disabled or blocked in this iframe context.', e);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      sessionStorage.setItem(key, value);
+    } catch (e) {}
+  }
 };
 
 const ARCHIVED_PENGHIDUPAN_LABELS: Record<number, string> = {
@@ -214,7 +238,7 @@ function MainApp() {
   useEffect(() => {
     const trackVisit = async () => {
       // Check if tracked in this sessionStorage session to prevent duplicate calls on refresh
-      if (sessionStorage.getItem('hamare_session_tracked')) {
+      if (safeSessionStorage.getItem('hamare_session_tracked')) {
         return;
       }
 
@@ -229,7 +253,7 @@ function MainApp() {
           createdAt: serverTimestamp()
         });
 
-        sessionStorage.setItem('hamare_session_tracked', 'true');
+        safeSessionStorage.setItem('hamare_session_tracked', 'true');
       } catch (err) {
         console.error('Error tracking visit:', err);
       }
@@ -303,8 +327,12 @@ function MainApp() {
     return stats;
   }, [allVisits]);
   const [guestGenerateCount, setGuestGenerateCount] = useState<number>(() => {
-    const saved = localStorage.getItem('hamare_guest_count');
-    return saved ? parseInt(saved, 10) : 0;
+    try {
+      const saved = localStorage.getItem('hamare_guest_count');
+      return saved ? parseInt(saved, 10) : 0;
+    } catch (e) {
+      return 0;
+    }
   });
   
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -341,7 +369,9 @@ function MainApp() {
   const incrementGuestGenerateCount = () => {
     const newCount = guestGenerateCount + 1;
     setGuestGenerateCount(newCount);
-    localStorage.setItem('hamare_guest_count', newCount.toString());
+    try {
+      localStorage.setItem('hamare_guest_count', newCount.toString());
+    } catch (e) {}
   };
 
   // New states for specific calculations
@@ -526,7 +556,7 @@ function MainApp() {
   const handleCalculateWeton = (date: Date | null) => {
     if (!date) return;
     
-    if (!user && !sessionStorage.getItem('hamare_login_offer_shown')) {
+    if (!user && !safeSessionStorage.getItem('hamare_login_offer_shown')) {
       setPendingCalculation({ type: 'weton', payload: date });
       setIsMemberOfferOpen(true);
       return;
@@ -549,7 +579,7 @@ function MainApp() {
   const handleCalculateHariBaik = (date: Date | null) => {
     if (!date) return;
 
-    if (!user && !sessionStorage.getItem('hamare_login_offer_shown')) {
+    if (!user && !safeSessionStorage.getItem('hamare_login_offer_shown')) {
       setPendingCalculation({ type: 'hariBaik', payload: date });
       setIsMemberOfferOpen(true);
       return;
@@ -572,7 +602,7 @@ function MainApp() {
   const handleCalculateJodoh = async () => {
     if (!mangsaSelfData || !mangsaPartnerData) return;
 
-    if (!user && !sessionStorage.getItem('hamare_login_offer_shown')) {
+    if (!user && !safeSessionStorage.getItem('hamare_login_offer_shown')) {
       setPendingCalculation({ type: 'jodoh', payload: null });
       setIsMemberOfferOpen(true);
       return;
@@ -607,7 +637,7 @@ function MainApp() {
   };
 
   const handleContinueAsGuestFromOffer = () => {
-    sessionStorage.setItem('hamare_login_offer_shown', 'true');
+    safeSessionStorage.setItem('hamare_login_offer_shown', 'true');
     setIsMemberOfferOpen(false);
     
     // Execute the pending action
