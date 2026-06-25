@@ -5,7 +5,8 @@ import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const resolvedFirebaseConfig = {
-  ...firebaseConfig
+  ...firebaseConfig,
+  authDomain: 'hamare.halokabhagya.com'
 };
 
 const app = initializeApp(resolvedFirebaseConfig);

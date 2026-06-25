@@ -223,13 +223,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("[Auth] Attempting Google login via popup...");
       await signInWithPopup(auth, provider);
     } catch (error: any) {
+      // Check if user manually closed or cancelled the popup
+      const isUserCancel = 
+        error.code === 'auth/popup-closed-by-user' || 
+        error.code === 'auth/cancelled-by-user';
+
+      if (isUserCancel) {
+        console.warn("[Auth] Sign-in popup closed or cancelled by user.");
+        const cancelMsg = "Masuk dengan Google dibatalkan oleh pengguna.";
+        setAuthError(cancelMsg);
+        throw new Error(cancelMsg);
+      }
+
       console.error("[Auth] Popup login error:", error);
       
-      // Check if popup was blocked, closed prematurely, or failed due to environment issues (such as sandboxed iframes)
+      // Check if popup was blocked or failed due to environment issues (such as sandboxed iframes)
       const isPopupBlocked = 
         error.code === 'auth/popup-blocked' || 
-        error.code === 'auth/popup-closed-by-user' ||
-        error.code === 'auth/cancelled-by-user' ||
         error.message?.toLowerCase().includes('popup') ||
         error.code?.toLowerCase().includes('popup');
 

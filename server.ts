@@ -60,6 +60,51 @@ async function startServer() {
     res.json({ status: 'ok', message: 'Server is running securely' });
   });
 
+  // Proxy Firebase Auth requests to support custom authDomain
+  app.all('/__/auth/*', async (req, res) => {
+    try {
+      const targetUrl = `https://gen-lang-client-0748393729.firebaseapp.com${req.originalUrl}`;
+      const headers = { ...req.headers };
+      
+      // Override host to match target
+      headers['host'] = 'gen-lang-client-0748393729.firebaseapp.com';
+      
+      const options: any = {
+        method: req.method,
+        headers: headers,
+      };
+
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        if ((req as any).rawBody) {
+          options.body = (req as any).rawBody;
+        } else {
+          const buffers: Buffer[] = [];
+          for await (const chunk of req) {
+            buffers.push(chunk as Buffer);
+          }
+          if (buffers.length > 0) {
+            options.body = Buffer.concat(buffers);
+          }
+        }
+      }
+
+      const response = await fetch(targetUrl, options);
+      
+      response.headers.forEach((value, key) => {
+        if (key.toLowerCase() !== 'content-encoding') {
+          res.setHeader(key, value);
+        }
+      });
+      
+      res.status(response.status);
+      const buffer = await response.arrayBuffer();
+      res.send(Buffer.from(buffer));
+    } catch (err: any) {
+      console.error('Error proxying Firebase auth request:', err);
+      res.status(500).send('Authentication proxy error: ' + err.message);
+    }
+  });
+
   // KBMS: Read raw HAMARE_PROJECT_KNOWLEDGE_BASE.md from disk
   app.get('/api/kb/raw', (req, res) => {
     try {
