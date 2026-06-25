@@ -44,11 +44,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMo
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    setLocalError(null);
     try {
       await login();
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setLocalError(err.message || "Gagal masuk dengan Google. Pastikan popup diizinkan.");
     } finally {
       setLoading(false);
     }
@@ -170,6 +172,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMo
                 <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
                 Masuk dengan Google
               </Button>
+
+              {typeof window !== 'undefined' && window.self !== window.top && (
+                <p className="text-[11px] text-stone-500 text-center mt-3 leading-relaxed bg-stone-50 p-2.5 rounded-xl border border-stone-100">
+                  💡 <strong>Tips:</strong> Jika tombol Google tidak merespon di dalam preview, silakan izinkan popup di browser Anda atau klik tombol <strong>"Buka di Tab Baru"</strong> di kanan atas layar Anda.
+                </p>
+              )}
 
               <div className="mt-8 text-center">
                 <button 
