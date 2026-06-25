@@ -3,6 +3,8 @@ import {
   onAuthStateChanged, 
   User as FirebaseUser,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   signOut,
   createUserWithEmailAndPassword,
@@ -135,6 +137,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let unsubscribeProfile: (() => void) | undefined;
 
+    // Check redirect result on mount
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          console.log("[Auth] Redirect sign-in success:", result.user);
+        }
+      })
+      .catch((error: any) => {
+        console.error("[Auth] Redirect sign-in error:", error);
+        let message = "Gagal login redirect: " + error.message;
+        if (error.code === 'auth/unauthorized-domain') {
+          message = "Domain ini belum terdaftar di Authorized Domains Firebase.";
+        }
+        setAuthError(message);
+      });
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       // Clear existing profile listener if switching users
       if (unsubscribeProfile) {
@@ -196,23 +214,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async () => {
     setAuthError(null);
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+
     try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({
-        prompt: 'select_account'
-      });
+      console.log("[Auth] Attempting Google login via popup...");
       await signInWithPopup(auth, provider);
     } catch (error: any) {
-      console.error("Login Error:", error);
+      console.error("[Auth] Popup login error:", error);
+      
+      // Check if popup was blocked, closed prematurely, or failed due to environment issues (such as sandboxed iframes)
+      const isPopupBlocked = 
+        error.code === 'auth/popup-blocked' || 
+        error.code === 'auth/popup-closed-by-user' ||
+        error.code === 'auth/cancelled-by-user' ||
+        error.message?.toLowerCase().includes('popup') ||
+        error.code?.toLowerCase().includes('popup');
+
+      if (isPopupBlocked) {
+        console.warn("[Auth] Popup blocked or failed. Falling back to signInWithRedirect...");
+        try {
+          await signInWithRedirect(auth, provider);
+          return;
+        } catch (redirectError: any) {
+          console.error("[Auth] Redirect login fallback error:", redirectError);
+          let message = "Gagal login redirect: " + redirectError.message;
+          if (redirectError.code === 'auth/unauthorized-domain') {
+            message = "Domain ini belum terdaftar di Authorized Domains Firebase.";
+          }
+          setAuthError(message);
+          throw redirectError;
+        }
+      }
+
       let message = "Gagal login: " + error.message;
       if (error.code === 'auth/unauthorized-domain') {
         message = "Domain ini belum terdaftar di Authorized Domains Firebase. Silakan hubungi admin.";
       } else if (error.code === 'auth/operation-not-allowed') {
         message = "Metode Google Sign-In belum diaktifkan di Firebase Console. Silakan aktifkan di tab Authentication > Sign-in method.";
-      } else if (error.code === 'auth/popup-blocked') {
-        message = "Popup diblokir oleh browser. Silakan izinkan popup untuk login.";
-      } else if (error.code === 'auth/cancelled-by-user') {
-        return; // Silent resolve for cancellation
       }
       
       setAuthError(message);
