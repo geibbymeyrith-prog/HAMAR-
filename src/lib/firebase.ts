@@ -4,11 +4,8 @@ import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 // @ts-ignore
 import firebaseConfig from '../../firebase-applet-config.json';
 
-// Smart branded custom authDomain fallback for production vs development preview
-const isProdCustomDomain = typeof window !== 'undefined' && window.location.hostname === 'hamare.halokabhagya.com';
 const resolvedFirebaseConfig = {
-  ...firebaseConfig,
-  authDomain: isProdCustomDomain ? 'hamare.halokabhagya.com' : firebaseConfig.authDomain
+  ...firebaseConfig
 };
 
 const app = initializeApp(resolvedFirebaseConfig);
