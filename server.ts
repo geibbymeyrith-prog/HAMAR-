@@ -1,7 +1,6 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import crypto from 'crypto';
@@ -42,8 +41,7 @@ const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabas
   ? getFirestore(adminApp, firebaseConfig.firestoreDatabaseId)
   : getFirestore(adminApp);
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = process.cwd();
 
 async function startServer() {
   const app = express();
