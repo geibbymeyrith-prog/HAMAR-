@@ -2,11 +2,15 @@
   "version": 2,
   "rewrites": [
     {
+      "source": "/__/auth/:path*",
+      "destination": "https://gen-lang-client-0748393729.firebaseapp.com/__/auth/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://ais-pre-alvgkoeuce6xeklwajhkmv-824023813445.asia-southeast1.run.app/api/:path*"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/|__/auth/).*)",
       "destination": "/index.html"
     }
   ]
