@@ -246,7 +246,21 @@ async function startServer() {
       } else {
         // Real API Call to Mayar
         try {
-          const response = await fetch('https://api.mayar.id/v2/payment/request', {
+          const expiredAt = new Date(
+            Date.now() + 24 * 60 * 60 * 1000
+          ).toISOString();
+     
+          console.log("===== MAYAR REQUEST =====");
+console.log({
+  endpoint: "https://api.mayar.id/h1/v1/payment/create",
+  name,
+  email,
+  mobile: whatsapp || '081200000000',
+  amount,
+  packageName,
+  expiredAt
+});
+          const response = await fetch('https://api.mayar.id/h1/v1/payment/create', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${apiKey}`,
@@ -258,17 +272,23 @@ async function startServer() {
               mobile: whatsapp || '081200000000',
               amount: Number(amount),
               description: `Akses HAMARÉ Premium: ${packageName}`,
-              redirectUrl: process.env.APP_URL || 'http://localhost:3000'
+              redirectUrl: process.env.APP_URL || 'http://localhost:3000',
+              expiredAt,
               // Note: callbackUrl is removed because Mayar webhooks are configured globally in the merchant dashboard
             })
           });
 
           if (!response.ok) {
             const errText = await response.text();
+            console.error("===== MAYAR ERROR =====");
+    console.error(errText);
             throw new Error(`Mayar API error: ${response.status} - ${errText}`);
           }
 
           const resData = await response.json();
+          console.log("===== MAYAR RESPONSE =====");
+          console.log(JSON.stringify(resData, null, 2));
+          
           paymentLink = resData.link || resData.url || (resData.data && (resData.data.link || resData.data.url));
           paymentId = resData.id || (resData.data && resData.data.id) || paymentId;
 
