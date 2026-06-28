@@ -212,6 +212,7 @@ async function startServer() {
   });
 
   // HAMARÉ & Mayar Integration: Create Payment
+console.log("SERVER VERSION: 28 JUN 12:00");
   app.post('/api/create-payment', async (req, res) => {
     try {
       const { userId, name, email, whatsapp, packageId, amount } = req.body;
