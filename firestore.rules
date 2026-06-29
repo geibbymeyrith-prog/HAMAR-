@@ -80,7 +80,9 @@ service cloud.firestore {
              (!('generateCount' in data) || data.generateCount is number) &&
              (!('temporaryUnlock' in data) || data.temporaryUnlock is bool) &&
              (!('premiumExpiredAt' in data) || data.premiumExpiredAt is timestamp) &&
-             (!('subscriptionStatus' in data) || data.subscriptionStatus is string);
+              (!('subscriptionStatus' in data) || data.subscriptionStatus is string) &&
+              (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+              (!('unlockedResults' in data) || data.unlockedResults is list);
     }
 
     function isValidHistory(data) {
@@ -100,15 +102,38 @@ service cloud.firestore {
     }
 
     function isValidPayment(data) {
-      return data.userId == request.auth.uid &&
-             data.name is string && data.name.size() < 100 &&
-             data.email is string && data.email.size() < 100 &&
-             data.whatsapp is string && data.whatsapp.size() < 30 &&
-             data.package in ['11000', '111000', '1111000', '15000', '150000', '1150000'] &&
-             data.uniqueAmount is number &&
-             data.status == 'pending' &&
-             data.createdAt is timestamp;
-    }
+  return data.userId == request.auth.uid &&
+         data.name is string &&
+         data.name.size() < 100 &&
+
+         data.email is string &&
+         data.email.size() < 100 &&
+
+         data.whatsapp is string &&
+         data.whatsapp.size() < 30 &&
+
+         data.package in [
+           '11000',
+           '111000',
+           '1111000',
+           '15000',
+           '150000',
+           '1150000'
+         ] &&
+
+         data.packageName is string &&
+         data.packageName.size() < 100 &&
+
+         data.uniqueAmount is number &&
+
+         data.status == 'pending' &&
+
+         (!('mayarPaymentId' in data) || data.mayarPaymentId is string) &&
+
+         (!('targetUnlock' in data) || data.targetUnlock is map) &&
+
+         data.createdAt is timestamp;
+}
 
     function isValidVisit(data) {
       return data.visitorId is string && data.visitorId.size() < 128 &&
@@ -180,7 +205,11 @@ service cloud.firestore {
     }
 
     match /system_assumptions/{assumptionId} {
-      allow read, write: if isAdmin();
-    }
+  allow read, write: if isAdmin();
+}
+
+match /{document=**} {
+  allow read, write: if false;
+}
   }
 }
