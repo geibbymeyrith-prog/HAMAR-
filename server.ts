@@ -567,6 +567,9 @@ async function startServer() {
 
       console.log('===== MAYAR WEBHOOK RECEIVED =====');
       console.log('Headers:', req.headers);
+      console.log('x-mayar-signature:', req.headers['x-mayar-signature']);
+      console.log('mayar-signature:', req.headers['mayar-signature']);
+      console.log('x-callback-token:', req.headers['x-callback-token']);
       console.log('Raw Payload Available:', !!(req as any).rawBody);
 
       // Verify signature if webhookToken is configured
