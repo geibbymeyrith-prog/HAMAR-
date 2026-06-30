@@ -381,7 +381,7 @@ async function startServer() {
 
           console.log({
             endpoint:
-              "https://api.mayar.id/h1/v1/payment/create",
+              "https://api.mayar.id/hl/v1/payment/create",
             name,
             email,
             mobile: whatsapp || "081200000000",
@@ -391,7 +391,7 @@ async function startServer() {
           });
 
           const response = await fetch(
-            "https://api.mayar.id/h1/v1/payment/create",
+            "https://api.mayar.id/hl/v1/payment/create",
             {
               method: "POST",
               headers: {
