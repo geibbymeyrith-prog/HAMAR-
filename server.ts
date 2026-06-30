@@ -253,7 +253,7 @@ console.log("SERVER VERSION: 28 JUN 12:00");
      
           console.log("===== MAYAR REQUEST =====");
 console.log({
-  endpoint: "https://api.mayar.id/h1/v1/payment/create",
+  endpoint: "https://api.mayar.id/hl/v1/payment/create",
   name,
   email,
   mobile: whatsapp || '081200000000',
@@ -261,7 +261,7 @@ console.log({
   packageName,
   expiredAt
 });
-          const response = await fetch('https://api.mayar.id/h1/v1/payment/create', {
+          const response = await fetch('https://api.mayar.id/hl/v1/payment/create', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${apiKey}`,
