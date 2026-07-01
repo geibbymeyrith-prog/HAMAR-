@@ -61,6 +61,50 @@ const db =
 
 const __dirname = process.cwd();
 
+// ======================================================
+// HAMARÉ Pricing Configuration
+// (Temporary Local Configuration - Next Step will move to Firestore)
+// ======================================================
+
+type PricingConfig = {
+  name: string;
+  amount: number;
+  durationDays: number;
+  type: 'subscription' | 'single_unlock';
+};
+
+async function getPricing(
+  packageId: string
+): Promise<PricingConfig | null> {
+
+  const pricing: Record<string, PricingConfig> = {
+
+    '15000': {
+      name: '1 Unlock (Hanya Hasil Ini)',
+      amount: 15000,
+      durationDays: 0,
+      type: 'single_unlock'
+    },
+
+    '150000': {
+      name: 'Unlimited 30 Hari',
+      amount: 150000,
+      durationDays: 30,
+      type: 'subscription'
+    },
+
+    '1150000': {
+      name: 'Unlimited 365 Hari',
+      amount: 1150000,
+      durationDays: 365,
+      type: 'subscription'
+    }
+
+  };
+
+  return pricing[packageId] || null;
+}
+
 async function startServer() {
 
   const app = express();
