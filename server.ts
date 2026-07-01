@@ -359,22 +359,24 @@ async function startServer() {
 
   app.post('/api/create-payment', async (req, res) => {
     try {
-      const { userId, name, email, whatsapp, packageId, amount } = req.body;
+      const { userId, name, email, whatsapp, packageId } = req.body;
 
-      if (!userId || !name || !email || !packageId || !amount) {
+     if (!userId || !name || !email || !packageId) {
         return res.status(400).json({
           error: 'Missing required payment fields'
         });
       }
 
-      const packageNames: Record<string, string> = {
-        '15000': '1 Unlock (Hanya Hasil Ini)',
-        '150000': 'Unlimited 30 Hari',
-        '1150000': 'Unlimited 365 Hari'
-      };
+    const pricing = await getPricing(packageId);
 
-      const packageName =
-        packageNames[packageId] || 'Premium Package';
+    if (!pricing) {
+    return res.status(400).json({
+    error: 'Invalid packageId'
+  });
+}
+
+    const packageName = pricing.name;
+    const amount = pricing.amount;
 
       const apiKey = process.env.MAYAR_API_KEY;
 
@@ -447,7 +449,7 @@ async function startServer() {
                 name,
                 email,
                 mobile: whatsapp || "081200000000",
-                amount: Number(amount),
+                amount: amount,
                 description: `Akses HAMARÉ Premium: ${packageName}`,
                 redirectUrl:
                   process.env.APP_URL ||
@@ -533,7 +535,7 @@ async function startServer() {
         whatsapp: whatsapp || "",
         package: packageId,
         packageName,
-        uniqueAmount: Number(amount),
+        uniqueAmount: amount,
         status: "pending",
         mayarPaymentId: paymentId,
         createdAt: new Date().toISOString(),
