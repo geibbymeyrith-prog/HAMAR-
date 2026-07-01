@@ -1264,7 +1264,10 @@ function MainApp() {
       {isAdminMode && isAdmin ? (
         <AdminDashboard onBack={() => setIsAdminMode(false)} visitorStats={visitorStats} />
       ) : isDashboardMode && profile ? (
-        <UserDashboard onBack={() => setIsDashboardMode(false)} />
+        <UserDashboard
+          onBack={() => setIsDashboardMode(false)}
+          isSubscriptionActive={isPremium}
+      />
       ) : (
         <>
           <header className="max-w-6xl mx-auto mb-8 text-center" id="header">
