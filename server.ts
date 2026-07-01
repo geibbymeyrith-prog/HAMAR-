@@ -535,6 +535,8 @@ async function startServer() {
         whatsapp: whatsapp || "",
         package: packageId,
         packageName,
+        packageType: pricing.type,
+        durationDays: pricing.durationDays,
         uniqueAmount: amount,
         status: "pending",
         mayarPaymentId: paymentId,
