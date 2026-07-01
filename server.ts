@@ -597,109 +597,62 @@ async function startServer() {
 
       initialLogId = initialLogRef.id;
 
-      const signatureRaw =
-        req.headers['x-mayar-signature'] ||
-        req.headers['mayar-signature'];
+      const callbackTokenRaw = req.headers['x-callback-token'];
 
-      const signature = Array.isArray(signatureRaw)
-        ? signatureRaw[0]
-        : (signatureRaw as string) || '';
+const callbackToken = Array.isArray(callbackTokenRaw)
+  ? callbackTokenRaw[0]
+  : (callbackTokenRaw as string) || '';
 
-      const webhookToken = process.env.MAYAR_WEBHOOK_TOKEN;
+const webhookToken = process.env.MAYAR_WEBHOOK_TOKEN;
 
-      const rawBody =
-        (req as any).rawBody ||
-        (typeof req.body === 'string'
-          ? req.body
-          : JSON.stringify(req.body));
+console.log('===== MAYAR WEBHOOK RECEIVED =====');
+console.log('Headers:', req.headers);
+console.log('x-callback-token:', callbackToken);
 
-      console.log('===== MAYAR WEBHOOK RECEIVED =====');
-      console.log('Headers:', req.headers);
-      console.log('x-mayar-signature:', req.headers['x-mayar-signature']);
-      console.log('mayar-signature:', req.headers['mayar-signature']);
-      console.log('x-callback-token:', req.headers['x-callback-token']);
-      console.log('Raw Payload Available:', !!(req as any).rawBody);
+let signatureVerified = false;
 
-      // Verify signature if webhookToken is configured
-      let signatureVerified = false;
+if (
+  webhookToken &&
+  webhookToken !== 'MY_MAYAR_WEBHOOK_TOKEN' &&
+  webhookToken !== ''
+) {
 
-      if (
-        webhookToken &&
-        webhookToken !== 'MY_MAYAR_WEBHOOK_TOKEN' &&
-        webhookToken !== ''
-      ) {
+  if (callbackToken !== webhookToken) {
 
-        const computed = crypto
-          .createHmac('sha256', webhookToken)
-          .update(rawBody)
-          .digest('hex');
+    console.warn(
+      'Webhook callback token mismatch.'
+    );
 
-        const computedBuffer = Buffer.from(computed, 'utf-8');
-        const signatureBuffer = Buffer.from(signature, 'utf-8');
+    if (initialLogId) {
+      await db
+        .collection('webhook_logs')
+        .doc(initialLogId)
+        .update({
+          processingResult:
+            'Failed callback token verification.',
+          verified: false
+        });
+    }
 
-        if (computedBuffer.length !== signatureBuffer.length) {
+    return res.status(400).json({
+      error: 'Invalid callback token'
+    });
+  }
 
-          console.warn(
-            `Webhook Signature Mismatch! Length discrepancy (Computed: ${computedBuffer.length}, Signature Header: ${signatureBuffer.length}).`
-          );
+  console.log(
+    'Webhook callback token verified successfully.'
+  );
 
-          if (initialLogId) {
-            await db
-              .collection('webhook_logs')
-              .doc(initialLogId)
-              .update({
-                processingResult:
-                  'Failed signature verification (length mismatch).',
-                verified: false
-              });
-          }
+  signatureVerified = true;
 
-          return res
-            .status(400)
-            .json({ error: 'Invalid webhook signature' });
-        }
+} else {
 
-        const isValid = crypto.timingSafeEqual(
-          computedBuffer,
-          signatureBuffer
-        );
+  console.log(
+    'Webhook verification skipped because MAYAR_WEBHOOK_TOKEN is not configured.'
+  );
 
-        if (!isValid) {
-
-          console.warn(
-            `Webhook Signature Mismatch! Header: ${signature}, Computed: ${computed}`
-          );
-
-          if (initialLogId) {
-            await db
-              .collection('webhook_logs')
-              .doc(initialLogId)
-              .update({
-                processingResult:
-                  'Failed signature verification (HMAC mismatch).',
-                verified: false
-              });
-          }
-
-          return res
-            .status(400)
-            .json({ error: 'Invalid webhook signature' });
-        }
-
-        console.log(
-          'Webhook Signature Verified Successfully via timing-safe HMAC check!'
-        );
-
-        signatureVerified = true;
-
-      } else {
-
-        console.log(
-          'Webhook signature verification skipped (Webhook token not configured or set to placeholder).'
-        );
-
-        signatureVerified = true;
-      }
+  signatureVerified = true;
+}
 
       // Store webhook payload in Firestore
       const txDoc = {
