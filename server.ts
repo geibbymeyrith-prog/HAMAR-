@@ -668,17 +668,18 @@ if (
       console.log(
         'Webhook payload log written to Firestore successfully.'
       );
-      // Extract payment keys
+     // Extract payment keys
       const mayarPaymentId =
         payload.payment_id ||
-        payload.id ||
-        (payload.data &&
-          (payload.data.payment_id ||
-            payload.data.id ||
-            payload.data.paymentId));
+        payload.data?.productId ||
+        payload.data?.paymentLinkId ||
+        payload.data?.payment_id ||
+        payload.data?.paymentId ||
+        payload.data?.id ||
+        payload.id;
 
       let paymentDoc: any = null;
-
+    
       if (mayarPaymentId) {
         console.log(
           `Webhook seeking payment with mayarPaymentId: ${mayarPaymentId}`
