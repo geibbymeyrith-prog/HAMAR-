@@ -90,6 +90,8 @@ interface UserProfile {
   subscriptionEndDate?: any;
   premiumExpiredAt?: any;
   generateCount: number;
+  freeGenerateUsed: number;
+  freePdfUsed: number;
   temporaryUnlock?: boolean;
   unlockedResults?: {
     type: 'weton' | 'jodoh' | 'hariBaik';
@@ -300,8 +302,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: 'user',
         subscriptionStatus: 'free',
         generateCount: 0,
-        createdAt: serverTimestamp(),
-      };
+        freeGenerateUsed: 0,
+        freePdfUsed: 0,
+  createdAt: serverTimestamp(),
+};
       await setDoc(userDocRef, newProfile);
       setProfile(newProfile);
     } catch (error: any) {
