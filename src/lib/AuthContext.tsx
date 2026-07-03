@@ -205,9 +205,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             // Write only if something actually changed
-            if (Object.keys(updates).length > 0) {
-              await updateDoc(userDocRef, updates);
-            }
+          if (Object.keys(updates).length > 0) {
+
+            console.log(
+              'Migrating existing user profile:',
+               firebaseUser.uid,
+               updates
+            );
+
+            await updateDoc(userDocRef, updates);
+
+          } else {
+
+            console.log(
+            'No migration needed:',
+            firebaseUser.uid
+          );
+
+        }
           }
         } catch (error) {
           console.error("Profile setup error:", error);
