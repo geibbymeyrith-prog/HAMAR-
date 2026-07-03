@@ -21,7 +21,7 @@ service cloud.firestore {
     // Document ID: auto-generated
     // Fields:
     //   - userId: string (required)
-    //   - type: string (required, 'weton'|'jodoh'|'hariBaik')
+    // type: string (required, feature identifier)
     //   - inputData: map (required)
     //   - resultData: map (required)
     //   - createdAt: timestamp (required)
@@ -78,6 +78,8 @@ service cloud.firestore {
              (!('whatsapp' in data) || (data.whatsapp is string && data.whatsapp.size() < 30)) &&
              (!('birthDate' in data) || data.birthDate is map) &&
              (!('generateCount' in data) || data.generateCount is number) &&
+              (!('freeGenerateUsed' in data) || data.freeGenerateUsed is number) &&
+              (!('freePdfUsed' in data) || data.freePdfUsed is number) &&
              (!('temporaryUnlock' in data) || data.temporaryUnlock is bool) &&
              (!('premiumExpiredAt' in data) || data.premiumExpiredAt is timestamp) &&
               (!('subscriptionStatus' in data) || data.subscriptionStatus is string) &&
@@ -87,7 +89,12 @@ service cloud.firestore {
 
     function isValidHistory(data) {
       return data.userId == request.auth.uid &&
-             data.type in ['weton', 'jodoh', 'hariBaik'] &&
+             data.type in [
+              'weton',
+              'jodoh',
+              'hariBaik',
+              'hitungNama'
+            ] &&
              data.label is string &&
              data.details is map &&
              data.createdAt is timestamp;
