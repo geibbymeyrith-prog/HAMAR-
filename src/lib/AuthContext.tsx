@@ -179,6 +179,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               role: firebaseUser.email === 'geibbymeyrith@gmail.com' ? 'admin' : 'user',
               subscriptionStatus: 'free',
               generateCount: 0,
+              freeGenerateUsed: 0,
+              freePdfUsed: 0,
               createdAt: serverTimestamp(),
             };
             await setDoc(userDocRef, newProfile);
