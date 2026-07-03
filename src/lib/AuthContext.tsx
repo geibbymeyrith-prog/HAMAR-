@@ -134,6 +134,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+    console.log(
+    'AUTH CONTEXT VERSION: MIGRATION TEST 1'
+    );
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -171,6 +174,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Initial setup for profile if it doesn't exist
         try {
           const userDoc = await getDoc(userDocRef);
+          console.log(
+            'Profile document exists:',
+            userDoc.exists()
+          );
           if (!userDoc.exists()) {
             const newProfile: UserProfile = {
               uid: firebaseUser.uid,
@@ -185,8 +192,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             };
             await setDoc(userDocRef, newProfile);
           } else {
-            const data = userDoc.data() as UserProfile;
 
+            console.log(
+              'Entered existing user migration block'
+            );
+            
+            const data = userDoc.data() as UserProfile;
+              console.log(
+                'Current user document:',
+                 data
+            );
+            
             const updates: Partial<UserProfile> = {};
 
             // Ensure admin role
