@@ -13,7 +13,7 @@ import { cn } from '../lib/utils';
 interface PaywallProps {
   onUnlock?: () => void;
   targetUnlock?: {
-    type: 'weton' | 'jodoh' | 'hariBaik';
+    type: string;
     key: string;
     label: string;
   };
