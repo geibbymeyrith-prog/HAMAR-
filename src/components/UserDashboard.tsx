@@ -39,7 +39,7 @@ import { cn } from '../lib/utils';
 
 interface HistoryItem {
   id: string;
-  type: 'weton' | 'jodoh' | 'hariBaik';
+  type: string;
   label: string;
   details: any;
   createdAt: any;
