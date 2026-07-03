@@ -183,10 +183,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             };
             await setDoc(userDocRef, newProfile);
           } else {
-            // Ensure admin role for specific user if they already exist
             const data = userDoc.data() as UserProfile;
-            if (firebaseUser.email === 'geibbymeyrith@gmail.com' && data.role !== 'admin') {
-              await updateDoc(userDocRef, { role: 'admin' });
+
+            const updates: Partial<UserProfile> = {};
+
+            // Ensure admin role
+            if (
+            firebaseUser.email === 'geibbymeyrith@gmail.com' &&
+            data.role !== 'admin'
+            ) {
+            updates.role = 'admin';
+            }
+
+            // Migration: initialize new quota fields
+            if (data.freeGenerateUsed === undefined) {
+              updates.freeGenerateUsed = 0;
+            }
+
+            if (data.freePdfUsed === undefined) {
+              updates.freePdfUsed = 0;
+            }
+
+            // Write only if something actually changed
+            if (Object.keys(updates).length > 0) {
+              await updateDoc(userDocRef, updates);
             }
           }
         } catch (error) {
