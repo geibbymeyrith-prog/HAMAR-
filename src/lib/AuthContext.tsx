@@ -94,7 +94,7 @@ interface UserProfile {
   freePdfUsed: number;
   temporaryUnlock?: boolean;
   unlockedResults?: {
-    type: 'weton' | 'jodoh' | 'hariBaik';
+    type: string;
     key: string;
     label: string;
     unlockedAt: string;
@@ -105,7 +105,7 @@ interface UserProfile {
 
 interface HistoryItem {
   userId: string;
-  type: 'weton' | 'jodoh' | 'hariBaik';
+  type: string;
   label: string;
   details: any;
   createdAt: any;
@@ -121,7 +121,7 @@ interface AuthContextType {
   registerWithEmail: (email: string, pass: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
-  saveHistory: (type: 'weton' | 'jodoh' | 'hariBaik', label: string, details: any) => Promise<void>;
+  saveHistory: (type: string, label: string, details: any) => Promise<void>;
   incrementGenerateCount: () => Promise<number>;
   isPremium: boolean;
   isAdmin: boolean;
@@ -329,7 +329,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const saveHistory = async (type: 'weton' | 'jodoh' | 'hariBaik', label: string, details: any) => {
+  const saveHistory = async (type: string, label: string, details: any) => {
     if (!user) return;
     try {
       await addDoc(collection(db, 'history'), {
