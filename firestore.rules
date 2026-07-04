@@ -84,6 +84,7 @@ service cloud.firestore {
              (!('premiumExpiredAt' in data) || data.premiumExpiredAt is timestamp) &&
               (!('subscriptionStatus' in data) || data.subscriptionStatus is string) &&
               (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+              (!('trustProfile' in data) || data.trustProfile is map) &&
               (!('unlockedResults' in data) || data.unlockedResults is list);
     }
 
