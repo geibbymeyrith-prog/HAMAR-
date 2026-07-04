@@ -100,6 +100,36 @@ interface UserProfile {
     unlockedAt: string;
     paymentId: string;
   }[];
+  trustProfile?: {
+    identity?: {
+      fingerprint?: string;
+      cookieId?: string;
+      timezone?: string;
+      userAgent?: string;
+    };
+
+    network?: {
+      ip?: string;
+      country?: string;
+    };
+
+    trial?: {
+      status?: 'unused' | 'active' | 'completed';
+      startedAt?: any;
+      completedAt?: any;
+    };
+
+    payment?: {
+      firstPaymentAt?: any;
+      totalPayments?: number;
+    };
+
+    firstSeenAt?: any;
+
+    lastSeenAt?: any;
+
+  };
+
   createdAt: any;
 }
 
@@ -188,6 +218,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               generateCount: 0,
               freeGenerateUsed: 0,
               freePdfUsed: 0,
+              trustProfile: {
+                trial: {
+                  status: 'unused'
+                },
+                payment: {
+                  totalPayments: 0
+                },
+                firstSeenAt: serverTimestamp(),
+                lastSeenAt: serverTimestamp()
+
+            },
               createdAt: serverTimestamp(),
             };
             await setDoc(userDocRef, newProfile);
@@ -357,6 +398,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         generateCount: 0,
         freeGenerateUsed: 0,
         freePdfUsed: 0,
+        trustProfile: {
+          trial: {
+            status: 'unused'
+          },
+          payment: {
+            totalPayments: 0
+          },
+          firstSeenAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp()
+        },
   createdAt: serverTimestamp(),
 };
       await setDoc(userDocRef, newProfile);
