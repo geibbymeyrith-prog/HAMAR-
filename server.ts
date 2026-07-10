@@ -80,22 +80,22 @@ async function getPricing(
 
   const pricing: Record<string, PricingConfig> = {
 
-    '15000': {
-      name: '1 Unlock (Hanya Hasil Ini)',
+    [BUSINESS_CONFIG.pricing.packageIds.singleUnlock]: {
+      name: BUSINESS_CONFIG.pricing.names.singleUnlock,
       amount: BUSINESS_CONFIG.pricing.amounts.singleUnlock,
       durationDays: 0,
       type: 'single_unlock'
     },
 
-    '150000': {
-      name: 'Unlimited 30 Hari',
+    [BUSINESS_CONFIG.pricing.packageIds.monthly]: {
+      name: BUSINESS_CONFIG.pricing.names.monthly,
       amount: BUSINESS_CONFIG.pricing.amounts.monthly,
       durationDays: 30,
       type: 'subscription'
     },
 
-    '1150000': {
-      name: 'Unlimited 365 Hari',
+    [BUSINESS_CONFIG.pricing.packageIds.yearly]: {
+      name: BUSINESS_CONFIG.pricing.names.yearly,
       amount: BUSINESS_CONFIG.pricing.amounts.yearly,
       durationDays: 365,
       type: 'subscription'
