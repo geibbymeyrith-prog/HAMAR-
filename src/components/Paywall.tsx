@@ -73,17 +73,17 @@ export const Paywall: React.FC<PaywallProps> = ({ onUnlock, targetUnlock }) => {
 
   const packages = [
     {
-      id: '15000',
+      id: BUSINESS_CONFIG.pricing.packageIds.singleUnlock,
       name: '1 Unlock (Hanya Hasil Ini)',
       price: BUSINESS_CONFIG.pricing.amounts.singleUnlock,
     },
     {
-      id: '150000',
+      id: BUSINESS_CONFIG.pricing.packageIds.monthly,
       name: 'Unlimited 30 Hari',
       price: BUSINESS_CONFIG.pricing.amounts.monthly,
     },
     {
-      id: '1150000',
+      id: BUSINESS_CONFIG.pricing.packageIds.yearly,
       name: 'Unlimited 365 Hari',
       price: BUSINESS_CONFIG.pricing.amounts.yearly,
     },
