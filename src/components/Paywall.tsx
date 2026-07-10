@@ -9,6 +9,7 @@ import { db, auth } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
+import { BUSINESS_CONFIG } from "../config/businessConfig";
 
 interface PaywallProps {
   onUnlock?: () => void;
@@ -71,9 +72,9 @@ export const Paywall: React.FC<PaywallProps> = ({ onUnlock, targetUnlock }) => {
   }, [user]);
 
   const packages = [
-    { id: '15000', name: '1 Unlock (Hanya Hasil Ini)', price: 15000 },
-    { id: '150000', name: 'Unlimited 30 Hari', price: 150000 },
-    { id: '1150000', name: 'Unlimited 365 Hari', price: 1150000 },
+    { id: '15000', name: '1 Unlock (Hanya Hasil Ini)', price: BUSINESS_CONFIG.pricing.singleUnlock,},
+    { id: '150000', name: 'Unlimited 30 Hari', price: BUSINESS_CONFIG.pricing.monthly,},
+    { id: '1150000', name: 'Unlimited 365 Hari', price: BUSINESS_CONFIG.pricing.yearly,},
   ];
 
   const handleSelectPackage = (pkg: typeof packages[0]) => {
