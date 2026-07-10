@@ -29,9 +29,18 @@
 
 export const BUSINESS_CONFIG = {
   /**
-   * Harga paket HAMARÉ
-   * Seluruh harga menggunakan satuan Rupiah (IDR).
-   */
+ * Konfigurasi paket HAMARÉ.
+ *
+ * amounts:
+ * Nominal pembayaran dalam Rupiah (IDR).
+ *
+ * packageIds:
+ * Identitas unik paket yang digunakan oleh frontend,
+ * backend, webhook, dan database.
+ *
+ * names:
+ * Nama paket yang ditampilkan kepada pengguna.
+ */
 pricing: {
   amounts: {
     singleUnlock: 15000,
@@ -43,6 +52,12 @@ pricing: {
     singleUnlock: "15000",
     monthly: "150000",
     yearly: "1150000",
+  },
+
+  names: {
+    singleUnlock: "1 Unlock (Hanya Hasil Ini)",
+    monthly: "Unlimited 30 Hari",
+    yearly: "Unlimited 365 Hari",
   },
 },
 
