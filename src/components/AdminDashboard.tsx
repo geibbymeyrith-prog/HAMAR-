@@ -29,6 +29,7 @@ import { useAuth } from '../lib/AuthContext';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
 import { KbmsDashboard } from './KbmsDashboard';
+import { BUSINESS_CONFIG } from './config/businessConfig';
 // Logo imports removed
 import { 
   Check, 
@@ -837,21 +838,88 @@ export const AdminDashboard: React.FC<{
     try {
       const paymentRef = doc(db, 'payments', payment.id);
       const userRef = doc(db, 'users', payment.userId);
-      await updateDoc(paymentRef, { status: 'approved', updatedAt: serverTimestamp() });
+
+      // Update status pembayaran
+      await updateDoc(paymentRef, {
+        status: 'approved',
+        updatedAt: serverTimestamp()
+      });
+
       const now = new Date();
-      if (payment.package === '11000' || payment.package === '15000') {
-        await updateDoc(userRef, { temporaryUnlock: true });
-      } else if (payment.package === '111000' || payment.package === '150000') {
-        const expiry = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-        await updateDoc(userRef, { subscriptionStatus: 'monthly', premiumExpiredAt: expiry, temporaryUnlock: false });
-      } else if (payment.package === '1111000' || payment.package === '1150000') {
-        const expiry = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
-        await updateDoc(userRef, { subscriptionStatus: 'yearly', premiumExpiredAt: expiry, temporaryUnlock: false });
+
+      // ======================================================
+      // SINGLE RESULT UNLOCK
+      // ======================================================
+      if (
+        payment.package === BUSINESS_CONFIG.pricing.packageIds.singleUnlock
+      ) {
+
+        await updateDoc(userRef, {
+          temporaryUnlock: true,
+          updatedAt: serverTimestamp()
+        });
+
       }
+
+      // ======================================================
+      // MONTHLY SUBSCRIPTION
+      // ======================================================
+      else if (
+        payment.package === BUSINESS_CONFIG.pricing.packageIds.monthly
+      ) {
+
+        const expiry = new Date(
+          now.getTime() + (30 * 24 * 60 * 60 * 1000)
+        );
+
+        await updateDoc(userRef, {
+          subscriptionStatus: 'monthly',
+          premiumExpiredAt: expiry,
+          temporaryUnlock: false,
+          updatedAt: serverTimestamp()
+        });
+
+      }
+
+      // ======================================================
+      // YEARLY SUBSCRIPTION
+      // ======================================================
+      else if (
+        payment.package === BUSINESS_CONFIG.pricing.packageIds.yearly
+      ) {
+
+        const expiry = new Date(
+          now.getTime() + (365 * 24 * 60 * 60 * 1000)
+        );
+
+        await updateDoc(userRef, {
+          subscriptionStatus: 'yearly',
+          premiumExpiredAt: expiry,
+          temporaryUnlock: false,
+          updatedAt: serverTimestamp()
+        });
+
+      }
+
+      // ======================================================
+      // UNKNOWN PACKAGE
+      // ======================================================
+      else {
+
+        console.warn(
+          `Unknown package ID: ${payment.package}`
+        );
+
+      }
+
       alert(`Pembayaran ${payment.name} berhasil disetujui!`);
+
     } catch (error) {
+
       console.error("Error approving payment:", error);
+
       alert("Gagal menyetujui pembayaran.");
+
     }
   };
 
