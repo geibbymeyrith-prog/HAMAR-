@@ -788,7 +788,7 @@ if (
 
       if (userDoc.exists) {
 
-        if (packageId === '150000') {
+        if (packageId === BUSINESS_CONFIG.pricing.packageIds.monthly) {
 
           const expiryDate = new Date();
           expiryDate.setDate(expiryDate.getDate() + 30);
@@ -812,7 +812,7 @@ if (
           expiryDate.setDate(expiryDate.getDate() + 365);
 
           await userRef.update({
-            subscriptionStatus: 'yearly',
+            subscriptionStatus: BUSINESS_CONFIG.pricing.packageIds.yearly,
             premiumExpiredAt: expiryDate.toISOString(),
             updatedAt: nowString
           });
@@ -824,7 +824,7 @@ if (
           procResult =
             `Successfully verified. Upgraded users/${userId} to Yearly Unlimited.`;
 
-        } else if (packageId === '15000') {
+        } else if (packageId === BUSINESS_CONFIG.pricing.packageIds.singleUnlock) {
 
           const targetUnlock = paymentData.targetUnlock;
 
