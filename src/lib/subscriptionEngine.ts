@@ -3,6 +3,8 @@
 // Central business rules for subscription & free quota.
 // ======================================================
 
+import { BUSINESS_CONFIG } from "../config/businessConfig";
+
 export interface SubscriptionDecision {
   isPremium: boolean;
 
@@ -84,10 +86,16 @@ export function evaluateSubscription(
     input.freePdfUsed ?? 0;
 
   const remainingFreeGenerate =
-    Math.max(0, 3 - freeGenerateUsed);
+    Math.max(
+      0,
+      BUSINESS_CONFIG.freeTrial.freeGenerate - freeGenerateUsed
+    );
 
   const remainingFreePdf =
-    Math.max(0, 3 - freePdfUsed);
+    Math.max(
+      0,
+      BUSINESS_CONFIG.freeTrial.freePdf - freePdfUsed
+    );
 
   return {
 
