@@ -6,6 +6,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { BUSINESS_CONFIG } from './src/config/businessConfig';
 
 // Load environment variables
 dotenv.config();
@@ -81,21 +82,21 @@ async function getPricing(
 
     '15000': {
       name: '1 Unlock (Hanya Hasil Ini)',
-      amount: 15000,
+      amount: BUSINESS_CONFIG.pricing.amounts.singleUnlock,
       durationDays: 0,
       type: 'single_unlock'
     },
 
     '150000': {
       name: 'Unlimited 30 Hari',
-      amount: 150000,
+      amount: BUSINESS_CONFIG.pricing.amounts.monthly,
       durationDays: 30,
       type: 'subscription'
     },
 
     '1150000': {
       name: 'Unlimited 365 Hari',
-      amount: 1150000,
+      amount: BUSINESS_CONFIG.pricing.amounts.yearly,
       durationDays: 365,
       type: 'subscription'
     }
