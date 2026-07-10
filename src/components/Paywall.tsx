@@ -72,9 +72,21 @@ export const Paywall: React.FC<PaywallProps> = ({ onUnlock, targetUnlock }) => {
   }, [user]);
 
   const packages = [
-    { id: '15000', name: '1 Unlock (Hanya Hasil Ini)', price: BUSINESS_CONFIG.pricing.singleUnlock,},
-    { id: '150000', name: 'Unlimited 30 Hari', price: BUSINESS_CONFIG.pricing.monthly,},
-    { id: '1150000', name: 'Unlimited 365 Hari', price: BUSINESS_CONFIG.pricing.yearly,},
+    {
+      id: '15000',
+      name: '1 Unlock (Hanya Hasil Ini)',
+      price: BUSINESS_CONFIG.pricing.amounts.singleUnlock,
+    },
+    {
+      id: '150000',
+      name: 'Unlimited 30 Hari',
+      price: BUSINESS_CONFIG.pricing.amounts.monthly,
+    },
+    {
+      id: '1150000',
+      name: 'Unlimited 365 Hari',
+      price: BUSINESS_CONFIG.pricing.amounts.yearly,
+    },
   ];
 
   const handleSelectPackage = (pkg: typeof packages[0]) => {
