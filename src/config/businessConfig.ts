@@ -32,11 +32,19 @@ export const BUSINESS_CONFIG = {
    * Harga paket HAMARÉ
    * Seluruh harga menggunakan satuan Rupiah (IDR).
    */
-  pricing: {
+pricing: {
+  amounts: {
     singleUnlock: 15000,
     monthly: 150000,
     yearly: 1150000,
   },
+
+  packageIds: {
+    singleUnlock: "15000",
+    monthly: "150000",
+    yearly: "1150000",
+  },
+},
 
   /**
    * Aturan Free Trial untuk Guest.
