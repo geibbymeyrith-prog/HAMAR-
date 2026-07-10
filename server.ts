@@ -806,13 +806,13 @@ if (
           procResult =
             `Successfully verified. Upgraded users/${userId} to Monthly Unlimited.`;
 
-        } else if (packageId === '1150000') {
+        } else if (packageId === BUSINESS_CONFIG.pricing.packageIds.yearly) {
 
           const expiryDate = new Date();
           expiryDate.setDate(expiryDate.getDate() + 365);
 
           await userRef.update({
-            subscriptionStatus: BUSINESS_CONFIG.pricing.packageIds.yearly,
+            subscriptionStatus: 'yearly',
             premiumExpiredAt: expiryDate.toISOString(),
             updatedAt: nowString
           });
@@ -853,11 +853,11 @@ if (
           } else {
 
             console.warn(
-              'Payment Rp15.000 completed but no targetUnlock metadata found.'
+              'Single Unlock payment completed but no targetUnlock metadata found.'
             );
 
             procResult =
-              'Successfully verified. Completed payment but no targetUnlock metadata found.';
+            'Successfully verified. Completed Single Unlock payment but no targetUnlock metadata found.';
           }
 
         } else {
