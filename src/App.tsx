@@ -84,6 +84,7 @@ import { AuthModal } from '@/components/AuthModal';
 import { MemberOfferModal } from '@/components/MemberOfferModal';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { BUSINESS_CONFIG } from "@/config/businessConfig";
 // Logo imports removed
 
 interface Article {
@@ -509,23 +510,23 @@ function MainApp() {
 
   const activeWetonKey = birthDateWeton ? `weton_${format(birthDateWeton, 'yyyy-MM-dd')}` : '';
   const isWetonUnlocked = isGeneralPremium || !!(activeWetonKey && isResultUnlocked('weton', activeWetonKey));
-  const showWetonPaywall = !isWetonUnlocked && currentCount >= 3;
+  const showWetonPaywall = !isWetonUnlocked && currentCount >= BUSINESS_CONFIG.freeTrial.freeGenerate;
 
   const activeJodohKey = (birthDateSelf && birthDatePartner) 
     ? `jodoh_${format(birthDateSelf, 'yyyy-MM-dd')}_${format(birthDatePartner, 'yyyy-MM-dd')}` 
     : '';
   const isJodohUnlocked = isGeneralPremium || !!(activeJodohKey && isResultUnlocked('jodoh', activeJodohKey));
-  const showJodohPaywall = !isJodohUnlocked && currentCount >= 3;
+  const showJodohPaywall = !isJodohUnlocked && currentCount >= BUSINESS_CONFIG.freeTrial.freeGenerate;
 
   const activeHariBaikKey = eventDateHariBaik ? `hariBaik_${format(eventDateHariBaik, 'yyyy-MM-dd')}` : '';
   const isHariBaikUnlocked = isGeneralPremium || !!(activeHariBaikKey && isResultUnlocked('hariBaik', activeHariBaikKey));
-  const showHariBaikPaywall = !isHariBaikUnlocked && currentCount >= 3;
+  const showHariBaikPaywall = !isHariBaikUnlocked && currentCount >= BUSINESS_CONFIG.freeTrial.freeGenerate;
 
   const showPaywall = (() => {
     if (activeTab === 'weton') return showWetonPaywall;
     if (activeTab === 'jodoh') return showJodohPaywall;
     if (activeTab === 'hari-baik') return showHariBaikPaywall;
-    return !isGeneralPremium && currentCount >= 3;
+    return !isGeneralPremium && currentCount >= BUSINESS_CONFIG.freeTrial.freeGenerate;
   })();
 
   const isCurrentTabUnlocked = (() => {
@@ -535,7 +536,7 @@ function MainApp() {
     return isGeneralPremium;
   })();
 
-  const canDownload = isCurrentTabUnlocked || currentCount < 3;
+  const canDownload = isCurrentTabUnlocked || currentCount < BUSINESS_CONFIG.freeTrial.freeGenerate;
 
   const wetonUnlockPayload = wetonKelahiranDetails ? {
     type: 'weton' as const,
@@ -568,11 +569,11 @@ function MainApp() {
     const details = getJavaneseDetails(date);
     if (profile) {
       saveHistory('weton', `${details.masehiDayName} ${details.pasaranName}`, details);
-      if (!isPremium && profile.generateCount <= 3) {
+      if (!isPremium && profile.generateCount <= BUSINESS_CONFIG.freeTrial.freeGenerate) {
         incrementGenerateCount();
       }
     } else {
-      if (guestGenerateCount <= 3) {
+      if (guestGenerateCount <= BUSINESS_CONFIG.freeTrial.freeGenerate) {
         incrementGuestGenerateCount();
       }
     }
@@ -591,11 +592,11 @@ function MainApp() {
     const details = getJavaneseDetails(date);
     if (profile) {
       saveHistory('hariBaik', `${details.masehiDayName} ${details.pasaranName}`, details);
-      if (!isPremium && profile.generateCount <= 3) {
+      if (!isPremium && profile.generateCount <= BUSINESS_CONFIG.freeTrial.freeGenerate) {
         incrementGenerateCount();
       }
     } else {
-      if (guestGenerateCount <= 3) {
+      if (guestGenerateCount <= BUSINESS_CONFIG.freeTrial.freeGenerate) {
         incrementGuestGenerateCount();
       }
     }
@@ -618,11 +619,11 @@ function MainApp() {
 
     if (profile) {
       saveHistory('jodoh', `${mangsaSelfData.name} x ${mangsaPartnerData.name} (${nameSelf || '-'} x ${namePartner || '-'})`, result);
-      if (!isPremium && profile.generateCount <= 3) {
+      if (!isPremium && profile.generateCount <= BUSINESS_CONFIG.freeTrial.freeGenerate) {
         incrementGenerateCount();
       }
     } else {
-      if (guestGenerateCount <= 3) {
+      if (guestGenerateCount <= BUSINESS_CONFIG.freeTrial.freeGenerate) {
         incrementGuestGenerateCount();
       }
     }
