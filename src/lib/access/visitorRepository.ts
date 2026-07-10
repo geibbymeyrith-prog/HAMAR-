@@ -3,105 +3,152 @@
  * HAMARÉ Visitor Repository
  * ============================================================================
  *
- * Single gateway for Visitor persistence.
+ * Repository layer for Visitor persistence.
  *
- * Responsibilities:
- * - Local Storage
- * - Firestore
- * - Session persistence
+ * Responsibilities
+ * ----------------
+ * - Read Visitor
+ * - Save Visitor
+ * - Claim Visitor
+ * - Clear Session
+ * - Future Firestore synchronization
  *
- * This repository DOES NOT:
- * - decide business rules
- * - check subscription
- * - generate results
- * - activate licenses
- * - process payments
+ * IMPORTANT
+ * ---------
+ * This repository DOES NOT contain business rules.
  *
- * Business decisions belong to AccessEngine.
+ * Business rules belong to:
+ * - AccessEngine
  *
+ * Visitor object creation and local persistence belong to:
+ * - visitor.ts
+ *
+ * Firestore integration will be added in a future commit
+ * without changing this public API.
  * ============================================================================
  */
 
 import type { Visitor } from "./types";
 
+import {
+  getOrCreateVisitor,
+  saveVisitor,
+  clearSession,
+} from "./visitor";
+
 export interface VisitorRepository {
   /**
-   * Creates a new Visitor.
+   * Creates a Visitor if one does not already exist.
    *
-   * Local Storage is always created.
-   *
-   * Firestore document will only be created
-   * after the first successful Generate.
+   * Firestore document is NOT created here.
+   * Firestore document will be created after the
+   * first successful Generate.
    */
-  createVisitor(): Promise<Visitor | null>;
+  create(): Promise<Visitor>;
 
   /**
    * Returns the current Visitor.
    *
-   * Priority:
-   * 1. Local Storage
-   * 2. Firestore
-   * 3. Create new Visitor
+   * If no Visitor exists locally,
+   * one will automatically be created.
    */
-  getCurrentVisitor(): Promise<Visitor | null>;
+  getCurrent(): Promise<Visitor>;
 
   /**
-   * Persists Visitor data.
+   * Persists Visitor changes.
    */
-  saveVisitor(visitor: Visitor): Promise<void>;
+  save(visitor: Visitor): Promise<void>;
 
   /**
-   * Claims a Visitor after registration.
+   * Links an anonymous Visitor
+   * with a registered Firebase account.
+   *
+   * Firestore implementation will be added
+   * in a future commit.
    */
-  claimVisitor(
+  claim(
     visitorId: string,
     uid: string
   ): Promise<void>;
 
   /**
-   * Clears current application session
+   * Clears the current application session
    * without removing Visitor identity.
    */
-  clearSession(): Promise<void>;
+  clearCurrentSession(): Promise<void>;
 
   /**
-   * Synchronizes Visitor between
+   * Synchronizes Visitor data between
    * Local Storage and Firestore.
+   *
+   * Placeholder for future implementation.
    */
-  syncVisitor(): Promise<void>;
+  sync(): Promise<void>;
 }
 
 export class DefaultVisitorRepository
   implements VisitorRepository {
 
-  async createVisitor(): Promise<Visitor | null> {
-    return null;
+  async create(): Promise<Visitor> {
+
+    return getOrCreateVisitor();
+
   }
 
-  async getCurrentVisitor(): Promise<Visitor | null> {
-    return null;
+  async getCurrent(): Promise<Visitor> {
+
+    return getOrCreateVisitor();
+
   }
 
-  async saveVisitor(
-    _visitor: Visitor
+  async save(
+    visitor: Visitor
   ): Promise<void> {
-    return;
+
+    saveVisitor(visitor);
+
   }
 
-  async claimVisitor(
+  async claim(
     _visitorId: string,
     _uid: string
   ): Promise<void> {
+
+    /**
+     * TODO
+     *
+     * Link visitorId with Firebase UID.
+     *
+     * Claim all Visitor Results.
+     *
+     * Update Visitor document
+     * in Firestore.
+     */
+
     return;
+
   }
 
-  async clearSession(): Promise<void> {
-    return;
+  async clearCurrentSession(): Promise<void> {
+
+    clearSession();
+
   }
 
-  async syncVisitor(): Promise<void> {
+  async sync(): Promise<void> {
+
+    /**
+     * TODO
+     *
+     * Synchronize Visitor data
+     * between Local Storage
+     * and Firestore.
+     */
+
     return;
+
   }
+
 }
 
 export const visitorRepository =
