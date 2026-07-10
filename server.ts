@@ -492,7 +492,7 @@ console.log({
       const userDoc = await userRef.get();
 
       if (userDoc.exists) {
-        if (packageId === '150000') {
+        if (packageId === BUSINESS_CONFIG.pricing.packageIds.monthly) {
           // Package Rp150.000: Monthly Unlimited
           const expiryDate = new Date();
           expiryDate.setDate(expiryDate.getDate() + 30);
@@ -504,7 +504,7 @@ console.log({
           });
           console.log(`User profile ${userId} upgraded to Monthly Subscription. Active until: ${expiryDate.toISOString()}`);
           procResult = `Successfully verified. Upgraded users/${userId} to Monthly Unlimited.`;
-        } else if (packageId === '1150000') {
+        } else if (packageId === BUSINESS_CONFIG.pricing.packageIds.yearly) {
           // Package Rp1.150.000: Yearly Unlimited
           const expiryDate = new Date();
           expiryDate.setDate(expiryDate.getDate() + 365);
@@ -516,7 +516,7 @@ console.log({
           });
           console.log(`User profile ${userId} upgraded to Yearly Subscription. Active until: ${expiryDate.toISOString()}`);
           procResult = `Successfully verified. Upgraded users/${userId} to Yearly Unlimited.`;
-        } else if (packageId === '15000') {
+        } else if (packageId === BUSINESS_CONFIG.pricing.packageIds.singleUnlock) {
           // Package Rp15.000: One-time Result Unlock ONLY
           // Read targetUnlock metadata from original payment trace
           const targetUnlock = paymentData.targetUnlock;
