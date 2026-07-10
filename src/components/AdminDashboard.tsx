@@ -1134,10 +1134,10 @@ export const AdminDashboard: React.FC<{
 
                     {/* Card 6: Single Unlock Purchases */}
                     {(() => {
-                      const countSingle = monitoringPayments.filter(p => p.package === '15000' && p.status === 'completed').length;
+                      const countSingle = monitoringPayments.filter(p => p.package === BUSINESS_CONFIG.pricing.packageIds.singleUnlock && p.status === 'completed').length;
                       return (
                         <Card className="p-4 bg-white border border-stone-200/80 shadow-sm">
-                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Unlock Rp15K</p>
+                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Single Unlock</p>
                           <h4 className="text-xl font-mono font-bold text-purple-600">{countSingle}</h4>
                         </Card>
                       );
