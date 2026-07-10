@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, LogIn, UserPlus, ArrowRight, ShieldAlert } from 'lucide-react';
 import { Button } from './ui/button';
+import { BUSINESS_CONFIG } from "@/config/businessConfig";
 
 interface MemberOfferModalProps {
   isOpen: boolean;
@@ -109,7 +110,12 @@ export const MemberOfferModal: React.FC<MemberOfferModalProps> = ({
                 </button>
 
                 <p className="text-[10px] text-center text-stone-400 italic mt-2">
-                  Kuota Gratis Tamu Anda Saat Ini: Sisa {Math.max(0, 3 - guestCountRemaining)} dari 3 kali.
+                  Kuota Gratis Tamu Anda Saat Ini: Sisa{" "}
+                  {Math.max(
+                    0,
+                    BUSINESS_CONFIG.freeTrial.freeGenerate - guestCountRemaining
+                  )}{" "}
+                  dari {BUSINESS_CONFIG.freeTrial.freeGenerate} kali.
                 </p>
               </div>
             </div>
