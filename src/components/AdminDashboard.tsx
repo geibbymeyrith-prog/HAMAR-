@@ -29,7 +29,7 @@ import { useAuth } from '../lib/AuthContext';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
 import { KbmsDashboard } from './KbmsDashboard';
-import { BUSINESS_CONFIG } from './config/businessConfig';
+import { BUSINESS_CONFIG } from '../config/businessConfig';
 // Logo imports removed
 import { 
   Check, 
