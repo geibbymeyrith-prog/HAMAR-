@@ -138,7 +138,7 @@ export const Paywall: React.FC<PaywallProps> = ({ onUnlock, targetUnlock }) => {
             whatsapp: formData.whatsapp,
             packageId: selectedPackage.id,
             amount: uniqueAmount,
-            ...(selectedPackage.id === '15000' && targetUnlock ? { targetUnlock } : {})
+            ...(selectedPackage.id === BUSINESS_CONFIG.pricing.packageIds.singleUnlock && targetUnlock ? { targetUnlock } : {})
           })
         });
 
