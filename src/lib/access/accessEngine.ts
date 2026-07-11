@@ -56,11 +56,13 @@ export interface DecisionResult {
 export class AccessEngine {
 
   /**
-   * Placeholder.
+   * Business rule migration in progress.
    *
-   * Business rules will be migrated here
-   * gradually from App.tsx.
+   * Generation rule
+   * will be implemented
+   * in the next commit.
    */
+  
   static canGenerate(
     visitor: Visitor | null,
     license: License | null
@@ -81,7 +83,12 @@ export class AccessEngine {
 
   /**
    * Placeholder.
+   *
+   * PDF access rule
+   * will be migrated
+   * after generation rule.
    */
+  
   static canDownloadPdf(
     result: Result | null
   ): DecisionResult {
@@ -99,22 +106,59 @@ export class AccessEngine {
 
   }
 
-  /**
-   * Placeholder.
+ /**
+   * Registration requirement rule.
+   *
+   * Determines whether
+   * an anonymous Visitor
+   * must register
+   * before continuing.
    */
+ 
   static needsRegistration(
     visitor: Visitor | null
   ): DecisionResult {
 
+    if (!visitor) {
+
+      return {
+
+        allowed: false,
+
+        decision: AccessDecision.LOGIN_REQUIRED,
+
+        reason:
+          "Visitor not found.",
+
+      };
+
+    }
+
+    if (visitor.registeredUserId) {
+      return {
+        allowed: true,
+        decision: AccessDecision.ALLOW,
+      };
+    }
+
+    if (visitor.trialConsumed) {
+
+      return {
+
+        allowed: false,
+
+        decision: AccessDecision.LOGIN_REQUIRED,
+
+        reason:
+          "Trial has been consumed.",
+
+      };
+
+    }
+
     return {
-
-      allowed: false,
-
-      decision: AccessDecision.LOGIN_REQUIRED,
-
-      reason:
-        "Business rule has not been migrated yet.",
-
+      allowed: true,
+      decision: AccessDecision.ALLOW,
     };
 
   }
