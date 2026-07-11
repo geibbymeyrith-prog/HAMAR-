@@ -31,10 +31,20 @@
 import type { Visitor } from "./types";
 
 import {
+  doc,
+  getDoc,
+  setDoc,
+} from "firebase/firestore";
+
+import { db } from "../firebase";
+
+import {
   getOrCreateVisitor,
   saveVisitor,
   clearSession,
 } from "./visitor";
+
+const VISITOR_COLLECTION = "visitors";
 
 export interface VisitorRepository {
   /**
@@ -83,11 +93,17 @@ export interface VisitorRepository {
    *
    * Placeholder for future implementation.
    */
-  sync(): Promise<void>;
+  sync(
+    visitor: Visitor
+  ): Promise<void>;
 }
 
 export class DefaultVisitorRepository
   implements VisitorRepository {
+
+  private visitorDoc(visitorId: string) {
+    return doc(db, VISITOR_COLLECTION, visitorId);
+  }
 
   async create(): Promise<Visitor> {
 
@@ -135,7 +151,9 @@ export class DefaultVisitorRepository
 
   }
 
-  async sync(): Promise<void> {
+  async sync(
+    _visitor: Visitor
+  ): Promise<void> {
 
     /**
      * TODO
