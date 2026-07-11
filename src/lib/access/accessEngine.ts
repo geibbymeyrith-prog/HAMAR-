@@ -25,6 +25,7 @@ import {
   Visitor,
   License,
   Result,
+  LicenseStatus,
 } from "./types";
 
 export enum AccessDecision {
@@ -63,10 +64,39 @@ export class AccessEngine {
    * in the next commit.
    */
   
-  static canGenerate(
-    visitor: Visitor | null,
-    license: License | null
-  ): DecisionResult {
+ static canGenerate(
+  visitor: Visitor | null,
+  license: License | null
+): DecisionResult {
+
+  if (!visitor) {
+
+    return {
+
+      allowed: false,
+
+      decision: AccessDecision.LOGIN_REQUIRED,
+
+      reason:
+        "Visitor not found.",
+
+    };
+
+  }
+
+  if (!visitor.trialConsumed) {
+
+    return {
+
+      allowed: true,
+
+      decision: AccessDecision.ALLOW,
+
+    };
+
+  }
+
+  if (!license) {
 
     return {
 
@@ -75,11 +105,36 @@ export class AccessEngine {
       decision: AccessDecision.LICENSE_REQUIRED,
 
       reason:
-        "Business rule has not been migrated yet.",
+        "No active license.",
 
     };
 
   }
+
+  if (license.status !== LicenseStatus.ACTIVE) {
+
+    return {
+
+      allowed: false,
+
+      decision: AccessDecision.LICENSE_REQUIRED,
+
+      reason:
+        "License is not active.",
+
+    };
+
+  }
+
+  return {
+
+    allowed: true,
+
+    decision: AccessDecision.ALLOW,
+
+  };
+
+}
 
   /**
    * Placeholder.
