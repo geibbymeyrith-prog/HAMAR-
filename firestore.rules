@@ -126,8 +126,13 @@ service cloud.firestore {
            '1111000',
            '15000',
            '150000',
-           '1150000'
-         ] &&
+           '1150000',
+
+            // New package identifiers
+            'single_unlock',
+            'monthly',
+            'yearly'
+           ] &&
 
          data.packageName is string &&
          data.packageName.size() < 100 &&
@@ -215,6 +220,28 @@ service cloud.firestore {
     match /system_assumptions/{assumptionId} {
   allow read, write: if isAdmin();
 }
+
+    match /visitors/{visitorId} {
+
+      allow create: if request.resource.data.visitorId == visitorId
+        && request.resource.data.generateUsed is number
+        && request.resource.data.trialConsumed is bool
+        && request.resource.data.status is string
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.lastSeenAt is timestamp
+        && (
+          !('registeredUserId' in request.resource.data)
+          || request.resource.data.registeredUserId == null
+          || request.resource.data.registeredUserId is string
+        );
+
+      allow read: if isAdmin();
+
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin();
+
+    }
 
 match /{document=**} {
   allow read, write: if false;
